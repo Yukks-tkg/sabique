@@ -1,0 +1,17 @@
+//
+//  SabiqueApp.swift
+//  Sabique
+//
+//  Created by 高木祐輝 on 2026/01/14.
+//
+
+import SwiftUI
+
+@main
+struct SabiqueApp: App {
+    var body: some Scene {
+        WindowGroup {
+            ContentView()
+        }
+    }
+}
