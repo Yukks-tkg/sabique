@@ -6,12 +6,14 @@
 //
 
 import SwiftUI
+import SwiftData
 
 @main
 struct SabiqueApp: App {
     var body: some Scene {
         WindowGroup {
-            ContentView()
+            PlaylistListView()
         }
+        .modelContainer(for: [Playlist.self, TrackInPlaylist.self])
     }
 }
