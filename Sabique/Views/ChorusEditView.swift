@@ -69,7 +69,7 @@ struct ChorusEditView: View {
                 
                 // 再生コントロール & シークバー
                 VStack(spacing: 10) {
-                    // カスタムシークバー（小さい丸のサム）
+                    // カスタムシークバー + ピン
                     GeometryReader { geometry in
                         ZStack(alignment: .leading) {
                             // 背景トラック
@@ -79,28 +79,62 @@ struct ChorusEditView: View {
                             
                             // 再生済みトラック
                             Capsule()
-                                .fill(Color.accentColor)
+                                .fill(Color.white.opacity(0.8))
                                 .frame(width: CGFloat(playbackTime / max(duration, 1)) * geometry.size.width, height: 4)
                             
-                            // サム（小さい丸）
-                            Circle()
-                                .fill(Color.white)
-                                .frame(width: 10, height: 10)
-                                .shadow(radius: 2)
-                                .offset(x: CGFloat(playbackTime / max(duration, 1)) * (geometry.size.width - 10))
-                                .gesture(
-                                    DragGesture(minimumDistance: 0)
-                                        .onChanged { value in
-                                            let progress = min(max(0, value.location.x / geometry.size.width), 1)
-                                            playbackTime = progress * duration
-                                        }
-                                        .onEnded { _ in
-                                            player.playbackTime = playbackTime
-                                        }
-                                )
+                            // サビ範囲のハイライト（再生済みトラックの上に表示）
+                            if let start = chorusStart, let end = chorusEnd, end > start, duration > 0 {
+                                let startX = CGFloat(start / duration) * geometry.size.width
+                                let endX = CGFloat(end / duration) * geometry.size.width
+                                let width = endX - startX
+                                Rectangle()
+                                    .fill(Color.green.opacity(0.5))
+                                    .frame(width: width, height: 8)
+                                    .cornerRadius(4)
+                                    .position(x: startX + width / 2, y: geometry.size.height / 2)
+                            }
+                            
+                            // 開始位置ピン（青）
+                            if let start = chorusStart, duration > 0 {
+                                let pinX = CGFloat(start / duration) * geometry.size.width
+                                VStack(spacing: 0) {
+                                    Circle()
+                                        .fill(Color.blue)
+                                        .frame(width: 8, height: 8)
+                                    Rectangle()
+                                        .fill(Color.blue)
+                                        .frame(width: 2, height: 12)
+                                }
+                                .position(x: pinX, y: geometry.size.height / 2 - 4)
+                            }
+                            
+                            // 終了位置ピン（赤）
+                            if let end = chorusEnd, duration > 0 {
+                                let pinX = CGFloat(end / duration) * geometry.size.width
+                                VStack(spacing: 0) {
+                                    Circle()
+                                        .fill(Color.red)
+                                        .frame(width: 8, height: 8)
+                                    Rectangle()
+                                        .fill(Color.red)
+                                        .frame(width: 2, height: 12)
+                                }
+                                .position(x: pinX, y: geometry.size.height / 2 - 4)
+                            }
                         }
+                        .contentShape(Rectangle())
+                        .gesture(
+                            DragGesture(minimumDistance: 0)
+                                .onChanged { value in
+                                    let progress = min(max(0, value.location.x / geometry.size.width), 1)
+                                    playbackTime = progress * duration
+                                }
+                                .onEnded { _ in
+                                    player.playbackTime = playbackTime
+                                }
+                        )
                     }
-                    .frame(height: 20)
+                    .frame(height: 28)
                     
                     HStack {
                         Text(formatTime(playbackTime))
@@ -123,7 +157,13 @@ struct ChorusEditView: View {
                 // サビ設定ボタン
                 HStack(spacing: 20) {
                     VStack {
-                        Button(action: { chorusStart = playbackTime }) {
+                        Button(action: {
+                            chorusStart = playbackTime
+                            // 開始位置が終了位置より後ろになった場合、終了位置をクリア
+                            if let end = chorusEnd, playbackTime >= end {
+                                chorusEnd = nil
+                            }
+                        }) {
                             VStack {
                                 Image(systemName: "arrow.right.to.line")
                                     .font(.title)
@@ -137,13 +177,32 @@ struct ChorusEditView: View {
                             .cornerRadius(12)
                         }
                         
-                        Text(chorusStart.map { formatTime($0) } ?? "--:--")
-                            .font(.headline)
-                            .monospacedDigit()
+                        HStack(spacing: 8) {
+                            Text(chorusStart.map { formatTime($0) } ?? "--:--")
+                                .font(.headline)
+                                .monospacedDigit()
+                            
+                            if chorusStart != nil {
+                                Button(action: {
+                                    chorusStart = nil
+                                    chorusEnd = nil  // 開始をリセットすると終了もリセット
+                                }) {
+                                    Image(systemName: "xmark.circle.fill")
+                                        .foregroundColor(.gray)
+                                }
+                            }
+                        }
                     }
                     
                     VStack {
-                        Button(action: { chorusEnd = playbackTime }) {
+                        Button(action: {
+                            // 開始位置が設定されていて、現在位置が開始位置より後ろの場合のみ設定可能
+                            if let start = chorusStart, playbackTime > start {
+                                chorusEnd = playbackTime
+                            } else if chorusStart == nil {
+                                // 開始位置が未設定の場合はまず開始位置を設定するよう促す（何もしない）
+                            }
+                        }) {
                             VStack {
                                 Image(systemName: "arrow.left.to.line")
                                     .font(.title)
@@ -156,10 +215,22 @@ struct ChorusEditView: View {
                             .background(Color.red.opacity(0.1))
                             .cornerRadius(12)
                         }
+                        // 終了ボタンは開始位置より後ろでないと押せないことを示す
+                        .opacity(chorusStart == nil || playbackTime <= (chorusStart ?? 0) ? 0.5 : 1.0)
+                        .disabled(chorusStart == nil || playbackTime <= (chorusStart ?? 0))
                         
-                        Text(chorusEnd.map { formatTime($0) } ?? "--:--")
-                            .font(.headline)
-                            .monospacedDigit()
+                        HStack(spacing: 8) {
+                            Text(chorusEnd.map { formatTime($0) } ?? "--:--")
+                                .font(.headline)
+                                .monospacedDigit()
+                            
+                            if chorusEnd != nil {
+                                Button(action: { chorusEnd = nil }) {
+                                    Image(systemName: "xmark.circle.fill")
+                                        .foregroundColor(.gray)
+                                }
+                            }
+                        }
                     }
                 }
                 .padding(.horizontal)
