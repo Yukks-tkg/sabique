@@ -314,19 +314,18 @@ struct ChorusEditView: View {
                 
                 duration = song.duration ?? 0
                 
-                // このトラックのキューを設定
+                // このトラックのキューを設定して再生開始
                 player.queue = [song]
-                player.playbackTime = 0
-                playbackTime = 0
+                try await player.play()
                 
-                // 既にハイライトが設定されている場合はその付近から開始
+                // 再生開始後にハイライト位置へシーク
                 if let start = track.chorusStartSeconds {
                     player.playbackTime = max(0, start - 2)
                     playbackTime = player.playbackTime
+                } else {
+                    player.playbackTime = 0
+                    playbackTime = 0
                 }
-                
-                // 自動で再生開始
-                try await player.play()
             } catch {
                 print("Player setup error: \(error)")
             }
