@@ -295,8 +295,11 @@ struct ChorusEditView: View {
     }
     
     private func setupPlayer() {
-        // 前の曲の再生位置をリセット
+        // 再生位置をリセット
         playbackTime = 0
+        
+        // 現在の再生を停止
+        player.stop()
         
         Task {
             do {
@@ -304,18 +307,19 @@ struct ChorusEditView: View {
                 let response = try await request.response()
                 guard let song = response.items.first else { return }
                 
-                player.queue = [song]
-                duration = song.duration ?? 0
-                
-                // 再生位置を先頭にリセット
-                player.playbackTime = 0
-                
                 // アートワークURLを取得
                 if let artwork = song.artwork {
                     artworkURL = artwork.url(width: 400, height: 400)
                 }
                 
-                // 既にハイライトが設定されている場合はその付近から再生開始
+                duration = song.duration ?? 0
+                
+                // このトラックのキューを設定
+                player.queue = [song]
+                player.playbackTime = 0
+                playbackTime = 0
+                
+                // 既にハイライトが設定されている場合はその付近から開始
                 if let start = track.chorusStartSeconds {
                     player.playbackTime = max(0, start - 2)
                     playbackTime = player.playbackTime
