@@ -296,6 +296,7 @@ struct ChorusEditView: View {
             .navigationBarTitleDisplayMode(.inline)
             .toolbarColorScheme(.dark, for: .navigationBar)
             .toolbarBackground(.visible, for: .navigationBar)
+            .preferredColorScheme(.dark)
             .onAppear {
                 setupPlayer()
                 loadCurrentValues()
