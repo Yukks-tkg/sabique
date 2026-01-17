@@ -17,29 +17,62 @@ struct PlaylistListView: View {
     @State private var showingSettings = false
     @State private var showingImportSheet = false
     @State private var newPlaylistName = ""
+    @State private var backgroundArtworkURL: URL?
     
     var body: some View {
         NavigationStack {
-            Group {
-                if playlists.isEmpty {
-                    ContentUnavailableView(
-                        "プレイリストがありません",
-                        systemImage: "music.note.list",
-                        description: Text("右上の＋ボタンでプレイリストを作成しましょう")
-                    )
-                } else {
-                    List {
-                        ForEach(playlists) { playlist in
-                            NavigationLink(destination: PlaylistDetailView(playlist: playlist)) {
-                                PlaylistRow(playlist: playlist)
-                            }
-                            .listRowSeparator(.visible, edges: .bottom)
+            ZStack {
+                // ぼかし背景
+                GeometryReader { geometry in
+                    if let url = backgroundArtworkURL {
+                        AsyncImage(url: url) { image in
+                            image
+                                .resizable()
+                                .aspectRatio(contentMode: .fill)
+                                .frame(width: geometry.size.width, height: geometry.size.height)
+                                .clipped()
+                                .blur(radius: 30)
+                                .opacity(0.6)
+                        } placeholder: {
+                            Color.black
                         }
-                        .onDelete(perform: deletePlaylists)
-                        .onMove(perform: movePlaylists)
+                    } else {
+                        Color(.systemBackground)
                     }
-                    .listStyle(.plain)
                 }
+                .ignoresSafeArea()
+                
+                // オーバーレイ
+                Color(.systemBackground).opacity(0.7)
+                    .ignoresSafeArea()
+                
+                // コンテンツ
+                Group {
+                    if playlists.isEmpty {
+                        ContentUnavailableView(
+                            "プレイリストがありません",
+                            systemImage: "music.note.list",
+                            description: Text("右上の＋ボタンでプレイリストを作成しましょう")
+                        )
+                    } else {
+                        List {
+                            ForEach(playlists) { playlist in
+                                NavigationLink(destination: PlaylistDetailView(playlist: playlist)) {
+                                    PlaylistRow(playlist: playlist)
+                                }
+                                .listRowSeparator(.visible, edges: .bottom)
+                                .listRowBackground(Color.clear)
+                            }
+                            .onDelete(perform: deletePlaylists)
+                            .onMove(perform: movePlaylists)
+                        }
+                        .listStyle(.plain)
+                        .scrollContentBackground(.hidden)
+                    }
+                }
+            }
+            .task(id: playlists.count) {
+                await loadRandomArtwork()
             }
             .navigationTitle("Sabiq")
             .toolbar {
@@ -111,6 +144,31 @@ struct PlaylistListView: View {
         // orderIndexを更新
         for (index, playlist) in reorderedPlaylists.enumerated() {
             playlist.orderIndex = index
+        }
+    }
+    
+    private func loadRandomArtwork() async {
+        // 全プレイリストからすべてのトラックを収集
+        let allTracks = playlists.flatMap { $0.tracks }
+        guard !allTracks.isEmpty else {
+            backgroundArtworkURL = nil
+            return
+        }
+        
+        // ランダムにトラックを選択
+        let randomTrack = allTracks.randomElement()!
+        
+        do {
+            let request = MusicCatalogResourceRequest<Song>(
+                matching: \.id,
+                equalTo: MusicItemID(randomTrack.appleMusicSongId)
+            )
+            let response = try await request.response()
+            if let song = response.items.first, let artwork = song.artwork {
+                backgroundArtworkURL = artwork.url(width: 400, height: 400)
+            }
+        } catch {
+            print("Background artwork load error: \(error)")
         }
     }
 }
