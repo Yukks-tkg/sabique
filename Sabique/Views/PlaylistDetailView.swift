@@ -16,11 +16,37 @@ struct PlaylistDetailView: View {
     @State private var showingAddSong = false
     @State private var selectedTrack: TrackInPlaylist?
     @State private var showingChorusEdit = false
+    @State private var backgroundArtworkURL: URL?
     
     @StateObject private var playerManager = ChorusPlayerManager()
     
     var body: some View {
         ZStack(alignment: .bottom) {
+            // ぼかし背景
+            GeometryReader { geometry in
+                if let url = backgroundArtworkURL {
+                    AsyncImage(url: url) { image in
+                        image
+                            .resizable()
+                            .aspectRatio(contentMode: .fill)
+                            .frame(width: geometry.size.width, height: geometry.size.height)
+                            .clipped()
+                            .blur(radius: 30)
+                            .opacity(0.6)
+                    } placeholder: {
+                        Color.black
+                    }
+                } else {
+                    Color(.systemBackground)
+                }
+            }
+            .ignoresSafeArea()
+            
+            // オーバーレイ
+            Color(.systemBackground).opacity(0.7)
+                .ignoresSafeArea()
+            
+            // コンテンツ
             List {
                 // 曲リスト
                 Section {
@@ -38,10 +64,25 @@ struct PlaylistDetailView: View {
                                     showingChorusEdit = true
                                 }
                                 .listRowInsets(EdgeInsets(top: 8, leading: 16, bottom: 8, trailing: 16))
+                                .listRowBackground(Color.clear)
                         }
                         .onDelete(perform: deleteTracks)
                         .onMove(perform: moveTracks)
                     }
+                    
+                    // トラックを追加ボタン
+                    Button(action: { showingAddSong = true }) {
+                        HStack(spacing: 12) {
+                            Image(systemName: "plus.circle")
+                                .font(.title2)
+                                .foregroundColor(.blue)
+                            Text("トラックを追加")
+                                .foregroundColor(.blue)
+                        }
+                        .padding(.vertical, 8)
+                    }
+                    .listRowInsets(EdgeInsets(top: 8, leading: 16, bottom: 8, trailing: 16))
+                    .listRowBackground(Color.clear)
                 } header: {
                     Text("ハイライトリスト")
                         .font(.subheadline)
@@ -50,8 +91,12 @@ struct PlaylistDetailView: View {
                         .padding(.top, 10)
                 }
             }
+            .scrollContentBackground(.hidden)
             .safeAreaInset(edge: .bottom) {
                 Color.clear.frame(height: 80) // 下部にスペースを確保
+            }
+            .task(id: playlist.trackCount) {
+                await loadFirstTrackArtwork()
             }
             
             // 再生ボタン（下部に固定）
@@ -128,6 +173,26 @@ struct PlaylistDetailView: View {
         // orderIndexを更新
         for (index, track) in tracks.enumerated() {
             track.orderIndex = index
+        }
+    }
+    
+    private func loadFirstTrackArtwork() async {
+        guard let firstTrack = playlist.sortedTracks.first else {
+            backgroundArtworkURL = nil
+            return
+        }
+        
+        do {
+            let request = MusicCatalogResourceRequest<Song>(
+                matching: \.id,
+                equalTo: MusicItemID(firstTrack.appleMusicSongId)
+            )
+            let response = try await request.response()
+            if let song = response.items.first, let artwork = song.artwork {
+                backgroundArtworkURL = artwork.url(width: 400, height: 400)
+            }
+        } catch {
+            print("Background artwork load error: \(error)")
         }
     }
 }

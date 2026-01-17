@@ -65,6 +65,19 @@ struct PlaylistListView: View {
                             }
                             .onDelete(perform: deletePlaylists)
                             .onMove(perform: movePlaylists)
+                            
+                            // プレイリストを追加ボタン
+                            Button(action: { showingCreateSheet = true }) {
+                                HStack(spacing: 12) {
+                                    Image(systemName: "plus.circle")
+                                        .font(.title2)
+                                        .foregroundColor(.blue)
+                                    Text("プレイリストを追加")
+                                        .foregroundColor(.blue)
+                                }
+                                .padding(.vertical, 8)
+                            }
+                            .listRowBackground(Color.clear)
                         }
                         .listStyle(.plain)
                         .scrollContentBackground(.hidden)

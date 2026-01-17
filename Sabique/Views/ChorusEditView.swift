@@ -151,7 +151,15 @@ struct ChorusEditView: View {
                     .monospacedDigit()
                     .foregroundColor(.secondary)
                     
-                    HStack(spacing: 40) {
+                    HStack(spacing: 24) {
+                        // 曲の最初へ
+                        Button(action: { goToStart() }) {
+                            Image(systemName: "backward.end.fill")
+                                .resizable()
+                                .scaledToFit()
+                                .frame(width: 24, height: 24)
+                        }
+                        
                         // 巻き戻しボタン（-5秒）
                         Button(action: { skipBackward() }) {
                             Image(systemName: "gobackward.5")
@@ -196,6 +204,14 @@ struct ChorusEditView: View {
                                 stopContinuousSkip()
                             }
                         }, perform: {})
+                        
+                        // 曲の最後へ
+                        Button(action: { goToEnd() }) {
+                            Image(systemName: "forward.end.fill")
+                                .resizable()
+                                .scaledToFit()
+                                .frame(width: 24, height: 24)
+                        }
                     }
                     .padding(.vertical)
                 }
@@ -364,6 +380,17 @@ struct ChorusEditView: View {
         let newTime = max(playbackTime - 5, 0)
         playbackTime = newTime
         player.playbackTime = newTime
+    }
+    
+    private func goToStart() {
+        playbackTime = 0
+        player.playbackTime = 0
+    }
+    
+    private func goToEnd() {
+        let endTime = max(duration - 1, 0)
+        playbackTime = endTime
+        player.playbackTime = endTime
     }
     
     private func startContinuousSkip(forward: Bool) {
