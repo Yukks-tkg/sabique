@@ -7,6 +7,7 @@
 
 import SwiftUI
 import SwiftData
+import MusicKit
 
 struct PlaylistListView: View {
     @Environment(\.modelContext) private var modelContext
@@ -104,24 +105,23 @@ struct PlaylistListView: View {
 // MARK: - PlaylistRow
 struct PlaylistRow: View {
     let playlist: Playlist
+    @State private var artworkURL: URL?
     
     var body: some View {
         HStack(spacing: 16) {
-            // プレイリストアイコン代わりのビジュアル
-            ZStack {
-                RoundedRectangle(cornerRadius: 12)
-                    .fill(
-                        LinearGradient(
-                            colors: [.blue.opacity(0.3), .purple.opacity(0.3)],
-                            startPoint: .topLeading,
-                            endPoint: .bottomTrailing
-                        )
-                    )
-                    .frame(width: 50, height: 50)
-                
-                Image(systemName: "music.note.list")
-                    .foregroundColor(.blue)
-                    .font(.title3)
+            // プレイリストのアートワーク（最初の曲から取得）
+            if let url = artworkURL {
+                AsyncImage(url: url) { image in
+                    image
+                        .resizable()
+                        .aspectRatio(contentMode: .fill)
+                } placeholder: {
+                    playlistPlaceholder
+                }
+                .frame(width: 50, height: 50)
+                .cornerRadius(8)
+            } else {
+                playlistPlaceholder
             }
             
             VStack(alignment: .leading, spacing: 4) {
@@ -136,6 +136,44 @@ struct PlaylistRow: View {
             Spacer()
         }
         .padding(.vertical, 8)
+        .task {
+            await loadFirstTrackArtwork()
+        }
+    }
+    
+    private var playlistPlaceholder: some View {
+        ZStack {
+            RoundedRectangle(cornerRadius: 8)
+                .fill(
+                    LinearGradient(
+                        colors: [.blue.opacity(0.3), .purple.opacity(0.3)],
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    )
+                )
+                .frame(width: 50, height: 50)
+            
+            Image(systemName: "music.note.list")
+                .foregroundColor(.blue)
+                .font(.title3)
+        }
+    }
+    
+    private func loadFirstTrackArtwork() async {
+        guard let firstTrack = playlist.sortedTracks.first else { return }
+        
+        do {
+            let request = MusicCatalogResourceRequest<Song>(
+                matching: \.id,
+                equalTo: MusicItemID(firstTrack.appleMusicSongId)
+            )
+            let response = try await request.response()
+            if let song = response.items.first, let artwork = song.artwork {
+                artworkURL = artwork.url(width: 100, height: 100)
+            }
+        } catch {
+            print("Artwork load error: \(error)")
+        }
     }
 }
 

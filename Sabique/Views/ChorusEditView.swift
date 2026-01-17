@@ -288,7 +288,8 @@ struct ChorusEditView: View {
                 updatePlaybackStatus()
             }
             .onDisappear {
-                stopPlayback()
+                // プレビューモードのみ解除（通常再生は継続）
+                isPreviewing = false
             }
         }
     }

@@ -30,7 +30,7 @@ final class Playlist {
         tracks.count
     }
     
-    /// orderIndex順にソートされた曲リスト
+    /// orderIndex順にソートされたハイライトリスト
     var sortedTracks: [TrackInPlaylist] {
         tracks.sorted { $0.orderIndex < $1.orderIndex }
     }

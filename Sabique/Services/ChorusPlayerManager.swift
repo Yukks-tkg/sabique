@@ -53,9 +53,9 @@ class ChorusPlayerManager: ObservableObject {
         currentTrackIndex += 1
         
         if currentTrackIndex >= tracks.count {
-            // 最後まで再生完了
-            stop()
-            return
+            // 最後まで再生完了、最初に戻ってリピート
+            currentTrackIndex = 0
+            print("🔁 リピート: 最初の曲に戻ります")
         }
         
         playCurrentTrack()
@@ -110,8 +110,7 @@ class ChorusPlayerManager: ObservableObject {
     private func scheduleNextTrack(endTime: Double) {
         timerCancellable?.cancel()
         
-        let isLastTrack = currentTrackIndex >= tracks.count - 1
-        print("📍 タイマーセット: トラック \(currentTrackIndex + 1)/\(tracks.count), 終了時間: \(endTime)秒, 最後のトラック: \(isLastTrack)")
+        print("📍 タイマーセット: トラック \(currentTrackIndex + 1)/\(tracks.count), 終了時間: \(endTime)秒")
         
         timerCancellable = Timer.publish(every: 0.1, on: .main, in: .common)
             .autoconnect()
@@ -120,19 +119,11 @@ class ChorusPlayerManager: ObservableObject {
                 
                 let currentTime = self.player.playbackTime
                 
-                // 終了時間を過ぎたら
+                // 終了時間を過ぎたら次の曲へ（リピート再生）
                 if currentTime >= endTime {
                     print("⏰ 終了時間到達: \(currentTime) >= \(endTime)")
                     self.timerCancellable?.cancel()
-                    
-                    if isLastTrack {
-                        // 最後の曲の場合は停止
-                        print("🏁 最後のトラック - 停止します")
-                        self.stop()
-                    } else {
-                        // 次の曲へ
-                        self.next()
-                    }
+                    self.next()
                 }
             }
     }

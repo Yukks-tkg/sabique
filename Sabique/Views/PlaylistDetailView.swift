@@ -43,7 +43,7 @@ struct PlaylistDetailView: View {
                         .onMove(perform: moveTracks)
                     }
                 } header: {
-                    Text("曲リスト")
+                    Text("ハイライトリスト")
                         .font(.subheadline)
                         .bold()
                         .foregroundColor(.primary)
