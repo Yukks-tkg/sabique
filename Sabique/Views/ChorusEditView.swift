@@ -26,6 +26,7 @@ struct ChorusEditView: View {
     private let player = SystemMusicPlayer.shared
     @State private var timer = Timer.publish(every: 0.5, on: .main, in: .common).autoconnect()
     @State private var skipTimer: AnyCancellable?
+    @State private var isPreviewing = false
     
     var body: some View {
         NavigationStack {
@@ -202,6 +203,9 @@ struct ChorusEditView: View {
                 
                 // ハイライト設定ボタン
                 HStack(spacing: 20) {
+                    let isStartDisabled = chorusEnd != nil && playbackTime > chorusEnd!
+                    let isEndDisabled = chorusStart != nil && playbackTime < chorusStart!
+                    
                     VStack {
                         Button(action: {
                             chorusStart = playbackTime
@@ -216,9 +220,11 @@ struct ChorusEditView: View {
                             }
                             .frame(maxWidth: .infinity)
                             .padding()
-                            .background(Color.blue.opacity(0.1))
+                            .background(isStartDisabled ? Color.gray.opacity(0.3) : Color.blue.opacity(0.1))
                             .cornerRadius(12)
                         }
+                        .disabled(isStartDisabled)
+                        .opacity(isStartDisabled ? 0.5 : 1.0)
                         
                         Text(chorusStart.map { formatTime($0) } ?? "--:--")
                             .font(.headline)
@@ -239,9 +245,11 @@ struct ChorusEditView: View {
                             }
                             .frame(maxWidth: .infinity)
                             .padding()
-                            .background(Color.red.opacity(0.1))
+                            .background(isEndDisabled ? Color.gray.opacity(0.3) : Color.red.opacity(0.1))
                             .cornerRadius(12)
                         }
+                        .disabled(isEndDisabled)
+                        .opacity(isEndDisabled ? 0.5 : 1.0)
                         
                         Text(chorusEnd.map { formatTime($0) } ?? "--:--")
                             .font(.headline)
@@ -252,12 +260,12 @@ struct ChorusEditView: View {
                 
                 // プレビューボタン
                 if let start = chorusStart, let end = chorusEnd, end > start {
-                    Button(action: previewChorus) {
-                        Label("ハイライト再生", systemImage: "waveform.path")
+                    Button(action: togglePreview) {
+                        Label(isPreviewing ? "ハイライト停止" : "ハイライト再生", systemImage: isPreviewing ? "stop.fill" : "repeat")
                             .font(.headline)
                             .padding()
                             .frame(maxWidth: .infinity)
-                            .background(Color.accentColor)
+                            .background(isPreviewing ? Color.orange : Color.accentColor)
                             .foregroundColor(.white)
                             .cornerRadius(12)
                     }
@@ -370,6 +378,30 @@ struct ChorusEditView: View {
         Task { @MainActor in
             playbackTime = player.playbackTime
             isPlaying = player.state.playbackStatus == .playing
+            
+            // ハイライトプレビュー中に終了点を過ぎたら開始点に戻る
+            if isPreviewing,
+               let start = chorusStart,
+               let end = chorusEnd,
+               playbackTime >= end {
+                player.playbackTime = start
+            }
+        }
+    }
+    
+    private func togglePreview() {
+        if isPreviewing {
+            // プレビュー停止
+            isPreviewing = false
+            player.pause()
+        } else {
+            // プレビュー開始
+            guard let start = chorusStart else { return }
+            isPreviewing = true
+            Task {
+                try? await player.play()
+                player.playbackTime = start
+            }
         }
     }
     

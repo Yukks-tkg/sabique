@@ -40,6 +40,7 @@ struct PlaylistDetailView: View {
                                 .listRowInsets(EdgeInsets(top: 8, leading: 16, bottom: 8, trailing: 16))
                         }
                         .onDelete(perform: deleteTracks)
+                        .onMove(perform: moveTracks)
                     }
                 } header: {
                     Text("曲リスト")
@@ -117,6 +118,16 @@ struct PlaylistDetailView: View {
         let sortedTracks = playlist.sortedTracks
         for index in offsets {
             modelContext.delete(sortedTracks[index])
+        }
+    }
+    
+    private func moveTracks(from source: IndexSet, to destination: Int) {
+        var tracks = playlist.sortedTracks
+        tracks.move(fromOffsets: source, toOffset: destination)
+        
+        // orderIndexを更新
+        for (index, track) in tracks.enumerated() {
+            track.orderIndex = index
         }
     }
 }

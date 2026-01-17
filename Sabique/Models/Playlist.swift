@@ -13,14 +13,16 @@ final class Playlist {
     @Attribute(.unique) var id: UUID
     var name: String
     var createdAt: Date
+    var orderIndex: Int = 0
     
     @Relationship(deleteRule: .cascade, inverse: \TrackInPlaylist.playlist)
     var tracks: [TrackInPlaylist] = []
     
-    init(name: String) {
+    init(name: String, orderIndex: Int = 0) {
         self.id = UUID()
         self.name = name
         self.createdAt = Date()
+        self.orderIndex = orderIndex
     }
     
     /// 曲数を取得

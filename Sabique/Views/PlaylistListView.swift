@@ -10,7 +10,7 @@ import SwiftData
 
 struct PlaylistListView: View {
     @Environment(\.modelContext) private var modelContext
-    @Query(sort: \Playlist.createdAt, order: .reverse) private var playlists: [Playlist]
+    @Query(sort: \Playlist.orderIndex) private var playlists: [Playlist]
     
     @State private var showingCreateSheet = false
     @State private var showingSettings = false
@@ -34,6 +34,7 @@ struct PlaylistListView: View {
                             .listRowSeparator(.visible, edges: .bottom)
                         }
                         .onDelete(perform: deletePlaylists)
+                        .onMove(perform: movePlaylists)
                     }
                     .listStyle(.plain)
                 }
@@ -70,7 +71,13 @@ struct PlaylistListView: View {
     private func createPlaylist() {
         guard !newPlaylistName.trimmingCharacters(in: .whitespaces).isEmpty else { return }
         
-        let playlist = Playlist(name: newPlaylistName.trimmingCharacters(in: .whitespaces))
+        // 新しいプレイリストは一番上に追加（orderIndex = 0）
+        // 既存のプレイリストの orderIndex をインクリメント
+        for playlist in playlists {
+            playlist.orderIndex += 1
+        }
+        
+        let playlist = Playlist(name: newPlaylistName.trimmingCharacters(in: .whitespaces), orderIndex: 0)
         modelContext.insert(playlist)
         
         newPlaylistName = ""
@@ -80,6 +87,16 @@ struct PlaylistListView: View {
     private func deletePlaylists(at offsets: IndexSet) {
         for index in offsets {
             modelContext.delete(playlists[index])
+        }
+    }
+    
+    private func movePlaylists(from source: IndexSet, to destination: Int) {
+        var reorderedPlaylists = playlists
+        reorderedPlaylists.move(fromOffsets: source, toOffset: destination)
+        
+        // orderIndexを更新
+        for (index, playlist) in reorderedPlaylists.enumerated() {
+            playlist.orderIndex = index
         }
     }
 }
