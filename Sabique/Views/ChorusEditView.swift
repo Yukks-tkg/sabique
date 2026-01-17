@@ -324,6 +324,9 @@ struct ChorusEditView: View {
                     player.playbackTime = max(0, start - 2)
                     playbackTime = player.playbackTime
                 }
+                
+                // 自動で再生開始
+                try await player.play()
             } catch {
                 print("Player setup error: \(error)")
             }
