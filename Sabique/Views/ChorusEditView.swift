@@ -295,6 +295,9 @@ struct ChorusEditView: View {
     }
     
     private func setupPlayer() {
+        // 前の曲の再生位置をリセット
+        playbackTime = 0
+        
         Task {
             do {
                 let request = MusicCatalogResourceRequest<Song>(matching: \.id, equalTo: MusicItemID(track.appleMusicSongId))
@@ -304,14 +307,18 @@ struct ChorusEditView: View {
                 player.queue = [song]
                 duration = song.duration ?? 0
                 
+                // 再生位置を先頭にリセット
+                player.playbackTime = 0
+                
                 // アートワークURLを取得
                 if let artwork = song.artwork {
                     artworkURL = artwork.url(width: 400, height: 400)
                 }
                 
-                // 既に設定されている場合はその付近から再生開始
+                // 既にハイライトが設定されている場合はその付近から再生開始
                 if let start = track.chorusStartSeconds {
                     player.playbackTime = max(0, start - 2)
+                    playbackTime = player.playbackTime
                 }
             } catch {
                 print("Player setup error: \(error)")

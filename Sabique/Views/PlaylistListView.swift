@@ -15,6 +15,7 @@ struct PlaylistListView: View {
     
     @State private var showingCreateSheet = false
     @State private var showingSettings = false
+    @State private var showingImportSheet = false
     @State private var newPlaylistName = ""
     
     var body: some View {
@@ -49,7 +50,14 @@ struct PlaylistListView: View {
                     }
                 }
                 ToolbarItem(placement: .navigationBarTrailing) {
-                    Button(action: { showingCreateSheet = true }) {
+                    Menu {
+                        Button(action: { showingCreateSheet = true }) {
+                            Label("新規プレイリスト", systemImage: "plus")
+                        }
+                        Button(action: { showingImportSheet = true }) {
+                            Label("Apple Musicからインポート", systemImage: "square.and.arrow.down")
+                        }
+                    } label: {
                         Image(systemName: "plus.circle.fill")
                             .font(.title3)
                             .symbolRenderingMode(.hierarchical)
@@ -65,6 +73,11 @@ struct PlaylistListView: View {
                     onCreate: createPlaylist,
                     onCancel: { showingCreateSheet = false }
                 )
+            }
+            .sheet(isPresented: $showingImportSheet) {
+                AppleMusicPlaylistImportView { importedPlaylist in
+                    // インポート成功時の処理（必要に応じて）
+                }
             }
         }
     }
@@ -136,7 +149,7 @@ struct PlaylistRow: View {
             Spacer()
         }
         .padding(.vertical, 8)
-        .task {
+        .task(id: playlist.trackCount) {
             await loadFirstTrackArtwork()
         }
     }
