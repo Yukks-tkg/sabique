@@ -23,7 +23,7 @@ class ChorusPlayerManager: ObservableObject {
         // タイマーで制御するため、playbackObserverは使用しない
     }
     
-    /// サビ連続再生を開始
+    /// ハイライト連続再生を開始
     func play(tracks: [TrackInPlaylist]) {
         self.tracks = tracks
         

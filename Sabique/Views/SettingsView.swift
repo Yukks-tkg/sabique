@@ -21,7 +21,7 @@ struct SettingsView: View {
                 }
                 
                 Section("このアプリについて") {
-                    Text("Sabiqueは、Apple Musicの曲をサビだけで繋いで再生できる音楽アプリです。")
+                    Text("Sabiqueは、Apple Musicの曲をハイライトだけで繋いで再生できる音楽アプリです。")
                         .font(.subheadline)
                         .foregroundColor(.secondary)
                 }

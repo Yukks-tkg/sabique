@@ -31,21 +31,26 @@ struct PlaylistListView: View {
                             NavigationLink(destination: PlaylistDetailView(playlist: playlist)) {
                                 PlaylistRow(playlist: playlist)
                             }
+                            .listRowSeparator(.visible, edges: .bottom)
                         }
                         .onDelete(perform: deletePlaylists)
                     }
+                    .listStyle(.plain)
                 }
             }
             .navigationTitle("Sabiq")
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
                     Button(action: { showingSettings = true }) {
-                        Image(systemName: "gear")
+                        Image(systemName: "line.3.horizontal.circle")
+                            .font(.title3)
                     }
                 }
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Button(action: { showingCreateSheet = true }) {
-                        Image(systemName: "plus")
+                        Image(systemName: "plus.circle.fill")
+                            .font(.title3)
+                            .symbolRenderingMode(.hierarchical)
                     }
                 }
             }
@@ -84,14 +89,36 @@ struct PlaylistRow: View {
     let playlist: Playlist
     
     var body: some View {
-        VStack(alignment: .leading, spacing: 4) {
-            Text(playlist.name)
-                .font(.headline)
-            Text("\(playlist.trackCount)曲")
-                .font(.subheadline)
-                .foregroundColor(.secondary)
+        HStack(spacing: 16) {
+            // プレイリストアイコン代わりのビジュアル
+            ZStack {
+                RoundedRectangle(cornerRadius: 12)
+                    .fill(
+                        LinearGradient(
+                            colors: [.blue.opacity(0.3), .purple.opacity(0.3)],
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        )
+                    )
+                    .frame(width: 50, height: 50)
+                
+                Image(systemName: "music.note.list")
+                    .foregroundColor(.blue)
+                    .font(.title3)
+            }
+            
+            VStack(alignment: .leading, spacing: 4) {
+                Text(playlist.name)
+                    .font(.headline)
+                    .foregroundColor(.primary)
+                Text("\(playlist.trackCount)曲")
+                    .font(.subheadline)
+                    .foregroundColor(.secondary)
+            }
+            
+            Spacer()
         }
-        .padding(.vertical, 4)
+        .padding(.vertical, 8)
     }
 }
 

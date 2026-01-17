@@ -83,8 +83,8 @@ struct SongSearchView: View {
                     authorizationStatus = await MusicAuthorization.request()
                 }
             }
-            .sheet(item: $addedTrack) { track in
-                ChorusEditView(track: track, onSave: { dismiss() })
+            .sheet(item: $addedTrack, onDismiss: { dismiss() }) { track in
+                ChorusEditView(track: track)
             }
         }
     }

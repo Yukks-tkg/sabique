@@ -20,52 +20,73 @@ struct PlaylistDetailView: View {
     @StateObject private var playerManager = ChorusPlayerManager()
     
     var body: some View {
-        List {
-            // 再生セクション
-            if !playlist.sortedTracks.isEmpty {
+        ZStack(alignment: .bottom) {
+            List {
+                // 曲リスト
                 Section {
-                    Button(action: startPlayback) {
-                        HStack {
-                            Image(systemName: playerManager.isPlaying ? "stop.fill" : "play.fill")
-                            Text(playerManager.isPlaying ? "停止" : "サビを連続再生")
+                    if playlist.sortedTracks.isEmpty {
+                        Text("曲がありません")
+                            .foregroundColor(.secondary)
+                            .frame(maxWidth: .infinity, alignment: .center)
+                            .padding()
+                    } else {
+                        ForEach(playlist.sortedTracks) { track in
+                            TrackRow(track: track)
+                                .contentShape(Rectangle())
+                                .onTapGesture {
+                                    selectedTrack = track
+                                    showingChorusEdit = true
+                                }
+                                .listRowInsets(EdgeInsets(top: 8, leading: 16, bottom: 8, trailing: 16))
                         }
-                        .font(.headline)
-                        .foregroundColor(.white)
-                        .frame(maxWidth: .infinity)
-                        .padding()
-                        .background(
-                            LinearGradient(
-                                colors: playerManager.isPlaying ? [.red, .orange] : [.blue, .purple],
-                                startPoint: .leading,
-                                endPoint: .trailing
-                            )
-                        )
-                        .cornerRadius(12)
-                        .shadow(radius: 5)
+                        .onDelete(perform: deleteTracks)
                     }
-                    .buttonStyle(.plain)
-                    .listRowInsets(EdgeInsets())
-                    .padding()
+                } header: {
+                    Text("曲リスト")
+                        .font(.subheadline)
+                        .bold()
+                        .foregroundColor(.primary)
+                        .padding(.top, 10)
                 }
-                .listRowBackground(Color.clear)
+            }
+            .safeAreaInset(edge: .bottom) {
+                Color.clear.frame(height: 80) // 下部にスペースを確保
             }
             
-            // 曲リスト
-            Section("曲リスト") {
-                if playlist.sortedTracks.isEmpty {
-                    Text("曲がありません")
-                        .foregroundColor(.secondary)
-                } else {
-                    ForEach(playlist.sortedTracks) { track in
-                        TrackRow(track: track)
-                            .contentShape(Rectangle())
-                            .onTapGesture {
-                                selectedTrack = track
-                                showingChorusEdit = true
-                            }
+            // 再生ボタン（下部に固定）
+            if !playlist.sortedTracks.isEmpty {
+                Button(action: startPlayback) {
+                    HStack(spacing: 12) {
+                        Image(systemName: playerManager.isPlaying ? "stop.fill" : "play.fill")
+                            .font(.title3)
+                        Text(playerManager.isPlaying ? "停止" : "ハイライトを連続再生")
+                            .font(.headline)
+                            .bold()
                     }
-                    .onDelete(perform: deleteTracks)
+                    .foregroundColor(.white)
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 16)
+                    .background(
+                        ZStack {
+                            LinearGradient(
+                                colors: playerManager.isPlaying ? [.red, .orange] : [.blue, .purple],
+                                startPoint: .topLeading,
+                                endPoint: .bottomTrailing
+                            )
+                            // 微かなグロスエフェクト
+                            LinearGradient(
+                                colors: [.white.opacity(0.3), .clear],
+                                startPoint: .top,
+                                endPoint: .center
+                            )
+                        }
+                    )
+                    .cornerRadius(16)
+                    .shadow(color: (playerManager.isPlaying ? Color.red : Color.blue).opacity(0.4), radius: 10, x: 0, y: 5)
                 }
+                .buttonStyle(.plain)
+                .padding(.horizontal)
+                .padding(.bottom, 16)
             }
         }
         .navigationTitle(playlist.name)
@@ -144,7 +165,7 @@ struct TrackRow: View {
             
             if track.hasChorusSettings {
                 VStack(alignment: .trailing, spacing: 2) {
-                    Text("サビ設定済み")
+                    Text("ハイライト設定済み")
                         .font(.caption2)
                         .bold()
                         .foregroundColor(.accentColor)

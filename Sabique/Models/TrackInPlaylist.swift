@@ -37,7 +37,7 @@ final class TrackInPlaylist {
         self.chorusEndSeconds = chorusEndSeconds
     }
     
-    /// サビ区間が設定済みかどうか
+    /// ハイライト区間が設定済みかどうか
     var hasChorusSettings: Bool {
         guard let start = chorusStartSeconds, let end = chorusEndSeconds else {
             return false
@@ -45,7 +45,7 @@ final class TrackInPlaylist {
         return start >= 0 && end > start
     }
     
-    /// サビの長さ（秒）
+    /// ハイライトの長さ（秒）
     var chorusDuration: Double? {
         guard let start = chorusStartSeconds, let end = chorusEndSeconds else {
             return nil
