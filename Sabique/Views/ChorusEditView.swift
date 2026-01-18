@@ -247,10 +247,10 @@ struct ChorusEditView: View {
                                 .resizable()
                                 .scaledToFit()
                                 .frame(width: 24, height: 24)
-                                .foregroundColor(chorusStart == nil ? .gray : .blue)
+                                .foregroundColor(chorusStart == nil ? .blue.opacity(0.4) : .blue)
                         }
                         .disabled(chorusStart == nil)
-                        .opacity(chorusStart == nil ? 0.4 : 1.0)
+                        .opacity(chorusStart == nil ? 0.6 : 1.0)
                         
                         // 巻き戻しボタン（-5秒）
                         Button(action: { skipBackward() }) {
@@ -308,10 +308,10 @@ struct ChorusEditView: View {
                                 .resizable()
                                 .scaledToFit()
                                 .frame(width: 24, height: 24)
-                                .foregroundColor(chorusEnd == nil ? .gray : .red)
+                                .foregroundColor(chorusEnd == nil ? .red.opacity(0.4) : .red)
                         }
                         .disabled(chorusEnd == nil)
-                        .opacity(chorusEnd == nil ? 0.4 : 1.0)
+                        .opacity(chorusEnd == nil ? 0.6 : 1.0)
                         
                         // 曲の最後へ
                         Button(action: { goToEnd() }) {
@@ -344,7 +344,7 @@ struct ChorusEditView: View {
                             VStack(alignment: .leading, spacing: 2) {
                                 Text("開始")
                                     .font(.caption)
-                                    .foregroundColor(.gray)
+                                    .foregroundColor(.white)
                                 Text(chorusStart.map { formatTime($0) } ?? "--:--")
                                     .font(.system(.title3, design: .monospaced))
                                     .fontWeight(.semibold)
@@ -384,7 +384,7 @@ struct ChorusEditView: View {
                             VStack(alignment: .leading, spacing: 2) {
                                 Text("終了")
                                     .font(.caption)
-                                    .foregroundColor(.gray)
+                                    .foregroundColor(.white)
                                 Text(chorusEnd.map { formatTime($0) } ?? "--:--")
                                     .font(.system(.title3, design: .monospaced))
                                     .fontWeight(.semibold)
@@ -422,8 +422,9 @@ struct ChorusEditView: View {
                         chorusEnd = nil
                         track.chorusStartSeconds = nil
                         track.chorusEndSeconds = nil
+                        isPreviewing = false // ハイライト再生状態をリセット
                     }) {
-                        Image(systemName: "arrow.counterclockwise")
+                        Image(systemName: "eraser")
                             .font(.title2)
                             .foregroundColor(isLocked ? .gray : .white)
                             .frame(width: 44, height: 44)

@@ -61,6 +61,19 @@ class ChorusPlayerManager: ObservableObject {
         playCurrentTrack()
     }
     
+    /// 前の曲へ
+    func previous() {
+        currentTrackIndex -= 1
+        
+        if currentTrackIndex < 0 {
+            // 最初より前、最後の曲に移動
+            currentTrackIndex = tracks.count - 1
+            print("🔁 リピート: 最後の曲に移動します")
+        }
+        
+        playCurrentTrack()
+    }
+    
     /// 現在の曲を再生
     private func playCurrentTrack() {
         guard currentTrackIndex < tracks.count else {

@@ -110,40 +110,54 @@ struct PlaylistDetailView: View {
                 await loadFirstTrackArtwork()
             }
             
-            // 再生ボタン（下部に固定）
+            // 再生コントロール（下部に固定）
             if !playlist.sortedTracks.isEmpty {
-                Button(action: startPlayback) {
-                    HStack(spacing: 12) {
-                        Image(systemName: playerManager.isPlaying ? "stop.fill" : "play.fill")
-                            .font(.title3)
-                        Text(playerManager.isPlaying ? "停止" : "ハイライトを連続再生")
-                            .font(.headline)
-                            .bold()
+                HStack(spacing: 16) {
+                    // 前のトラックボタン
+                    Button(action: { playerManager.previous() }) {
+                        Image(systemName: "backward.fill")
+                            .font(.title2)
+                            .foregroundColor(.white)
+                            .frame(width: 44, height: 44)
+                            .background(Color.white.opacity(0.2))
+                            .cornerRadius(12)
                     }
-                    .foregroundColor(.white)
-                    .frame(maxWidth: .infinity)
-                    .padding(.vertical, 16)
-                    .background(
-                        ZStack {
-                            LinearGradient(
-                                colors: playerManager.isPlaying ? [.red, .orange] : [.blue, .purple],
-                                startPoint: .topLeading,
-                                endPoint: .bottomTrailing
-                            )
-                            // 微かなグロスエフェクト
-                            LinearGradient(
-                                colors: [.white.opacity(0.3), .clear],
-                                startPoint: .top,
-                                endPoint: .center
-                            )
+                    .disabled(!playerManager.isPlaying)
+                    .opacity(playerManager.isPlaying ? 1.0 : 0.4)
+                    
+                    // 連続再生/停止ボタン
+                    Button(action: startPlayback) {
+                        HStack(spacing: 12) {
+                            Image(systemName: playerManager.isPlaying ? "stop.fill" : "play.fill")
+                                .font(.title3)
+                            Text(playerManager.isPlaying ? "停止" : "連続再生")
+                                .font(.headline)
+                                .bold()
                         }
-                    )
-                    .cornerRadius(16)
-                    .shadow(color: (playerManager.isPlaying ? Color.red : Color.blue).opacity(0.4), radius: 10, x: 0, y: 5)
+                        .foregroundColor(.white)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 16)
+                        .background(Color.accentColor)
+                        .cornerRadius(16)
+                        .shadow(color: Color.accentColor.opacity(0.4), radius: 10, x: 0, y: 5)
+                    }
+                    .buttonStyle(.plain)
+                    
+                    // 次のトラックボタン
+                    Button(action: { playerManager.next() }) {
+                        Image(systemName: "forward.fill")
+                            .font(.title2)
+                            .foregroundColor(.white)
+                            .frame(width: 44, height: 44)
+                            .background(Color.white.opacity(0.2))
+                            .cornerRadius(12)
+                    }
+                    .disabled(!playerManager.isPlaying)
+                    .opacity(playerManager.isPlaying ? 1.0 : 0.4)
                 }
-                .buttonStyle(.plain)
                 .padding(.horizontal)
                 .padding(.bottom, 16)
+                .animation(nil, value: playerManager.isPlaying)
             }
         }
         .navigationTitle("ハイライトリスト")
