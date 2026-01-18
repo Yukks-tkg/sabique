@@ -138,6 +138,11 @@ struct ChorusEditView: View {
                                     .overlay(Rectangle().stroke(Color.white, lineWidth: 1))
                                     .position(x: endX, y: 10)
                             }
+                            
+                            // 高さを常に確保するための透明なプレースホルダー
+                            Rectangle()
+                                .fill(Color.clear)
+                                .frame(width: 1, height: 20)
                         }
                         .contentShape(Rectangle())
                         .gesture(

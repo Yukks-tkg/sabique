@@ -75,9 +75,9 @@ struct PlaylistDetailView: View {
                         HStack(spacing: 12) {
                             Image(systemName: "plus.circle")
                                 .font(.title2)
-                                .foregroundColor(.blue)
+                                .foregroundColor(.primary)
                             Text("トラックを追加")
-                                .foregroundColor(.blue)
+                                .foregroundColor(.primary)
                         }
                         .padding(.vertical, 8)
                     }
