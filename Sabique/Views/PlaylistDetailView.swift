@@ -68,13 +68,20 @@ struct PlaylistDetailView: View {
                             .padding()
                     } else {
                         ForEach(playlist.sortedTracks) { track in
-                            TrackRow(track: track)
+                            let isCurrentlyPlaying = playerManager.isPlaying && playerManager.currentTrack?.id == track.id
+                            TrackRow(track: track, isPlaying: isCurrentlyPlaying)
+                                .padding(.horizontal, 8)
+                                .padding(.vertical, 4)
+                                .background(
+                                    RoundedRectangle(cornerRadius: 12)
+                                        .fill(isCurrentlyPlaying ? Color.white.opacity(0.2) : Color.clear)
+                                )
                                 .contentShape(Rectangle())
                                 .onTapGesture {
                                     selectedTrack = track
                                     showingChorusEdit = true
                                 }
-                                .listRowInsets(EdgeInsets(top: 8, leading: 16, bottom: 8, trailing: 16))
+                                .listRowInsets(EdgeInsets(top: 4, leading: 8, bottom: 4, trailing: 8))
                                 .listRowBackground(Color.clear)
                         }
                         .onDelete(perform: deleteTracks)
@@ -275,6 +282,7 @@ struct ShareSheet: UIViewControllerRepresentable {
 // MARK: - TrackRow
 struct TrackRow: View {
     let track: TrackInPlaylist
+    var isPlaying: Bool = false
     @State private var artworkURL: URL?
     
     var body: some View {
