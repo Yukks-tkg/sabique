@@ -18,6 +18,11 @@ struct PlaylistDetailView: View {
     @State private var showingChorusEdit = false
     @State private var backgroundArtworkURL: URL?
     
+    // 1曲目のID（並べ替え検知用）
+    private var firstTrackId: String? {
+        playlist.sortedTracks.first?.appleMusicSongId
+    }
+    
     @StateObject private var playerManager = ChorusPlayerManager()
     
     var body: some View {
@@ -36,11 +41,14 @@ struct PlaylistDetailView: View {
                     } placeholder: {
                         Color.black
                     }
+                    .id(url) // URLが変わったらビューを再作成
+                    .transition(.opacity)
                 } else {
                     Color(.systemBackground)
                 }
             }
             .ignoresSafeArea()
+            .animation(.easeInOut(duration: 0.5), value: backgroundArtworkURL)
             
             // オーバーレイ
             Color.black.opacity(0.25)
@@ -95,7 +103,7 @@ struct PlaylistDetailView: View {
             .safeAreaInset(edge: .bottom) {
                 Color.clear.frame(height: 80) // 下部にスペースを確保
             }
-            .task(id: playlist.trackCount) {
+            .task(id: firstTrackId) {
                 await loadFirstTrackArtwork()
             }
             
