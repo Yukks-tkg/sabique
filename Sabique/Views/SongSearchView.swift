@@ -50,7 +50,11 @@ struct SongSearchView: View {
                             }
                         }
                         .padding()
-                        .background(Color(.systemGray6))
+                        .background(Color.white.opacity(0.1))
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 10)
+                                .stroke(Color.gray.opacity(0.5), lineWidth: 1)
+                        )
                         .cornerRadius(10)
                         .padding(.horizontal)
                         

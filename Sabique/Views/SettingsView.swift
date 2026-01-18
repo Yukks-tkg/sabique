@@ -23,15 +23,6 @@ struct SettingsView: View {
                     }
                 }
                 
-                Section("情報") {
-                    HStack {
-                        Text("バージョン")
-                        Spacer()
-                        Text("1.0.0 (MVP)")
-                            .foregroundColor(.secondary)
-                    }
-                }
-                
                 Section("このアプリについて") {
                     Text("Sabiqueは、Apple Musicの曲をハイライトだけで繋いで再生できる音楽アプリです。")
                         .font(.subheadline)

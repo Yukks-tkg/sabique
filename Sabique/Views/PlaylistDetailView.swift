@@ -119,51 +119,54 @@ struct PlaylistDetailView: View {
             
             // 再生コントロール（下部に固定）
             if !playlist.sortedTracks.isEmpty {
-                HStack(spacing: 16) {
-                    // 前のトラックボタン
-                    Button(action: { playerManager.previous() }) {
-                        Image(systemName: "backward.fill")
-                            .font(.title2)
-                            .foregroundColor(.white)
-                            .frame(width: 44, height: 44)
-                            .background(Color.white.opacity(0.2))
-                            .cornerRadius(12)
-                    }
-                    .disabled(!playerManager.isPlaying)
-                    .opacity(playerManager.isPlaying ? 1.0 : 0.4)
-                    
-                    // 連続再生/停止ボタン
-                    Button(action: startPlayback) {
-                        HStack(spacing: 12) {
-                            Image(systemName: playerManager.isPlaying ? "stop.fill" : "play.fill")
-                                .font(.title3)
-                            Text(playerManager.isPlaying ? "停止" : "連続再生")
-                                .font(.headline)
-                                .bold()
+                VStack(spacing: 0) {
+                    HStack(spacing: 16) {
+                        // 前のトラックボタン
+                        Button(action: { playerManager.previous() }) {
+                            Image(systemName: "backward.fill")
+                                .font(.title2)
+                                .foregroundColor(.white)
+                                .frame(width: 44, height: 44)
+                                .background(Color.white.opacity(0.2))
+                                .cornerRadius(12)
                         }
-                        .foregroundColor(.white)
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 16)
-                        .background(Color.accentColor)
-                        .cornerRadius(16)
-                        .shadow(color: Color.accentColor.opacity(0.4), radius: 10, x: 0, y: 5)
-                    }
-                    .buttonStyle(.plain)
-                    
-                    // 次のトラックボタン
-                    Button(action: { playerManager.next() }) {
-                        Image(systemName: "forward.fill")
-                            .font(.title2)
+                        .disabled(!playerManager.isPlaying)
+                        .opacity(playerManager.isPlaying ? 1.0 : 0.4)
+                        
+                        // 連続再生/停止ボタン
+                        Button(action: startPlayback) {
+                            HStack(spacing: 12) {
+                                Image(systemName: playerManager.isPlaying ? "stop.fill" : "play.fill")
+                                    .font(.title3)
+                                Text(playerManager.isPlaying ? "停止" : "再生")
+                                    .font(.headline)
+                                    .bold()
+                            }
                             .foregroundColor(.white)
-                            .frame(width: 44, height: 44)
-                            .background(Color.white.opacity(0.2))
-                            .cornerRadius(12)
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 16)
+                            .background(Color.accentColor)
+                            .cornerRadius(16)
+                            .shadow(color: Color.accentColor.opacity(0.4), radius: 10, x: 0, y: 5)
+                        }
+                        .buttonStyle(.plain)
+                        
+                        // 次のトラックボタン
+                        Button(action: { playerManager.next() }) {
+                            Image(systemName: "forward.fill")
+                                .font(.title2)
+                                .foregroundColor(.white)
+                                .frame(width: 44, height: 44)
+                                .background(Color.white.opacity(0.2))
+                                .cornerRadius(12)
+                        }
+                        .disabled(!playerManager.isPlaying)
+                        .opacity(playerManager.isPlaying ? 1.0 : 0.4)
                     }
-                    .disabled(!playerManager.isPlaying)
-                    .opacity(playerManager.isPlaying ? 1.0 : 0.4)
+                    .padding(.horizontal)
+                    .padding(.vertical, 12)
                 }
-                .padding(.horizontal)
-                .padding(.bottom, 16)
+                .background(.ultraThinMaterial)
                 .animation(nil, value: playerManager.isPlaying)
             }
         }

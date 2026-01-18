@@ -12,6 +12,7 @@ import UniformTypeIdentifiers
 
 struct PlaylistListView: View {
     @Environment(\.modelContext) private var modelContext
+    @EnvironmentObject private var playerManager: ChorusPlayerManager
     @Query(sort: \Playlist.orderIndex) private var playlists: [Playlist]
     
     @State private var showingCreateSheet = false
@@ -62,8 +63,15 @@ struct PlaylistListView: View {
                     } else {
                         List {
                             ForEach(playlists) { playlist in
+                                let isPlayingFromThisPlaylist = playerManager.isPlaying && playlist.sortedTracks.contains(where: { $0.id == playerManager.currentTrack?.id })
                                 NavigationLink(destination: PlaylistDetailView(playlist: playlist)) {
                                     PlaylistRow(playlist: playlist)
+                                        .padding(.horizontal, 8)
+                                        .padding(.vertical, 4)
+                                        .background(
+                                            RoundedRectangle(cornerRadius: 12)
+                                                .fill(isPlayingFromThisPlaylist ? Color.white.opacity(0.2) : Color.clear)
+                                        )
                                 }
                                 .listRowSeparator(.visible, edges: .bottom)
                                 .listRowBackground(Color.clear)

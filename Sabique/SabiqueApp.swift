@@ -10,9 +10,12 @@ import SwiftData
 
 @main
 struct SabiqueApp: App {
+    @StateObject private var playerManager = ChorusPlayerManager()
+    
     var body: some Scene {
         WindowGroup {
             PlaylistListView()
+                .environmentObject(playerManager)
         }
         .modelContainer(for: [Playlist.self, TrackInPlaylist.self])
     }
