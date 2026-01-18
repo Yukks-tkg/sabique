@@ -119,24 +119,82 @@ struct ChorusEditView: View {
                                 .frame(width: CGFloat(playbackTime / max(duration, 1)) * geometry.size.width, height: 4)
                                 .animation(.linear(duration: 0.1), value: playbackTime)
                             
-                            // 開始キューポイント（青い縦線）
+                            // 開始キューポイント（青い縦線 + ドラッグ可能な丸）
                             if let start = chorusStart, duration > 0 {
                                 let startX = CGFloat(start / duration) * geometry.size.width
+                                // 縦線
                                 Rectangle()
                                     .fill(Color.blue)
-                                    .frame(width: 3, height: 20)
-                                    .overlay(Rectangle().stroke(Color.white, lineWidth: 1))
-                                    .position(x: startX, y: 10)
+                                    .frame(width: 3, height: 40)
+                                    .position(x: startX, y: 18)
+                                
+                                // 丸（ドラッグ判定あり）
+                                ZStack {
+                                    // 透明なタップ領域（大きめ）
+                                    Circle()
+                                        .fill(Color.clear)
+                                        .frame(width: 44, height: 44)
+                                    // 視覚的な丸
+                                    Circle()
+                                        .fill(Color.blue)
+                                        .frame(width: 16, height: 16)
+                                }
+                                .contentShape(Circle().size(width: 44, height: 44))
+                                .position(x: startX, y: 46)
+                                .highPriorityGesture(
+                                    DragGesture()
+                                        .onChanged { value in
+                                            let progress = min(max(0, value.location.x / geometry.size.width), 1)
+                                            let newTime = progress * duration
+                                            if let endTime = chorusEnd {
+                                                chorusStart = min(newTime, endTime - 1)
+                                            } else {
+                                                chorusStart = newTime
+                                            }
+                                        }
+                                        .onEnded { _ in
+                                            track.chorusStartSeconds = chorusStart
+                                        }
+                                )
                             }
                             
-                            // 終了キューポイント（赤い縦線）
+                            // 終了キューポイント（赤い縦線 + ドラッグ可能な丸）
                             if let end = chorusEnd, duration > 0 {
                                 let endX = CGFloat(end / duration) * geometry.size.width
+                                // 縦線
                                 Rectangle()
                                     .fill(Color.red)
-                                    .frame(width: 3, height: 20)
-                                    .overlay(Rectangle().stroke(Color.white, lineWidth: 1))
-                                    .position(x: endX, y: 10)
+                                    .frame(width: 3, height: 40)
+                                    .position(x: endX, y: 18)
+                                
+                                // 丸（ドラッグ判定あり）
+                                ZStack {
+                                    // 透明なタップ領域（大きめ）
+                                    Circle()
+                                        .fill(Color.clear)
+                                        .frame(width: 44, height: 44)
+                                    // 視覚的な丸
+                                    Circle()
+                                        .fill(Color.red)
+                                        .frame(width: 16, height: 16)
+                                }
+                                .contentShape(Circle().size(width: 44, height: 44))
+                                .position(x: endX, y: 46)
+                                .highPriorityGesture(
+                                    DragGesture()
+                                        .onChanged { value in
+                                            let progress = min(max(0, value.location.x / geometry.size.width), 1)
+                                            let newTime = progress * duration
+                                            if let startTime = chorusStart {
+                                                chorusEnd = max(newTime, startTime + 1)
+                                            } else {
+                                                chorusEnd = newTime
+                                            }
+                                        }
+                                        .onEnded { _ in
+                                            track.chorusEndSeconds = chorusEnd
+                                        }
+                                )
                             }
                             
                             // 高さを常に確保するための透明なプレースホルダー
@@ -156,7 +214,9 @@ struct ChorusEditView: View {
                                 }
                         )
                     }
-                    .frame(height: 20)
+                    .frame(height: 36)
+                    
+                    Spacer().frame(height: 24)
                     
                     HStack(spacing: 36) {
                         // 曲の最初へ
