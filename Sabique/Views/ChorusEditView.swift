@@ -28,6 +28,7 @@ struct ChorusEditView: View {
     @State private var skipTimer: AnyCancellable?
     @State private var isPreviewing = false
     @State private var isDraggingSeekbar = false
+    @State private var isLocked = false
     
     var body: some View {
         NavigationStack {
@@ -55,7 +56,7 @@ struct ChorusEditView: View {
                     
                     ScrollView(showsIndicators: false) {
                         VStack(spacing: 20) {
-                            Spacer().frame(height: 60) // ナビゲーションバーの余白
+                            Spacer().frame(height: 80) // ナビゲーションバーの余白
                     // アートワーク
                     if let url = artworkURL {
                         AsyncImage(url: url) { image in
@@ -145,6 +146,7 @@ struct ChorusEditView: View {
                                 .highPriorityGesture(
                                     DragGesture()
                                         .onChanged { value in
+                                            guard !isLocked else { return }
                                             let progress = min(max(0, value.location.x / geometry.size.width), 1)
                                             let newTime = progress * duration
                                             if let endTime = chorusEnd {
@@ -154,6 +156,7 @@ struct ChorusEditView: View {
                                             }
                                         }
                                         .onEnded { _ in
+                                            guard !isLocked else { return }
                                             track.chorusStartSeconds = chorusStart
                                         }
                                 )
@@ -184,6 +187,7 @@ struct ChorusEditView: View {
                                 .highPriorityGesture(
                                     DragGesture()
                                         .onChanged { value in
+                                            guard !isLocked else { return }
                                             let progress = min(max(0, value.location.x / geometry.size.width), 1)
                                             let newTime = progress * duration
                                             if let startTime = chorusStart {
@@ -193,6 +197,7 @@ struct ChorusEditView: View {
                                             }
                                         }
                                         .onEnded { _ in
+                                            guard !isLocked else { return }
                                             track.chorusEndSeconds = chorusEnd
                                         }
                                 )
@@ -318,76 +323,143 @@ struct ChorusEditView: View {
                 }
                 .padding(.horizontal)
                 
-                // ハイライト設定ボタン
-                HStack(spacing: 20) {
-                    let isStartDisabled = chorusEnd != nil && playbackTime > chorusEnd!
-                    let isEndDisabled = chorusStart != nil && playbackTime < chorusStart!
+                // ハイライト設定ボタン（コンパクトカードデザイン）
+                HStack(spacing: 16) {
+                    let isStartDisabled = isLocked || (chorusEnd != nil && playbackTime > chorusEnd!)
+                    let isEndDisabled = isLocked || (chorusStart != nil && playbackTime < chorusStart!)
                     
-                    VStack {
-                        Button(action: {
-                            chorusStart = playbackTime
-                            track.chorusStartSeconds = playbackTime
-                        }) {
-                            VStack {
-                                Image(systemName: "arrow.right.to.line")
-                                    .font(.title)
-                                Text("ここを開始")
+                    // 開始ポイント設定カード
+                    Button(action: {
+                        chorusStart = playbackTime
+                        track.chorusStartSeconds = playbackTime
+                    }) {
+                        HStack(spacing: 12) {
+                            Circle()
+                                .fill(Color.blue)
+                                .frame(width: 8, height: 8)
+                            
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text("開始")
                                     .font(.caption)
-                                    .bold()
+                                    .foregroundColor(.gray)
+                                Text(chorusStart.map { formatTime($0) } ?? "--:--")
+                                    .font(.system(.title3, design: .monospaced))
+                                    .fontWeight(.semibold)
+                                    .foregroundColor(.white)
                             }
-                            .frame(maxWidth: .infinity)
-                            .padding()
-                            .background(isStartDisabled ? Color.gray.opacity(0.3) : Color.blue.opacity(0.1))
-                            .cornerRadius(12)
+                            
+                            Spacer()
+                            
+                            Image(systemName: "arrow.right.to.line")
+                                .font(.title3)
+                                .foregroundColor(.blue)
                         }
-                        .disabled(isStartDisabled)
-                        .opacity(isStartDisabled ? 0.5 : 1.0)
-                        
-                        Text(chorusStart.map { formatTime($0) } ?? "--:--")
-                            .font(.headline)
-                            .monospacedDigit()
+                        .padding(.horizontal, 16)
+                        .padding(.vertical, 12)
+                        .background(
+                            RoundedRectangle(cornerRadius: 12)
+                                .fill(Color.white.opacity(0.1))
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: 12)
+                                        .stroke(Color.blue.opacity(0.3), lineWidth: 1)
+                                )
+                        )
                     }
+                    .disabled(isStartDisabled)
+                    .opacity(isStartDisabled ? 0.4 : 1.0)
                     
-                    VStack {
-                        Button(action: {
-                            chorusEnd = playbackTime
-                            track.chorusEndSeconds = playbackTime
-                        }) {
-                            VStack {
-                                Image(systemName: "arrow.left.to.line")
-                                    .font(.title)
-                                Text("ここを終了")
+                    // 終了ポイント設定カード
+                    Button(action: {
+                        chorusEnd = playbackTime
+                        track.chorusEndSeconds = playbackTime
+                    }) {
+                        HStack(spacing: 12) {
+                            Circle()
+                                .fill(Color.red)
+                                .frame(width: 8, height: 8)
+                            
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text("終了")
                                     .font(.caption)
-                                    .bold()
+                                    .foregroundColor(.gray)
+                                Text(chorusEnd.map { formatTime($0) } ?? "--:--")
+                                    .font(.system(.title3, design: .monospaced))
+                                    .fontWeight(.semibold)
+                                    .foregroundColor(.white)
                             }
-                            .frame(maxWidth: .infinity)
-                            .padding()
-                            .background(isEndDisabled ? Color.gray.opacity(0.3) : Color.red.opacity(0.1))
-                            .cornerRadius(12)
+                            
+                            Spacer()
+                            
+                            Image(systemName: "arrow.left.to.line")
+                                .font(.title3)
+                                .foregroundColor(.red)
                         }
-                        .disabled(isEndDisabled)
-                        .opacity(isEndDisabled ? 0.5 : 1.0)
-                        
-                        Text(chorusEnd.map { formatTime($0) } ?? "--:--")
-                            .font(.headline)
-                            .monospacedDigit()
+                        .padding(.horizontal, 16)
+                        .padding(.vertical, 12)
+                        .background(
+                            RoundedRectangle(cornerRadius: 12)
+                                .fill(Color.white.opacity(0.1))
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: 12)
+                                        .stroke(Color.red.opacity(0.3), lineWidth: 1)
+                                )
+                        )
                     }
+                    .disabled(isEndDisabled)
+                    .opacity(isEndDisabled ? 0.4 : 1.0)
                 }
                 .padding(.horizontal)
                 
-                // プレビューボタン
-                if let start = chorusStart, let end = chorusEnd, end > start {
+                // ハイライト再生ボタンとリセット・ロックボタン
+                let canPreview = chorusStart != nil && chorusEnd != nil && (chorusEnd ?? 0) > (chorusStart ?? 0)
+                HStack(spacing: 12) {
+                    // リセットボタン
+                    Button(action: {
+                        chorusStart = nil
+                        chorusEnd = nil
+                        track.chorusStartSeconds = nil
+                        track.chorusEndSeconds = nil
+                    }) {
+                        Image(systemName: "arrow.counterclockwise")
+                            .font(.title2)
+                            .foregroundColor(isLocked ? .gray : .white)
+                            .frame(width: 44, height: 44)
+                            .background(Color.white.opacity(0.1))
+                            .cornerRadius(12)
+                    }
+                    .disabled(isLocked || (chorusStart == nil && chorusEnd == nil))
+                    .opacity((isLocked || (chorusStart == nil && chorusEnd == nil)) ? 0.4 : 1.0)
+                    
+                    // ハイライト再生ボタン
                     Button(action: togglePreview) {
                         Label(isPreviewing ? "ハイライト停止" : "ハイライト再生", systemImage: isPreviewing ? "stop.fill" : "repeat")
                             .font(.headline)
                             .padding()
                             .frame(maxWidth: .infinity)
-                            .background(isPreviewing ? Color.orange : Color.accentColor)
+                            .background(isPreviewing ? Color.orange : (canPreview ? Color.accentColor : Color.gray.opacity(0.5)))
                             .foregroundColor(.white)
                             .cornerRadius(12)
                     }
-                    .padding(.horizontal)
+                    .disabled(!canPreview)
+                    .opacity(canPreview ? 1.0 : 0.5)
+                    
+                    // ロックボタン
+                    let hasAnyCuePoint = chorusStart != nil || chorusEnd != nil
+                    Button(action: {
+                        isLocked.toggle()
+                    }) {
+                        Image(systemName: isLocked ? "lock.fill" : "lock.open")
+                            .font(.title2)
+                            .foregroundColor(isLocked ? .orange : (hasAnyCuePoint ? .white : .gray))
+                            .frame(width: 44, height: 44)
+                            .background(isLocked ? Color.orange.opacity(0.2) : Color.white.opacity(0.1))
+                            .cornerRadius(12)
+                    }
+                    .disabled(!hasAnyCuePoint)
+                    .opacity(hasAnyCuePoint ? 1.0 : 0.4)
                 }
+                .padding(.horizontal)
+                .padding(.bottom, 20) // 下部の余白を詰める
                 } // VStack
                 } // ScrollView
             } // ZStack
@@ -397,6 +469,7 @@ struct ChorusEditView: View {
             .navigationBarTitleDisplayMode(.inline)
             .toolbarColorScheme(.dark, for: .navigationBar)
             .toolbarBackground(.visible, for: .navigationBar)
+
             .preferredColorScheme(.dark)
             .onAppear {
                 setupPlayer()
