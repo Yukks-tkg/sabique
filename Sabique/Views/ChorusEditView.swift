@@ -204,7 +204,7 @@ struct ChorusEditView: View {
                         }
                         .contentShape(Rectangle())
                         .gesture(
-                            DragGesture(minimumDistance: 0)
+                            DragGesture(minimumDistance: 10)
                                 .onChanged { value in
                                     let progress = min(max(0, value.location.x / geometry.size.width), 1)
                                     playbackTime = progress * duration
