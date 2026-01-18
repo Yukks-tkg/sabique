@@ -17,6 +17,9 @@ struct PlaylistDetailView: View {
     @State private var selectedTrack: TrackInPlaylist?
     @State private var showingChorusEdit = false
     @State private var backgroundArtworkURL: URL?
+    @State private var isExporting = false
+    @State private var exportedFileURL: URL?
+    @State private var showingShareSheet = false
     
     // 1曲目のID（並べ替え検知用）
     private var firstTrackId: String? {
@@ -146,6 +149,20 @@ struct PlaylistDetailView: View {
         .navigationTitle("ハイライトリスト")
         .preferredColorScheme(.dark)
         .toolbar {
+            // エクスポートボタン
+            ToolbarItem(placement: .navigationBarTrailing) {
+                Button(action: exportPlaylist) {
+                    if isExporting {
+                        ProgressView()
+                            .tint(.white)
+                    } else {
+                        Image(systemName: "square.and.arrow.up")
+                    }
+                }
+                .disabled(isExporting || playlist.sortedTracks.isEmpty)
+            }
+            
+            // 曲追加ボタン
             ToolbarItem(placement: .navigationBarTrailing) {
                 Button(action: { showingAddSong = true }) {
                     Image(systemName: "plus")
@@ -157,6 +174,11 @@ struct PlaylistDetailView: View {
         }
         .sheet(item: $selectedTrack) { track in
             ChorusEditView(track: track)
+        }
+        .sheet(isPresented: $showingShareSheet) {
+            if let url = exportedFileURL {
+                ShareSheet(activityItems: [url])
+            }
         }
     }
     
@@ -204,6 +226,36 @@ struct PlaylistDetailView: View {
             print("Background artwork load error: \(error)")
         }
     }
+    
+    private func exportPlaylist() {
+        isExporting = true
+        Task {
+            do {
+                let fileURL = try await PlaylistExporter.exportToFile(playlist: playlist)
+                await MainActor.run {
+                    exportedFileURL = fileURL
+                    showingShareSheet = true
+                    isExporting = false
+                }
+            } catch {
+                print("Export error: \(error)")
+                await MainActor.run {
+                    isExporting = false
+                }
+            }
+        }
+    }
+}
+
+// MARK: - ShareSheet
+struct ShareSheet: UIViewControllerRepresentable {
+    let activityItems: [Any]
+    
+    func makeUIViewController(context: Context) -> UIActivityViewController {
+        UIActivityViewController(activityItems: activityItems, applicationActivities: nil)
+    }
+    
+    func updateUIViewController(_ uiViewController: UIActivityViewController, context: Context) {}
 }
 
 // MARK: - TrackRow

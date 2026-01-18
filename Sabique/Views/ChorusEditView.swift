@@ -29,6 +29,7 @@ struct ChorusEditView: View {
     @State private var isPreviewing = false
     @State private var isDraggingSeekbar = false
     @State private var isLocked = false
+    @AppStorage("autoPlayOnOpen") private var autoPlayOnOpen = false
     
     var body: some View {
         NavigationStack {
@@ -505,17 +506,21 @@ struct ChorusEditView: View {
                 
                 duration = song.duration ?? 0
                 
-                // このトラックのキューを設定して再生開始
+                // このトラックのキューを設定
                 player.queue = [song]
-                try await player.play()
                 
-                // 再生開始後にハイライト位置へシーク
-                if let start = track.chorusStartSeconds {
-                    player.playbackTime = max(0, start - 2)
-                    playbackTime = player.playbackTime
-                } else {
-                    player.playbackTime = 0
-                    playbackTime = 0
+                // 自動再生がオンの場合のみ再生開始
+                if autoPlayOnOpen {
+                    try await player.play()
+                    
+                    // 再生開始後にハイライト位置へシーク
+                    if let start = track.chorusStartSeconds {
+                        player.playbackTime = max(0, start - 2)
+                        playbackTime = player.playbackTime
+                    } else {
+                        player.playbackTime = 0
+                        playbackTime = 0
+                    }
                 }
             } catch {
                 print("Player setup error: \(error)")
