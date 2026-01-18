@@ -43,7 +43,7 @@ struct PlaylistListView: View {
                 .ignoresSafeArea()
                 
                 // オーバーレイ
-                Color(.systemBackground).opacity(0.7)
+                Color.black.opacity(0.25)
                     .ignoresSafeArea()
                 
                 // コンテンツ
@@ -87,13 +87,19 @@ struct PlaylistListView: View {
             .task(id: playlists.count) {
                 await loadRandomArtwork()
             }
-            .navigationTitle("Sabiq")
+            .preferredColorScheme(.dark)
+            .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
                     Button(action: { showingSettings = true }) {
-                        Image(systemName: "line.3.horizontal.circle")
+                        Image(systemName: "gearshape")
                             .font(.title3)
                     }
+                }
+                ToolbarItem(placement: .principal) {
+                    Text("プレイリスト")
+                        .font(.headline)
+                        .bold()
                 }
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Menu {
@@ -104,9 +110,7 @@ struct PlaylistListView: View {
                             Label("Apple Musicからインポート", systemImage: "square.and.arrow.down")
                         }
                     } label: {
-                        Image(systemName: "plus.circle.fill")
-                            .font(.title3)
-                            .symbolRenderingMode(.hierarchical)
+                        Image(systemName: "plus")
                     }
                 }
             }
@@ -161,15 +165,15 @@ struct PlaylistListView: View {
     }
     
     private func loadRandomArtwork() async {
-        // 全プレイリストからすべてのトラックを収集
-        let allTracks = playlists.flatMap { $0.tracks }
-        guard !allTracks.isEmpty else {
+        // 各プレイリストの1番目のトラックを収集
+        let firstTracks = playlists.compactMap { $0.sortedTracks.first }
+        guard !firstTracks.isEmpty else {
             backgroundArtworkURL = nil
             return
         }
         
         // ランダムにトラックを選択
-        let randomTrack = allTracks.randomElement()!
+        let randomTrack = firstTracks.randomElement()!
         
         do {
             let request = MusicCatalogResourceRequest<Song>(

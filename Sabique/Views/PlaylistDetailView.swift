@@ -43,7 +43,7 @@ struct PlaylistDetailView: View {
             .ignoresSafeArea()
             
             // オーバーレイ
-            Color(.systemBackground).opacity(0.7)
+            Color.black.opacity(0.25)
                 .ignoresSafeArea()
             
             // コンテンツ
@@ -84,7 +84,7 @@ struct PlaylistDetailView: View {
                     .listRowInsets(EdgeInsets(top: 8, leading: 16, bottom: 8, trailing: 16))
                     .listRowBackground(Color.clear)
                 } header: {
-                    Text("ハイライトリスト")
+                    Text(playlist.name)
                         .font(.subheadline)
                         .bold()
                         .foregroundColor(.primary)
@@ -135,7 +135,8 @@ struct PlaylistDetailView: View {
                 .padding(.bottom, 16)
             }
         }
-        .navigationTitle(playlist.name)
+        .navigationTitle("ハイライトリスト")
+        .preferredColorScheme(.dark)
         .toolbar {
             ToolbarItem(placement: .navigationBarTrailing) {
                 Button(action: { showingAddSong = true }) {
@@ -240,29 +241,10 @@ struct TrackRow: View {
             Spacer()
             
             if track.hasChorusSettings {
-                VStack(alignment: .trailing, spacing: 2) {
-                    Text("ハイライト設定済み")
-                        .font(.caption2)
-                        .bold()
-                        .foregroundColor(.accentColor)
-                        .padding(.horizontal, 6)
-                        .padding(.vertical, 2)
-                        .background(Color.accentColor.opacity(0.1))
-                        .cornerRadius(4)
-                    
-                    Text("\(track.chorusStartFormatted) - \(track.chorusEndFormatted)")
-                        .font(.caption)
-                        .monospacedDigit()
-                        .foregroundColor(.secondary)
-                }
-            } else {
-                Text("通常再生")
-                    .font(.caption2)
+                Text("\(track.chorusStartFormatted) - \(track.chorusEndFormatted)")
+                    .font(.caption)
+                    .monospacedDigit()
                     .foregroundColor(.secondary)
-                    .padding(.horizontal, 6)
-                    .padding(.vertical, 2)
-                    .background(Color.secondary.opacity(0.1))
-                    .cornerRadius(4)
             }
             
             Image(systemName: "chevron.right")

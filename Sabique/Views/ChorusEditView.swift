@@ -50,7 +50,7 @@ struct ChorusEditView: View {
                     }
                     
                     // 背景のオーバーレイ（視認性を確保）
-                    Color.black.opacity(0.4)
+                    Color.black.opacity(0.25)
                     
                     ScrollView(showsIndicators: false) {
                         VStack(spacing: 20) {
@@ -95,6 +95,16 @@ struct ChorusEditView: View {
                 
                 // 再生コントロール & シークバー
                 VStack(spacing: 10) {
+                    // 再生時間表示
+                    HStack {
+                        Text(formatTime(playbackTime))
+                        Spacer()
+                        Text(formatTime(duration))
+                    }
+                    .font(.caption2)
+                    .monospacedDigit()
+                    .foregroundColor(.secondary)
+                    
                     // カスタムシークバー
                     GeometryReader { geometry in
                         ZStack(alignment: .leading) {
@@ -105,8 +115,9 @@ struct ChorusEditView: View {
                             
                             // 再生済みトラック
                             Capsule()
-                                .fill(Color.accentColor)
+                                .fill(Color.white.opacity(0.9))
                                 .frame(width: CGFloat(playbackTime / max(duration, 1)) * geometry.size.width, height: 4)
+                                .animation(.linear(duration: 0.1), value: playbackTime)
                             
                             // 開始キューポイント（青い縦線）
                             if let start = chorusStart, duration > 0 {
@@ -142,16 +153,7 @@ struct ChorusEditView: View {
                     }
                     .frame(height: 20)
                     
-                    HStack {
-                        Text(formatTime(playbackTime))
-                        Spacer()
-                        Text(formatTime(duration))
-                    }
-                    .font(.caption2)
-                    .monospacedDigit()
-                    .foregroundColor(.secondary)
-                    
-                    HStack(spacing: 24) {
+                    HStack(spacing: 36) {
                         // 曲の最初へ
                         Button(action: { goToStart() }) {
                             Image(systemName: "backward.end.fill")
@@ -213,6 +215,7 @@ struct ChorusEditView: View {
                                 .frame(width: 24, height: 24)
                         }
                     }
+                    .foregroundColor(.white)
                     .padding(.vertical)
                 }
                 .padding(.horizontal)
