@@ -221,21 +221,36 @@ struct ChorusEditView: View {
                     
                     Spacer().frame(height: 24)
                     
-                    HStack(spacing: 36) {
+                    HStack(spacing: 28) {
                         // 曲の最初へ
                         Button(action: { goToStart() }) {
                             Image(systemName: "backward.end.fill")
                                 .resizable()
                                 .scaledToFit()
-                                .frame(width: 24, height: 24)
+                                .frame(width: 20, height: 20)
                         }
+                        
+                        // 開始キューポイントへジャンプ（青）
+                        Button(action: {
+                            if let start = chorusStart {
+                                playbackTime = start
+                                player.playbackTime = start
+                            }
+                        }) {
+                            Image(systemName: "backward.frame.fill")
+                                .resizable()
+                                .scaledToFit()
+                                .frame(width: 24, height: 24)
+                                .foregroundColor(.blue)
+                        }
+                        .disabled(chorusStart == nil)
                         
                         // 巻き戻しボタン（-5秒）
                         Button(action: { skipBackward() }) {
                             Image(systemName: "gobackward.5")
                                 .resizable()
                                 .scaledToFit()
-                                .frame(width: 36, height: 36)
+                                .frame(width: 28, height: 28)
                         }
                         .simultaneousGesture(
                             LongPressGesture(minimumDuration: 0.3)
@@ -253,7 +268,7 @@ struct ChorusEditView: View {
                         Button(action: togglePlayback) {
                             Image(systemName: isPlaying ? "pause.fill" : "play.fill")
                                 .resizable()
-                                .frame(width: 54, height: 54)
+                                .frame(width: 44, height: 44)
                         }
                         
                         // 早送りボタン（+5秒）
@@ -261,7 +276,7 @@ struct ChorusEditView: View {
                             Image(systemName: "goforward.5")
                                 .resizable()
                                 .scaledToFit()
-                                .frame(width: 36, height: 36)
+                                .frame(width: 28, height: 28)
                         }
                         .simultaneousGesture(
                             LongPressGesture(minimumDuration: 0.3)
@@ -275,12 +290,27 @@ struct ChorusEditView: View {
                             }
                         }, perform: {})
                         
+                        // 終了キューポイントへジャンプ（赤）
+                        Button(action: {
+                            if let end = chorusEnd {
+                                playbackTime = end
+                                player.playbackTime = end
+                            }
+                        }) {
+                            Image(systemName: "forward.frame.fill")
+                                .resizable()
+                                .scaledToFit()
+                                .frame(width: 24, height: 24)
+                                .foregroundColor(.red)
+                        }
+                        .disabled(chorusEnd == nil)
+                        
                         // 曲の最後へ
                         Button(action: { goToEnd() }) {
                             Image(systemName: "forward.end.fill")
                                 .resizable()
                                 .scaledToFit()
-                                .frame(width: 24, height: 24)
+                                .frame(width: 20, height: 20)
                         }
                     }
                     .foregroundColor(.white)
