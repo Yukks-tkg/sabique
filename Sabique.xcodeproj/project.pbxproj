@@ -401,6 +401,7 @@
 				DEVELOPMENT_TEAM = 2HNQAJKUD5;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = Sabique;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.music";
 				INFOPLIST_KEY_NSAppleMusicUsageDescription = "アプリ内で音楽を再生するためにライブラリにアクセスします。";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
@@ -442,6 +443,7 @@
 				DEVELOPMENT_TEAM = 2HNQAJKUD5;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = Sabique;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.music";
 				INFOPLIST_KEY_NSAppleMusicUsageDescription = "アプリ内で音楽を再生するためにライブラリにアクセスします。";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
