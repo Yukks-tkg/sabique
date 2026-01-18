@@ -27,6 +27,7 @@ struct ChorusEditView: View {
     @State private var timer = Timer.publish(every: 0.5, on: .main, in: .common).autoconnect()
     @State private var skipTimer: AnyCancellable?
     @State private var isPreviewing = false
+    @State private var isDraggingSeekbar = false
     
     var body: some View {
         NavigationStack {
@@ -206,11 +207,13 @@ struct ChorusEditView: View {
                         .gesture(
                             DragGesture(minimumDistance: 10)
                                 .onChanged { value in
+                                    isDraggingSeekbar = true
                                     let progress = min(max(0, value.location.x / geometry.size.width), 1)
                                     playbackTime = progress * duration
                                 }
                                 .onEnded { _ in
                                     player.playbackTime = playbackTime
+                                    isDraggingSeekbar = false
                                 }
                         )
                     }
@@ -486,7 +489,10 @@ struct ChorusEditView: View {
     
     private func updatePlaybackStatus() {
         Task { @MainActor in
-            playbackTime = player.playbackTime
+            // ドラッグ中はplaybackTimeを上書きしない
+            if !isDraggingSeekbar {
+                playbackTime = player.playbackTime
+            }
             isPlaying = player.state.playbackStatus == .playing
             
             // ハイライトプレビュー中に終了点を過ぎたら開始点に戻る
