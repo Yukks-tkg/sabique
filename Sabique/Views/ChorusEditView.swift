@@ -247,9 +247,10 @@ struct ChorusEditView: View {
                                 .resizable()
                                 .scaledToFit()
                                 .frame(width: 24, height: 24)
-                                .foregroundColor(.blue)
+                                .foregroundColor(chorusStart == nil ? .gray : .blue)
                         }
                         .disabled(chorusStart == nil)
+                        .opacity(chorusStart == nil ? 0.4 : 1.0)
                         
                         // 巻き戻しボタン（-5秒）
                         Button(action: { skipBackward() }) {
@@ -307,9 +308,10 @@ struct ChorusEditView: View {
                                 .resizable()
                                 .scaledToFit()
                                 .frame(width: 24, height: 24)
-                                .foregroundColor(.red)
+                                .foregroundColor(chorusEnd == nil ? .gray : .red)
                         }
                         .disabled(chorusEnd == nil)
+                        .opacity(chorusEnd == nil ? 0.4 : 1.0)
                         
                         // 曲の最後へ
                         Button(action: { goToEnd() }) {
@@ -444,20 +446,20 @@ struct ChorusEditView: View {
                     .disabled(!canPreview)
                     .opacity(canPreview ? 1.0 : 0.5)
                     
-                    // ロックボタン
-                    let hasAnyCuePoint = chorusStart != nil || chorusEnd != nil
+                    // ロックボタン（両方のキューポイントが設定されているときのみ有効）
+                    let hasBothCuePoints = chorusStart != nil && chorusEnd != nil
                     Button(action: {
                         isLocked.toggle()
                     }) {
                         Image(systemName: isLocked ? "lock.fill" : "lock.open")
                             .font(.title2)
-                            .foregroundColor(isLocked ? .orange : (hasAnyCuePoint ? .white : .gray))
+                            .foregroundColor(isLocked ? .orange : (hasBothCuePoints ? .white : .gray))
                             .frame(width: 44, height: 44)
                             .background(isLocked ? Color.orange.opacity(0.2) : Color.white.opacity(0.1))
                             .cornerRadius(12)
                     }
-                    .disabled(!hasAnyCuePoint)
-                    .opacity(hasAnyCuePoint ? 1.0 : 0.4)
+                    .disabled(!hasBothCuePoints)
+                    .opacity(hasBothCuePoints ? 1.0 : 0.4)
                 }
                 .padding(.horizontal)
                 .padding(.bottom, 20) // 下部の余白を詰める
