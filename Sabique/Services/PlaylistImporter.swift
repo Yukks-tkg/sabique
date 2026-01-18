@@ -1,0 +1,123 @@
+//
+//  PlaylistImporter.swift
+//  Sabique
+//
+
+import Foundation
+import MusicKit
+import SwiftData
+
+// MARK: - Playlist Importer
+
+class PlaylistImporter {
+    
+    /// JSONファイルからプレイリストをインポート
+    static func importFromFile(url: URL, modelContext: ModelContext) async throws -> Playlist {
+        // ファイルにアクセス
+        guard url.startAccessingSecurityScopedResource() else {
+            throw ImportError.accessDenied
+        }
+        defer { url.stopAccessingSecurityScopedResource() }
+        
+        // JSONを読み込み
+        let data = try Data(contentsOf: url)
+        let decoder = JSONDecoder()
+        decoder.dateDecodingStrategy = .iso8601
+        
+        let exportedPlaylist = try decoder.decode(ExportedPlaylist.self, from: data)
+        
+        // プレイリストを作成
+        let playlist = Playlist(name: exportedPlaylist.name, orderIndex: 0)
+        modelContext.insert(playlist)
+        
+        // トラックを追加
+        for (index, exportedTrack) in exportedPlaylist.tracks.enumerated() {
+            // まずISRCで検索、なければAppleMusicIdで検索
+            var songId: String? = nil
+            
+            // ISRCで曲を検索
+            if let isrc = exportedTrack.isrc {
+                if let foundId = await findSongByISRC(isrc: isrc) {
+                    songId = foundId
+                }
+            }
+            
+            // ISRCで見つからなければAppleMusicIdを使用
+            if songId == nil {
+                // AppleMusicIdが同じリージョンで有効か確認
+                if await verifySongExists(appleMusicId: exportedTrack.appleMusicId) {
+                    songId = exportedTrack.appleMusicId
+                }
+            }
+            
+            // 曲が見つかった場合のみトラックを追加
+            if let validSongId = songId {
+                let track = TrackInPlaylist(
+                    appleMusicSongId: validSongId,
+                    title: exportedTrack.title,
+                    artist: exportedTrack.artist,
+                    orderIndex: index,
+                    chorusStartSeconds: exportedTrack.chorusStart,
+                    chorusEndSeconds: exportedTrack.chorusEnd
+                )
+                track.playlist = playlist
+                modelContext.insert(track)
+            }
+        }
+        
+        return playlist
+    }
+    
+    /// ISRCで曲を検索
+    private static func findSongByISRC(isrc: String) async -> String? {
+        do {
+            var request = MusicCatalogSearchRequest(term: isrc, types: [Song.self])
+            request.limit = 5
+            let response = try await request.response()
+            
+            // ISRCが一致する曲を探す
+            for song in response.songs {
+                if song.isrc == isrc {
+                    return song.id.rawValue
+                }
+            }
+        } catch {
+            print("ISRC search error: \(error)")
+        }
+        return nil
+    }
+    
+    /// AppleMusicIdで曲が存在するか確認
+    private static func verifySongExists(appleMusicId: String) async -> Bool {
+        do {
+            let request = MusicCatalogResourceRequest<Song>(
+                matching: \.id,
+                equalTo: MusicItemID(appleMusicId)
+            )
+            let response = try await request.response()
+            return response.items.first != nil
+        } catch {
+            print("Song verification error: \(error)")
+            return false
+        }
+    }
+}
+
+// MARK: - Import Error
+
+enum ImportError: LocalizedError {
+    case accessDenied
+    case invalidFormat
+    case noTracksFound
+    
+    var errorDescription: String? {
+        switch self {
+        case .accessDenied:
+            return "ファイルにアクセスできません"
+        case .invalidFormat:
+            return "ファイル形式が無効です"
+        case .noTracksFound:
+            return "曲が見つかりませんでした"
+        }
+    }
+}

@@ -8,6 +8,7 @@
 import SwiftUI
 import SwiftData
 import MusicKit
+import UniformTypeIdentifiers
 
 struct PlaylistListView: View {
     @Environment(\.modelContext) private var modelContext
@@ -16,6 +17,10 @@ struct PlaylistListView: View {
     @State private var showingCreateSheet = false
     @State private var showingSettings = false
     @State private var showingImportSheet = false
+    @State private var showingFileImporter = false
+    @State private var isImporting = false
+    @State private var importError: String?
+    @State private var showingImportError = false
     @State private var newPlaylistName = ""
     @State private var backgroundArtworkURL: URL?
     
@@ -107,7 +112,10 @@ struct PlaylistListView: View {
                             Label("新規プレイリスト", systemImage: "plus")
                         }
                         Button(action: { showingImportSheet = true }) {
-                            Label("Apple Musicからインポート", systemImage: "square.and.arrow.down")
+                            Label("Apple Musicからインポート", systemImage: "music.note")
+                        }
+                        Button(action: { showingFileImporter = true }) {
+                            Label("ファイルからインポート", systemImage: "doc.badge.arrow.up")
                         }
                     } label: {
                         Image(systemName: "plus")
@@ -128,6 +136,18 @@ struct PlaylistListView: View {
                 AppleMusicPlaylistImportView { importedPlaylist in
                     // インポート成功時の処理（必要に応じて）
                 }
+            }
+            .fileImporter(
+                isPresented: $showingFileImporter,
+                allowedContentTypes: [UTType.json],
+                allowsMultipleSelection: false
+            ) { result in
+                handleFileImport(result: result)
+            }
+            .alert("インポートエラー", isPresented: $showingImportError) {
+                Button("OK", role: .cancel) {}
+            } message: {
+                Text(importError ?? "不明なエラーが発生しました")
             }
         }
     }
@@ -186,6 +206,38 @@ struct PlaylistListView: View {
             }
         } catch {
             print("Background artwork load error: \(error)")
+        }
+    }
+    
+    private func handleFileImport(result: Result<[URL], Error>) {
+        switch result {
+        case .success(let urls):
+            guard let url = urls.first else { return }
+            isImporting = true
+            
+            Task {
+                do {
+                    // 既存のプレイリストのorderIndexを更新
+                    for playlist in playlists {
+                        playlist.orderIndex += 1
+                    }
+                    
+                    let _ = try await PlaylistImporter.importFromFile(url: url, modelContext: modelContext)
+                    await MainActor.run {
+                        isImporting = false
+                    }
+                } catch {
+                    await MainActor.run {
+                        importError = error.localizedDescription
+                        showingImportError = true
+                        isImporting = false
+                    }
+                }
+            }
+            
+        case .failure(let error):
+            importError = error.localizedDescription
+            showingImportError = true
         }
     }
 }
