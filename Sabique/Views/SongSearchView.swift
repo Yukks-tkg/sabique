@@ -9,6 +9,19 @@ import SwiftUI
 import SwiftData
 import MusicKit
 
+/// 曲ソースの種類
+enum SongSource: String, CaseIterable, Identifiable {
+    case topCharts = "top_charts"
+    case library = "library"
+    case recentlyPlayed = "recently_played"
+    
+    var id: String { rawValue }
+    
+    var localizedName: String {
+        String(localized: String.LocalizationValue(rawValue))
+    }
+}
+
 struct SongSearchView: View {
     @Environment(\.modelContext) private var modelContext
     @Environment(\.dismiss) private var dismiss
@@ -17,20 +30,21 @@ struct SongSearchView: View {
     
     @State private var searchKeyword = ""
     @State private var songs: MusicItemCollection<Song> = []
-    @State private var recentlyPlayedSongs: [Song] = []
+    @State private var sourceSongs: [Song] = []
+    @State private var selectedSource: SongSource = .topCharts
     @State private var isSearching = false
-    @State private var isLoadingRecent = false
+    @State private var isLoadingSource = false
     @State private var authorizationStatus: MusicAuthorization.Status = .notDetermined
     @State private var addedTrack: TrackInPlaylist?
     @State private var showingChorusEdit = false
     @State private var searchTask: Task<Void, Never>?
     
-    /// 表示する曲リスト（検索中は検索結果、それ以外は最近再生した曲）
+    /// 表示する曲リスト（検索中は検索結果、それ以外は選択されたソースの曲）
     private var displayedSongs: [Song] {
         if !searchKeyword.isEmpty {
             return Array(songs)
         } else {
-            return recentlyPlayedSongs
+            return sourceSongs
         }
     }
     
@@ -38,7 +52,7 @@ struct SongSearchView: View {
         if !searchKeyword.isEmpty {
             return String(localized: "search_results")
         } else {
-            return String(localized: "recently_played")
+            return selectedSource.localizedName
         }
     }
     
@@ -52,7 +66,7 @@ struct SongSearchView: View {
                         description: Text(String(localized: "apple_music_access_description"))
                     )
                 } else {
-                    VStack {
+                    VStack(spacing: 0) {
                         // 検索バー
                         HStack {
                             Image(systemName: "magnifyingglass")
@@ -76,8 +90,34 @@ struct SongSearchView: View {
                         .cornerRadius(20)
                         .padding(.horizontal)
                         
+                        // ソース切り替えセグメントコントロール
+                        if searchKeyword.isEmpty {
+                            ScrollView(.horizontal, showsIndicators: false) {
+                                HStack(spacing: 8) {
+                                    ForEach(SongSource.allCases) { source in
+                                        Button(action: {
+                                            selectedSource = source
+                                        }) {
+                                            Text(source.localizedName)
+                                                .font(.subheadline)
+                                                .fontWeight(selectedSource == source ? .semibold : .regular)
+                                                .padding(.horizontal, 16)
+                                                .padding(.vertical, 8)
+                                                .background(
+                                                    Capsule()
+                                                        .fill(selectedSource == source ? Color.white.opacity(0.2) : Color.clear)
+                                                )
+                                                .foregroundColor(selectedSource == source ? .white : .secondary)
+                                        }
+                                    }
+                                }
+                                .padding(.horizontal)
+                                .padding(.vertical, 12)
+                            }
+                        }
+                        
                         // コンテンツ
-                        if isSearching || isLoadingRecent {
+                        if isSearching || isLoadingSource {
                             ProgressView(isSearching ? String(localized: "searching") : String(localized: "loading"))
                                 .frame(maxHeight: .infinity)
                         } else if displayedSongs.isEmpty {
@@ -85,23 +125,21 @@ struct SongSearchView: View {
                                 ContentUnavailableView.search(text: searchKeyword)
                             } else {
                                 ContentUnavailableView(
-                                    String(localized: "no_recently_played"),
-                                    systemImage: "clock",
-                                    description: Text(String(localized: "no_recently_played_description"))
+                                    String(localized: "no_songs_in_source"),
+                                    systemImage: "music.note",
+                                    description: Text(String(localized: "no_songs_in_source_description"))
                                 )
                             }
                         } else {
                             List {
-                                Section(header: Text(sectionTitle).foregroundColor(.secondary)) {
-                                    ForEach(displayedSongs, id: \.id) { song in
-                                        SongRow(
-                                            song: song,
-                                            onAdd: { addSongDirectly(song) },
-                                            onEdit: { addSongWithEdit(song) }
-                                        )
-                                        .listRowInsets(EdgeInsets(top: 4, leading: 8, bottom: 4, trailing: 8))
-                                        .listRowBackground(Color.clear)
-                                    }
+                                ForEach(displayedSongs, id: \.id) { song in
+                                    SongRow(
+                                        song: song,
+                                        onAdd: { addSongDirectly(song) },
+                                        onEdit: { addSongWithEdit(song) }
+                                    )
+                                    .listRowInsets(EdgeInsets(top: 4, leading: 8, bottom: 4, trailing: 8))
+                                    .listRowBackground(Color.clear)
                                 }
                             }
                             .listStyle(.plain)
@@ -121,7 +159,7 @@ struct SongSearchView: View {
                 Task {
                     authorizationStatus = await MusicAuthorization.request()
                     if authorizationStatus == .authorized {
-                        await loadRecentlyPlayedSongs()
+                        await loadSongsForSource(selectedSource)
                     }
                 }
             }
@@ -145,20 +183,67 @@ struct SongSearchView: View {
                     await searchMusic()
                 }
             }
+            .onChange(of: selectedSource) { oldValue, newValue in
+                Task {
+                    await loadSongsForSource(newValue)
+                }
+            }
+        }
+    }
+    
+    /// 選択されたソースの曲を読み込む
+    private func loadSongsForSource(_ source: SongSource) async {
+        isLoadingSource = true
+        defer { isLoadingSource = false }
+        
+        switch source {
+        case .recentlyPlayed:
+            await loadRecentlyPlayedSongs()
+        case .library:
+            await loadLibrarySongs()
+        case .topCharts:
+            await loadTopChartsSongs()
         }
     }
     
     /// 最近再生した曲を取得
     private func loadRecentlyPlayedSongs() async {
-        isLoadingRecent = true
-        defer { isLoadingRecent = false }
-        
         do {
             let request = MusicRecentlyPlayedRequest<Song>()
             let response = try await request.response()
-            recentlyPlayedSongs = Array(response.items.prefix(20))
+            sourceSongs = Array(response.items.prefix(30))
         } catch {
             print("Recently played songs load error: \(error)")
+            sourceSongs = []
+        }
+    }
+    
+    /// ライブラリの曲を取得
+    private func loadLibrarySongs() async {
+        do {
+            var request = MusicLibraryRequest<Song>()
+            request.limit = 50
+            let response = try await request.response()
+            sourceSongs = Array(response.items)
+        } catch {
+            print("Library songs load error: \(error)")
+            sourceSongs = []
+        }
+    }
+    
+    /// トップチャートの曲を取得
+    private func loadTopChartsSongs() async {
+        do {
+            let request = MusicCatalogChartsRequest(kinds: [.mostPlayed], types: [Song.self])
+            let response = try await request.response()
+            if let songChart = response.songCharts.first {
+                sourceSongs = Array(songChart.items.prefix(30))
+            } else {
+                sourceSongs = []
+            }
+        } catch {
+            print("Top charts songs load error: \(error)")
+            sourceSongs = []
         }
     }
     

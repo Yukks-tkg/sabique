@@ -271,6 +271,23 @@
         }
       }
     },
+    "for_you" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "For You"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "おすすめ"
+          }
+        }
+      }
+    },
     "highlight_list" : {
       "localizations" : {
         "en" : {
@@ -415,6 +432,23 @@
         }
       }
     },
+    "library" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Library"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ライブラリ"
+          }
+        }
+      }
+    },
     "loading" : {
       "localizations" : {
         "en" : {
@@ -512,6 +546,7 @@
       }
     },
     "no_recently_played" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -528,6 +563,7 @@
       }
     },
     "no_recently_played_description" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -555,6 +591,38 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "曲がありません"
+          }
+        }
+      }
+    },
+    "no_songs_in_source" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No Songs"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "曲がありません"
+          }
+        }
+      }
+    },
+    "no_songs_in_source_description" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No songs available in this category"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "このカテゴリに曲がありません"
           }
         }
       }
@@ -656,6 +724,7 @@
       }
     },
     "recently_played" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -811,6 +880,23 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "利用規約"
+          }
+        }
+      }
+    },
+    "top_charts" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Top Charts"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "チャート"
           }
         }
       }
