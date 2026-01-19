@@ -34,7 +34,7 @@ struct SettingsView: View {
                 }
                 
                 Section(String(localized: "legal_info")) {
-                    Link(destination: URL(string: "https://example.com/privacy")!) {
+                    Link(destination: URL(string: "https://immense-engineer-7f8.notion.site/Privacy-Policy-Sabique-2ed0dee3bb098077b979d500914ffbba")!) {
                         HStack {
                             Text(String(localized: "privacy_policy"))
                                 .foregroundColor(.primary)
@@ -45,7 +45,7 @@ struct SettingsView: View {
                         }
                     }
                     
-                    Link(destination: URL(string: "https://example.com/terms")!) {
+                    Link(destination: URL(string: "https://immense-engineer-7f8.notion.site/Terms-of-Use-Sabique-2ed0dee3bb098038983feb7ecea57f7a")!) {
                         HStack {
                             Text(String(localized: "terms_of_use"))
                                 .foregroundColor(.primary)
