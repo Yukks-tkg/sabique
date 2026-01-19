@@ -350,12 +350,26 @@ struct TrackRow: View {
     
     private func loadArtwork() async {
         do {
+            var song: Song?
+            
+            // まずIDで検索
             let request = MusicCatalogResourceRequest<Song>(
                 matching: \.id,
                 equalTo: MusicItemID(track.appleMusicSongId)
             )
             let response = try await request.response()
-            if let song = response.items.first, let artwork = song.artwork {
+            song = response.items.first
+            
+            // IDで見つからない場合はタイトルとアーティストで検索
+            if song == nil {
+                var searchRequest = MusicCatalogSearchRequest(term: "\(track.title) \(track.artist)", types: [Song.self])
+                searchRequest.limit = 5
+                let searchResponse = try await searchRequest.response()
+                song = searchResponse.songs.first { $0.title == track.title && $0.artistName == track.artist }
+                    ?? searchResponse.songs.first
+            }
+            
+            if let foundSong = song, let artwork = foundSong.artwork {
                 artworkURL = artwork.url(width: 100, height: 100)
             }
         } catch {

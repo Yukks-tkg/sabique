@@ -23,6 +23,7 @@ struct SongSearchView: View {
     @State private var authorizationStatus: MusicAuthorization.Status = .notDetermined
     @State private var addedTrack: TrackInPlaylist?
     @State private var showingChorusEdit = false
+    @State private var searchTask: Task<Void, Never>?
     
     /// 表示する曲リスト（検索中は検索結果、それ以外は最近再生した曲）
     private var displayedSongs: [Song] {
@@ -58,9 +59,7 @@ struct SongSearchView: View {
                                 .foregroundColor(.secondary)
                             TextField(String(localized: "search_placeholder"), text: $searchKeyword)
                                 .textFieldStyle(.plain)
-                                .onSubmit {
-                                    Task { await searchMusic() }
-                                }
+                                .autocorrectionDisabled()
                             if !searchKeyword.isEmpty {
                                 Button(action: { searchKeyword = "" }) {
                                     Image(systemName: "xmark.circle.fill")
@@ -99,10 +98,13 @@ struct SongSearchView: View {
                                             SongRow(song: song)
                                         }
                                         .buttonStyle(.plain)
+                                        .listRowInsets(EdgeInsets(top: 4, leading: 8, bottom: 4, trailing: 8))
+                                        .listRowBackground(Color.clear)
                                     }
                                 }
                             }
                             .listStyle(.plain)
+                            .scrollContentBackground(.hidden)
                         }
                     }
                 }
@@ -124,6 +126,23 @@ struct SongSearchView: View {
             }
             .sheet(item: $addedTrack, onDismiss: { dismiss() }) { track in
                 ChorusEditView(track: track)
+            }
+            .onChange(of: searchKeyword) { oldValue, newValue in
+                // 既存の検索タスクをキャンセル
+                searchTask?.cancel()
+                
+                // 空の場合は検索結果をクリア
+                if newValue.isEmpty {
+                    songs = []
+                    return
+                }
+                
+                // デバウンス（0.3秒待ってから検索）
+                searchTask = Task {
+                    try? await Task.sleep(nanoseconds: 300_000_000)
+                    guard !Task.isCancelled else { return }
+                    await searchMusic()
+                }
             }
         }
     }

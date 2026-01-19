@@ -505,19 +505,37 @@ struct ChorusEditView: View {
         
         Task {
             do {
+                var song: Song?
+                
+                // まずIDで曲を検索
                 let request = MusicCatalogResourceRequest<Song>(matching: \.id, equalTo: MusicItemID(track.appleMusicSongId))
                 let response = try await request.response()
-                guard let song = response.items.first else { return }
+                song = response.items.first
+                
+                // IDで見つからない場合はタイトルとアーティストで検索
+                if song == nil {
+                    var searchRequest = MusicCatalogSearchRequest(term: "\(track.title) \(track.artist)", types: [Song.self])
+                    searchRequest.limit = 5
+                    let searchResponse = try await searchRequest.response()
+                    // 最も一致する曲を選択
+                    song = searchResponse.songs.first { $0.title == track.title && $0.artistName == track.artist }
+                        ?? searchResponse.songs.first
+                }
+                
+                guard let foundSong = song else {
+                    print("Song not found: \(track.title) by \(track.artist)")
+                    return
+                }
                 
                 // アートワークURLを取得
-                if let artwork = song.artwork {
+                if let artwork = foundSong.artwork {
                     artworkURL = artwork.url(width: 400, height: 400)
                 }
                 
-                duration = song.duration ?? 0
+                duration = foundSong.duration ?? 0
                 
                 // このトラックのキューを設定
-                player.queue = [song]
+                player.queue = [foundSong]
                 
                 // 自動再生がオンの場合のみ再生開始
                 if autoPlayOnOpen {
