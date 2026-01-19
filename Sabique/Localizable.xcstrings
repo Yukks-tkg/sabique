@@ -100,13 +100,13 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Highlight player for Apple Music choruses"
+            "value" : "Play your favorite parts, seamlessly connected"
           }
         },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Apple Musicのサビを繋ぐ、ハイライト再生プレイヤー"
+            "value" : "Apple Musicの好きな部分を繋ぐ、ハイライト再生プレイヤー"
           }
         }
       }
