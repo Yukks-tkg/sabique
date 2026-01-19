@@ -504,54 +504,93 @@ struct ChorusEditView: View {
         player.stop()
         
         Task {
+            var song: Song?
+            
+            print("🎵 Searching for song ID: \(track.appleMusicSongId)")
+            
+            // まずIDで曲を検索（エラーをキャッチして続行）
             do {
-                var song: Song?
-                
-                // まずIDで曲を検索
                 let request = MusicCatalogResourceRequest<Song>(matching: \.id, equalTo: MusicItemID(track.appleMusicSongId))
                 let response = try await request.response()
                 song = response.items.first
-                
-                // IDで見つからない場合はタイトルとアーティストで検索
-                if song == nil {
-                    var searchRequest = MusicCatalogSearchRequest(term: "\(track.title) \(track.artist)", types: [Song.self])
-                    searchRequest.limit = 5
+                print("🎵 ID search result: \(song?.title ?? "not found")")
+            } catch {
+                print("⚠️ ID search failed (will try text search): \(error)")
+            }
+            
+            // IDで見つからない場合はタイトルとアーティストで検索
+            if song == nil {
+                do {
+                    let searchTerm = "\(track.title) \(track.artist)"
+                    print("🎵 Searching with term: \(searchTerm)")
+                    
+                    var searchRequest = MusicCatalogSearchRequest(term: searchTerm, types: [Song.self])
+                    searchRequest.limit = 10
                     let searchResponse = try await searchRequest.response()
-                    // 最も一致する曲を選択
+                    
+                    print("🎵 Search results count: \(searchResponse.songs.count)")
+                    
+                    // 完全一致を優先
                     song = searchResponse.songs.first { $0.title == track.title && $0.artistName == track.artist }
-                        ?? searchResponse.songs.first
+                    
+                    // 部分一致でフォールバック
+                    if song == nil {
+                        song = searchResponse.songs.first { $0.title.contains(track.title) || track.title.contains($0.title) }
+                    }
+                    
+                    // それでも見つからなければ最初の結果を使用
+                    if song == nil {
+                        song = searchResponse.songs.first
+                    }
+                    
+                    print("🎵 Final search result: \(song?.title ?? "still not found")")
+                } catch {
+                    print("❌ Text search also failed: \(error)")
                 }
-                
-                guard let foundSong = song else {
-                    print("Song not found: \(track.title) by \(track.artist)")
-                    return
-                }
-                
+            }
+            
+            guard let foundSong = song else {
+                print("❌ Song not found: \(track.title) by \(track.artist)")
+                return
+            }
+            
+            print("✅ Found song: \(foundSong.title) by \(foundSong.artistName)")
+            
+            // MainActorでUI関連の変数を更新
+            await MainActor.run {
                 // アートワークURLを取得
                 if let artwork = foundSong.artwork {
                     artworkURL = artwork.url(width: 400, height: 400)
+                    print("✅ Artwork URL set")
                 }
                 
                 duration = foundSong.duration ?? 0
-                
-                // このトラックのキューを設定
-                player.queue = [foundSong]
-                
-                // 自動再生がオンの場合のみ再生開始
-                if autoPlayOnOpen {
+                print("✅ Duration: \(duration)")
+            }
+            
+            // このトラックのキューを設定
+            player.queue = [foundSong]
+            
+            // 自動再生がオンの場合のみ再生開始
+            if autoPlayOnOpen {
+                do {
                     try await player.play()
                     
                     // 再生開始後にハイライト位置へシーク
                     if let start = track.chorusStartSeconds {
                         player.playbackTime = max(0, start - 2)
-                        playbackTime = player.playbackTime
+                        await MainActor.run {
+                            playbackTime = player.playbackTime
+                        }
                     } else {
                         player.playbackTime = 0
-                        playbackTime = 0
+                        await MainActor.run {
+                            playbackTime = 0
+                        }
                     }
+                } catch {
+                    print("❌ Player play error: \(error)")
                 }
-            } catch {
-                print("Player setup error: \(error)")
             }
         }
     }
