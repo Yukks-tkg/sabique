@@ -94,10 +94,11 @@ struct SongSearchView: View {
                             List {
                                 Section(header: Text(sectionTitle).foregroundColor(.secondary)) {
                                     ForEach(displayedSongs, id: \.id) { song in
-                                        Button(action: { addSong(song) }) {
-                                            SongRow(song: song)
-                                        }
-                                        .buttonStyle(.plain)
+                                        SongRow(
+                                            song: song,
+                                            onAdd: { addSongDirectly(song) },
+                                            onEdit: { addSongWithEdit(song) }
+                                        )
                                         .listRowInsets(EdgeInsets(top: 4, leading: 8, bottom: 4, trailing: 8))
                                         .listRowBackground(Color.clear)
                                     }
@@ -177,27 +178,31 @@ struct SongSearchView: View {
         }
     }
     
-    private func addSong(_ song: Song) {
+    /// 曲を直接追加（ChorusEditViewなし）
+    private func addSongDirectly(_ song: Song) {
         Task {
-            var catalogSongId = song.id.rawValue
+            let catalogSongId = await getCatalogSongId(song: song)
             
-            // カタログから曲を検索して正しいIDを取得
-            do {
-                var searchRequest = MusicCatalogSearchRequest(term: "\(song.title) \(song.artistName)", types: [Song.self])
-                searchRequest.limit = 5
-                let searchResponse = try await searchRequest.response()
+            await MainActor.run {
+                let track = TrackInPlaylist(
+                    appleMusicSongId: catalogSongId,
+                    title: song.title,
+                    artist: song.artistName,
+                    orderIndex: playlist.tracks.count
+                )
+                track.playlist = playlist
+                modelContext.insert(track)
                 
-                // タイトルとアーティストが一致する曲を探す
-                if let catalogSong = searchResponse.songs.first(where: { $0.title == song.title && $0.artistName == song.artistName }) {
-                    catalogSongId = catalogSong.id.rawValue
-                    print("✅ Found catalog song: \(catalogSong.title) with ID: \(catalogSongId)")
-                } else if let firstSong = searchResponse.songs.first {
-                    catalogSongId = firstSong.id.rawValue
-                    print("⚠️ Using first search result: \(firstSong.title) with ID: \(catalogSongId)")
-                }
-            } catch {
-                print("❌ Catalog search failed, using original ID: \(error)")
+                // ハイライトリストに戻る
+                dismiss()
             }
+        }
+    }
+    
+    /// 曲を追加してChorusEditViewを表示
+    private func addSongWithEdit(_ song: Song) {
+        Task {
+            let catalogSongId = await getCatalogSongId(song: song)
             
             await MainActor.run {
                 let track = TrackInPlaylist(
@@ -213,42 +218,78 @@ struct SongSearchView: View {
             }
         }
     }
+    
+    /// カタログから正しい曲IDを取得
+    private func getCatalogSongId(song: Song) async -> String {
+        var catalogSongId = song.id.rawValue
+        
+        do {
+            var searchRequest = MusicCatalogSearchRequest(term: "\(song.title) \(song.artistName)", types: [Song.self])
+            searchRequest.limit = 5
+            let searchResponse = try await searchRequest.response()
+            
+            if let catalogSong = searchResponse.songs.first(where: { $0.title == song.title && $0.artistName == song.artistName }) {
+                catalogSongId = catalogSong.id.rawValue
+            } else if let firstSong = searchResponse.songs.first {
+                catalogSongId = firstSong.id.rawValue
+            }
+        } catch {
+            print("Catalog search failed: \(error)")
+        }
+        
+        return catalogSongId
+    }
 }
 
 // MARK: - SongRow
 struct SongRow: View {
     let song: Song
+    let onAdd: () -> Void
+    let onEdit: () -> Void
     
     var body: some View {
         HStack {
-            if let artwork = song.artwork {
-                ArtworkImage(artwork, width: 50)
-                    .cornerRadius(6)
-            } else {
-                RoundedRectangle(cornerRadius: 6)
-                    .fill(Color.gray.opacity(0.3))
-                    .frame(width: 50, height: 50)
-                    .overlay {
-                        Image(systemName: "music.note")
-                            .foregroundColor(.gray)
+            // 曲情報エリア（タップでChorusEditView）
+            Button(action: onEdit) {
+                HStack {
+                    if let artwork = song.artwork {
+                        ArtworkImage(artwork, width: 50)
+                            .cornerRadius(6)
+                    } else {
+                        RoundedRectangle(cornerRadius: 6)
+                            .fill(Color.gray.opacity(0.3))
+                            .frame(width: 50, height: 50)
+                            .overlay {
+                                Image(systemName: "music.note")
+                                    .foregroundColor(.gray)
+                            }
                     }
+                    
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text(song.title)
+                            .font(.headline)
+                            .lineLimit(1)
+                        Text(song.artistName)
+                            .font(.subheadline)
+                            .foregroundColor(.secondary)
+                            .lineLimit(1)
+                    }
+                    
+                    Spacer()
+                }
+                .contentShape(Rectangle())
             }
+            .buttonStyle(.plain)
             
-            VStack(alignment: .leading, spacing: 4) {
-                Text(song.title)
-                    .font(.headline)
-                    .lineLimit(1)
-                Text(song.artistName)
-                    .font(.subheadline)
-                    .foregroundColor(.secondary)
-                    .lineLimit(1)
+            // +ボタン（タップで直接追加）
+            Button(action: onAdd) {
+                Image(systemName: "plus.circle")
+                    .font(.title2)
+                    .foregroundColor(Color(red: 1.0, green: 0.5, blue: 0.3))
+                    .frame(width: 44, height: 44)
+                    .contentShape(Rectangle())
             }
-            
-            Spacer()
-            
-            Image(systemName: "plus.circle")
-                .font(.title2)
-                .foregroundColor(Color(red: 1.0, green: 0.5, blue: 0.3))
+            .buttonStyle(.plain)
         }
         .padding(.vertical, 4)
     }

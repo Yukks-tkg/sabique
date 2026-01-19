@@ -127,6 +127,7 @@ struct PlaylistListView: View {
                         }
                     } label: {
                         Image(systemName: "plus")
+                            .font(.title3)
                     }
                 }
             }
