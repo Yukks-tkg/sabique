@@ -271,23 +271,6 @@
         }
       }
     },
-    "for_you" : {
-      "extractionState" : "stale",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "For You"
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "おすすめ"
-          }
-        }
-      }
-    },
     "highlight_list" : {
       "localizations" : {
         "en" : {
@@ -432,23 +415,6 @@
         }
       }
     },
-    "library" : {
-      "extractionState" : "stale",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Library"
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "ライブラリ"
-          }
-        }
-      }
-    },
     "loading" : {
       "localizations" : {
         "en" : {
@@ -541,40 +507,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Apple Musicライブラリにプレイリストがありません"
-          }
-        }
-      }
-    },
-    "no_recently_played" : {
-      "extractionState" : "stale",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "No Recently Played Songs"
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "最近再生した曲がありません"
-          }
-        }
-      }
-    },
-    "no_recently_played_description" : {
-      "extractionState" : "stale",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Songs will appear here when you play them in Apple Music"
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Apple Musicで曲を再生すると、ここに表示されます"
           }
         }
       }
@@ -723,23 +655,6 @@
         }
       }
     },
-    "recently_played" : {
-      "extractionState" : "stale",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Recently Played"
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "最近再生した曲"
-          }
-        }
-      }
-    },
     "Sabique %@" : {
       "localizations" : {
         "en" : {
@@ -884,23 +799,6 @@
         }
       }
     },
-    "top_charts" : {
-      "extractionState" : "stale",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Top Charts"
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "チャート"
-          }
-        }
-      }
-    },
     "track_count_format" : {
       "localizations" : {
         "en" : {
@@ -934,7 +832,14 @@
       }
     },
     "曲名を検索（例: Official髭男dism）" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "曲名を検索（例: Official髭男dism）"
+          }
+        }
+      }
     }
   },
   "version" : "1.1"
