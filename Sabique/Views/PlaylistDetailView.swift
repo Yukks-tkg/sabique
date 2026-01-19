@@ -62,7 +62,7 @@ struct PlaylistDetailView: View {
                 // 曲リスト
                 Section {
                     if playlist.sortedTracks.isEmpty {
-                        Text("曲がありません")
+                        Text(String(localized: "no_songs"))
                             .foregroundColor(.secondary)
                             .frame(maxWidth: .infinity, alignment: .center)
                             .padding()
@@ -94,7 +94,7 @@ struct PlaylistDetailView: View {
                             Image(systemName: "plus.circle")
                                 .font(.title2)
                                 .foregroundColor(.primary)
-                            Text("トラックを追加")
+                            Text(String(localized: "add_track"))
                                 .foregroundColor(.primary)
                         }
                         .padding(.vertical, 8)
@@ -137,7 +137,7 @@ struct PlaylistDetailView: View {
                             HStack(spacing: 12) {
                                 Image(systemName: playerManager.isPlaying ? "stop.fill" : "play.fill")
                                     .font(.title3)
-                                Text(playerManager.isPlaying ? "停止" : "再生")
+                                Text(playerManager.isPlaying ? String(localized: "stop") : String(localized: "play"))
                                     .font(.headline)
                                     .bold()
                             }
@@ -176,7 +176,7 @@ struct PlaylistDetailView: View {
                 .animation(nil, value: playerManager.isPlaying)
             }
         }
-        .navigationTitle("ハイライトリスト")
+        .navigationTitle(String(localized: "highlight_list"))
         .preferredColorScheme(.dark)
         .toolbar {
             // エクスポートボタン

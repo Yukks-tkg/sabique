@@ -17,19 +17,38 @@ struct SongSearchView: View {
     
     @State private var searchKeyword = ""
     @State private var songs: MusicItemCollection<Song> = []
+    @State private var recentlyPlayedSongs: [Song] = []
     @State private var isSearching = false
+    @State private var isLoadingRecent = false
     @State private var authorizationStatus: MusicAuthorization.Status = .notDetermined
     @State private var addedTrack: TrackInPlaylist?
     @State private var showingChorusEdit = false
+    
+    /// 表示する曲リスト（検索中は検索結果、それ以外は最近再生した曲）
+    private var displayedSongs: [Song] {
+        if !searchKeyword.isEmpty {
+            return Array(songs)
+        } else {
+            return recentlyPlayedSongs
+        }
+    }
+    
+    private var sectionTitle: String {
+        if !searchKeyword.isEmpty {
+            return String(localized: "search_results")
+        } else {
+            return String(localized: "recently_played")
+        }
+    }
     
     var body: some View {
         NavigationStack {
             Group {
                 if authorizationStatus != .authorized {
                     ContentUnavailableView(
-                        "Apple Musicへのアクセスが必要です",
+                        String(localized: "apple_music_access_required"),
                         systemImage: "music.note",
-                        description: Text("設定アプリからApple Musicへのアクセスを許可してください")
+                        description: Text(String(localized: "apple_music_access_description"))
                     )
                 } else {
                     VStack {
@@ -37,7 +56,7 @@ struct SongSearchView: View {
                         HStack {
                             Image(systemName: "magnifyingglass")
                                 .foregroundColor(.secondary)
-                            TextField("曲名またはアーティスト名", text: $searchKeyword)
+                            TextField(String(localized: "search_placeholder"), text: $searchKeyword)
                                 .textFieldStyle(.plain)
                                 .onSubmit {
                                     Task { await searchMusic() }
@@ -58,38 +77,68 @@ struct SongSearchView: View {
                         .cornerRadius(20)
                         .padding(.horizontal)
                         
-                        // 検索結果
-                        if isSearching {
-                            ProgressView("検索中...")
+                        // コンテンツ
+                        if isSearching || isLoadingRecent {
+                            ProgressView(isSearching ? String(localized: "searching") : String(localized: "loading"))
                                 .frame(maxHeight: .infinity)
-                        } else if songs.isEmpty && !searchKeyword.isEmpty {
-                            ContentUnavailableView.search(text: searchKeyword)
-                        } else {
-                            List(songs) { song in
-                                Button(action: { addSong(song) }) {
-                                    SongRow(song: song)
-                                }
-                                .buttonStyle(.plain)
+                        } else if displayedSongs.isEmpty {
+                            if !searchKeyword.isEmpty {
+                                ContentUnavailableView.search(text: searchKeyword)
+                            } else {
+                                ContentUnavailableView(
+                                    String(localized: "no_recently_played"),
+                                    systemImage: "clock",
+                                    description: Text(String(localized: "no_recently_played_description"))
+                                )
                             }
+                        } else {
+                            List {
+                                Section(header: Text(sectionTitle).foregroundColor(.secondary)) {
+                                    ForEach(displayedSongs, id: \.id) { song in
+                                        Button(action: { addSong(song) }) {
+                                            SongRow(song: song)
+                                        }
+                                        .buttonStyle(.plain)
+                                    }
+                                }
+                            }
+                            .listStyle(.plain)
                         }
                     }
                 }
             }
-            .navigationTitle("曲を追加")
+            .navigationTitle(String(localized: "add_song"))
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
-                    Button("閉じる") { dismiss() }
+                    Button(String(localized: "close")) { dismiss() }
                 }
             }
             .onAppear {
                 Task {
                     authorizationStatus = await MusicAuthorization.request()
+                    if authorizationStatus == .authorized {
+                        await loadRecentlyPlayedSongs()
+                    }
                 }
             }
             .sheet(item: $addedTrack, onDismiss: { dismiss() }) { track in
                 ChorusEditView(track: track)
             }
+        }
+    }
+    
+    /// 最近再生した曲を取得
+    private func loadRecentlyPlayedSongs() async {
+        isLoadingRecent = true
+        defer { isLoadingRecent = false }
+        
+        do {
+            let request = MusicRecentlyPlayedRequest<Song>()
+            let response = try await request.response()
+            recentlyPlayedSongs = Array(response.items.prefix(20))
+        } catch {
+            print("Recently played songs load error: \(error)")
         }
     }
     

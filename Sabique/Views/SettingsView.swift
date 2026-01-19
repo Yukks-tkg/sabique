@@ -12,27 +12,27 @@ struct SettingsView: View {
     var body: some View {
         NavigationStack {
             List {
-                Section("再生設定") {
+                Section(String(localized: "playback_settings")) {
                     Toggle(isOn: $autoPlayOnOpen) {
                         VStack(alignment: .leading, spacing: 4) {
-                            Text("自動再生")
-                            Text("ハイライト設定画面を開いたときに自動的に再生を開始")
+                            Text(String(localized: "auto_play"))
+                            Text(String(localized: "auto_play_description"))
                                 .font(.caption)
                                 .foregroundColor(.secondary)
                         }
                     }
                 }
                 
-                Section("このアプリについて") {
-                    Text("Sabiqueは、Apple Musicの曲をハイライトだけで繋いで再生できる音楽アプリです。")
+                Section(String(localized: "about_this_app")) {
+                    Text(String(localized: "app_description"))
                         .font(.subheadline)
                         .foregroundColor(.secondary)
                 }
                 
-                Section("法的情報") {
+                Section(String(localized: "legal_info")) {
                     Link(destination: URL(string: "https://example.com/privacy")!) {
                         HStack {
-                            Text("プライバシーポリシー")
+                            Text(String(localized: "privacy_policy"))
                                 .foregroundColor(.primary)
                             Spacer()
                             Image(systemName: "arrow.up.right")
@@ -43,7 +43,7 @@ struct SettingsView: View {
                     
                     Link(destination: URL(string: "https://example.com/terms")!) {
                         HStack {
-                            Text("利用規約")
+                            Text(String(localized: "terms_of_use"))
                                 .foregroundColor(.primary)
                             Spacer()
                             Image(systemName: "arrow.up.right")
@@ -66,11 +66,11 @@ struct SettingsView: View {
                     .padding(.top, 20)
                 }
             }
-            .navigationTitle("設定")
+            .navigationTitle(String(localized: "settings"))
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .confirmationAction) {
-                    Button("完了") {
+                    Button(String(localized: "done")) {
                         dismiss()
                     }
                 }

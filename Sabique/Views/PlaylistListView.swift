@@ -56,9 +56,9 @@ struct PlaylistListView: View {
                 Group {
                     if playlists.isEmpty {
                         ContentUnavailableView(
-                            "プレイリストがありません",
+                            String(localized: "no_playlists"),
                             systemImage: "music.note.list",
-                            description: Text("右上の＋ボタンでプレイリストを作成しましょう")
+                            description: Text(String(localized: "no_playlists_description"))
                         )
                     } else {
                         List {
@@ -85,7 +85,7 @@ struct PlaylistListView: View {
                                     Image(systemName: "plus.circle")
                                         .font(.title2)
                                         .foregroundColor(.primary)
-                                    Text("プレイリストを追加")
+                                    Text(String(localized: "add_playlist"))
                                         .foregroundColor(.primary)
                                 }
                                 .padding(.vertical, 8)
@@ -110,20 +110,20 @@ struct PlaylistListView: View {
                     }
                 }
                 ToolbarItem(placement: .principal) {
-                    Text("プレイリスト")
+                    Text(String(localized: "playlists"))
                         .font(.headline)
                         .bold()
                 }
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Menu {
                         Button(action: { showingCreateSheet = true }) {
-                            Label("新規プレイリスト", systemImage: "plus")
+                            Label(String(localized: "new_playlist"), systemImage: "plus")
                         }
                         Button(action: { showingImportSheet = true }) {
-                            Label("Apple Musicからインポート", systemImage: "music.note")
+                            Label(String(localized: "import_apple_music"), systemImage: "music.note")
                         }
                         Button(action: { showingFileImporter = true }) {
-                            Label("ファイルからインポート", systemImage: "doc.badge.arrow.up")
+                            Label(String(localized: "import_file"), systemImage: "doc.badge.arrow.up")
                         }
                     } label: {
                         Image(systemName: "plus")
@@ -152,10 +152,10 @@ struct PlaylistListView: View {
             ) { result in
                 handleFileImport(result: result)
             }
-            .alert("インポートエラー", isPresented: $showingImportError) {
-                Button("OK", role: .cancel) {}
+            .alert(String(localized: "import_error"), isPresented: $showingImportError) {
+                Button(String(localized: "ok"), role: .cancel) {}
             } message: {
-                Text(importError ?? "不明なエラーが発生しました")
+                Text(importError ?? String(localized: "unknown_error"))
             }
         }
     }
@@ -276,7 +276,7 @@ struct PlaylistRow: View {
                 Text(playlist.name)
                     .font(.headline)
                     .foregroundColor(.primary)
-                Text("\(playlist.trackCount)曲")
+                Text("\(playlist.trackCount)" + String(localized: "track_count_format"))
                     .font(.subheadline)
                     .foregroundColor(.secondary)
             }
@@ -334,16 +334,16 @@ struct CreatePlaylistSheet: View {
     var body: some View {
         NavigationStack {
             Form {
-                TextField("プレイリスト名", text: $playlistName)
+                TextField(String(localized: "playlist_name"), text: $playlistName)
             }
-            .navigationTitle("新規プレイリスト")
+            .navigationTitle(String(localized: "new_playlist"))
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
-                    Button("キャンセル", action: onCancel)
+                    Button(String(localized: "cancel"), action: onCancel)
                 }
                 ToolbarItem(placement: .confirmationAction) {
-                    Button("作成", action: onCreate)
+                    Button(String(localized: "create"), action: onCreate)
                         .disabled(playlistName.trimmingCharacters(in: .whitespaces).isEmpty)
                 }
             }

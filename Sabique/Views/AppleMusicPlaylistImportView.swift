@@ -25,18 +25,18 @@ struct AppleMusicPlaylistImportView: View {
         NavigationStack {
             Group {
                 if isLoading {
-                    ProgressView("プレイリストを読み込み中...")
+                    ProgressView(String(localized: "loading_playlists"))
                 } else if let error = errorMessage {
                     ContentUnavailableView(
-                        "エラー",
+                        String(localized: "error"),
                         systemImage: "exclamationmark.triangle",
                         description: Text(error)
                     )
                 } else if libraryPlaylists.isEmpty {
                     ContentUnavailableView(
-                        "プレイリストがありません",
+                        String(localized: "no_playlists"),
                         systemImage: "music.note.list",
-                        description: Text("Apple Musicライブラリにプレイリストがありません")
+                        description: Text(String(localized: "no_playlists_in_library"))
                     )
                 } else {
                     List(libraryPlaylists) { playlist in
@@ -79,11 +79,11 @@ struct AppleMusicPlaylistImportView: View {
                     }
                 }
             }
-            .navigationTitle("Apple Musicから選択")
+            .navigationTitle(String(localized: "select_from_apple_music"))
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
-                    Button("キャンセル") {
+                    Button(String(localized: "cancel")) {
                         dismiss()
                     }
                     .disabled(isImporting)
@@ -98,7 +98,7 @@ struct AppleMusicPlaylistImportView: View {
                         Color.black.opacity(0.3)
                         VStack(spacing: 12) {
                             ProgressView()
-                            Text("インポート中...")
+                            Text(String(localized: "importing"))
                                 .font(.headline)
                         }
                         .padding(24)

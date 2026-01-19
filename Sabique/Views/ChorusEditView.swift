@@ -342,7 +342,7 @@ struct ChorusEditView: View {
                                 .frame(width: 8, height: 8)
                             
                             VStack(alignment: .leading, spacing: 2) {
-                                Text("開始")
+                                Text(String(localized: "start"))
                                     .font(.caption)
                                     .foregroundColor(.white)
                                 Text(chorusStart.map { formatTime($0) } ?? "--:--")
@@ -382,7 +382,7 @@ struct ChorusEditView: View {
                                 .frame(width: 8, height: 8)
                             
                             VStack(alignment: .leading, spacing: 2) {
-                                Text("終了")
+                                Text(String(localized: "end"))
                                     .font(.caption)
                                     .foregroundColor(.white)
                                 Text(chorusEnd.map { formatTime($0) } ?? "--:--")
@@ -436,7 +436,7 @@ struct ChorusEditView: View {
                     
                     // ハイライト再生ボタン
                     Button(action: togglePreview) {
-                        Label(isPreviewing ? "ハイライト停止" : "ハイライト再生", systemImage: isPreviewing ? "stop.fill" : "repeat")
+                        Label(isPreviewing ? String(localized: "highlight_stop") : String(localized: "highlight_play"), systemImage: isPreviewing ? "stop.fill" : "repeat")
                             .font(.headline)
                             .padding()
                             .frame(maxWidth: .infinity)
@@ -476,7 +476,7 @@ struct ChorusEditView: View {
             } // ZStack
             } // GeometryReader
             .ignoresSafeArea()
-            .navigationTitle("ハイライトを設定")
+            .navigationTitle(String(localized: "highlight_settings"))
             .navigationBarTitleDisplayMode(.inline)
             .toolbarColorScheme(.dark, for: .navigationBar)
             .toolbarBackground(.visible, for: .navigationBar)
