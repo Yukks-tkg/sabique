@@ -440,7 +440,14 @@ struct ChorusEditView: View {
                             .font(.headline)
                             .padding()
                             .frame(maxWidth: .infinity)
-                            .background(isPreviewing ? Color.orange : (canPreview ? Color.accentColor : Color.gray.opacity(0.5)))
+                            .background(
+                                canPreview ?
+                                LinearGradient(
+                                    colors: [Color(red: 1.0, green: 0.6, blue: 0.2), Color(red: 1.0, green: 0.4, blue: 0.4)],
+                                    startPoint: .leading,
+                                    endPoint: .trailing
+                                ) : LinearGradient(colors: [Color.gray.opacity(0.5)], startPoint: .leading, endPoint: .trailing)
+                            )
                             .foregroundColor(.white)
                             .cornerRadius(12)
                     }

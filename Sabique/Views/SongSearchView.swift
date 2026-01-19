@@ -52,10 +52,10 @@ struct SongSearchView: View {
                         .padding()
                         .background(Color.white.opacity(0.1))
                         .overlay(
-                            RoundedRectangle(cornerRadius: 10)
+                            RoundedRectangle(cornerRadius: 20)
                                 .stroke(Color.gray.opacity(0.5), lineWidth: 1)
                         )
-                        .cornerRadius(10)
+                        .cornerRadius(20)
                         .padding(.horizontal)
                         
                         // 検索結果

@@ -147,7 +147,7 @@ struct PlaylistListView: View {
             }
             .fileImporter(
                 isPresented: $showingFileImporter,
-                allowedContentTypes: [UTType.json],
+                allowedContentTypes: [UTType.json, UTType(filenameExtension: "sabique") ?? UTType.data],
                 allowsMultipleSelection: false
             ) { result in
                 handleFileImport(result: result)

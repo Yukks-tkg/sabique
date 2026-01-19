@@ -103,8 +103,7 @@ struct PlaylistDetailView: View {
                     .listRowBackground(Color.clear)
                 } header: {
                     Text(playlist.name)
-                        .font(.subheadline)
-                        .bold()
+                        .font(.system(size: 19, weight: .bold))
                         .foregroundColor(.primary)
                         .padding(.top, 10)
                 }
@@ -120,15 +119,15 @@ struct PlaylistDetailView: View {
             // 再生コントロール（下部に固定）
             if !playlist.sortedTracks.isEmpty {
                 VStack(spacing: 0) {
-                    HStack(spacing: 16) {
+                    HStack(spacing: 20) {
                         // 前のトラックボタン
                         Button(action: { playerManager.previous() }) {
                             Image(systemName: "backward.fill")
                                 .font(.title2)
                                 .foregroundColor(.white)
-                                .frame(width: 44, height: 44)
+                                .frame(width: 50, height: 50)
                                 .background(Color.white.opacity(0.2))
-                                .cornerRadius(12)
+                                .cornerRadius(14)
                         }
                         .disabled(!playerManager.isPlaying)
                         .opacity(playerManager.isPlaying ? 1.0 : 0.4)
@@ -143,11 +142,17 @@ struct PlaylistDetailView: View {
                                     .bold()
                             }
                             .foregroundColor(.white)
-                            .frame(maxWidth: .infinity)
+                            .frame(width: 160)
                             .padding(.vertical, 16)
-                            .background(Color.accentColor)
+                            .background(
+                                LinearGradient(
+                                    colors: [Color(red: 1.0, green: 0.6, blue: 0.2), Color(red: 1.0, green: 0.4, blue: 0.4)],
+                                    startPoint: .leading,
+                                    endPoint: .trailing
+                                )
+                            )
                             .cornerRadius(16)
-                            .shadow(color: Color.accentColor.opacity(0.4), radius: 10, x: 0, y: 5)
+                            .shadow(color: Color(red: 1.0, green: 0.5, blue: 0.3).opacity(0.4), radius: 10, x: 0, y: 5)
                         }
                         .buttonStyle(.plain)
                         
@@ -156,16 +161,17 @@ struct PlaylistDetailView: View {
                             Image(systemName: "forward.fill")
                                 .font(.title2)
                                 .foregroundColor(.white)
-                                .frame(width: 44, height: 44)
+                                .frame(width: 50, height: 50)
                                 .background(Color.white.opacity(0.2))
-                                .cornerRadius(12)
+                                .cornerRadius(14)
                         }
                         .disabled(!playerManager.isPlaying)
                         .opacity(playerManager.isPlaying ? 1.0 : 0.4)
                     }
-                    .padding(.horizontal)
+                    .frame(maxWidth: .infinity)
                     .padding(.vertical, 12)
                 }
+                .frame(maxWidth: .infinity)
                 .background(.ultraThinMaterial)
                 .animation(nil, value: playerManager.isPlaying)
             }

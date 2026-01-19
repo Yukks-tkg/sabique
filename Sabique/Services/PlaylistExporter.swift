@@ -75,7 +75,14 @@ class PlaylistExporter {
     static func exportToFile(playlist: Playlist) async throws -> URL {
         let data = try await export(playlist: playlist)
         
-        let fileName = "\(playlist.name.replacingOccurrences(of: " ", with: "_"))_export.json"
+        // 日付フォーマット（YYYYMMDD）
+        let dateFormatter = DateFormatter()
+        dateFormatter.dateFormat = "yyyyMMdd"
+        let dateString = dateFormatter.string(from: Date())
+        
+        // ファイル名: プレイリスト名_日付.sabique
+        let sanitizedName = playlist.name.replacingOccurrences(of: " ", with: "_")
+        let fileName = "\(sanitizedName)_\(dateString).sabique"
         let tempURL = FileManager.default.temporaryDirectory.appendingPathComponent(fileName)
         
         try data.write(to: tempURL)

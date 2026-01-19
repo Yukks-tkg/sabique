@@ -20,11 +20,22 @@ class PlaylistImporter {
         defer { url.stopAccessingSecurityScopedResource() }
         
         // JSONを読み込み
-        let data = try Data(contentsOf: url)
+        let data: Data
+        do {
+            data = try Data(contentsOf: url)
+        } catch {
+            throw ImportError.corruptedFile
+        }
+        
         let decoder = JSONDecoder()
         decoder.dateDecodingStrategy = .iso8601
         
-        let exportedPlaylist = try decoder.decode(ExportedPlaylist.self, from: data)
+        let exportedPlaylist: ExportedPlaylist
+        do {
+            exportedPlaylist = try decoder.decode(ExportedPlaylist.self, from: data)
+        } catch {
+            throw ImportError.invalidFormat
+        }
         
         // プレイリストを作成
         let playlist = Playlist(name: exportedPlaylist.name, orderIndex: 0)
@@ -109,15 +120,18 @@ enum ImportError: LocalizedError {
     case accessDenied
     case invalidFormat
     case noTracksFound
+    case corruptedFile
     
     var errorDescription: String? {
         switch self {
         case .accessDenied:
             return "ファイルにアクセスできません"
         case .invalidFormat:
-            return "ファイル形式が無効です"
+            return "ファイル形式が正しくありません。Sabiqueでエクスポートされたファイルか確認してください。"
         case .noTracksFound:
             return "曲が見つかりませんでした"
+        case .corruptedFile:
+            return "ファイルが破損しているか、読み込めません。別のファイルをお試しください。"
         }
     }
 }
