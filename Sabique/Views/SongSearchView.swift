@@ -178,16 +178,40 @@ struct SongSearchView: View {
     }
     
     private func addSong(_ song: Song) {
-        let track = TrackInPlaylist(
-            appleMusicSongId: song.id.rawValue,
-            title: song.title,
-            artist: song.artistName,
-            orderIndex: playlist.tracks.count
-        )
-        track.playlist = playlist
-        modelContext.insert(track)
-        
-        addedTrack = track
+        Task {
+            var catalogSongId = song.id.rawValue
+            
+            // カタログから曲を検索して正しいIDを取得
+            do {
+                var searchRequest = MusicCatalogSearchRequest(term: "\(song.title) \(song.artistName)", types: [Song.self])
+                searchRequest.limit = 5
+                let searchResponse = try await searchRequest.response()
+                
+                // タイトルとアーティストが一致する曲を探す
+                if let catalogSong = searchResponse.songs.first(where: { $0.title == song.title && $0.artistName == song.artistName }) {
+                    catalogSongId = catalogSong.id.rawValue
+                    print("✅ Found catalog song: \(catalogSong.title) with ID: \(catalogSongId)")
+                } else if let firstSong = searchResponse.songs.first {
+                    catalogSongId = firstSong.id.rawValue
+                    print("⚠️ Using first search result: \(firstSong.title) with ID: \(catalogSongId)")
+                }
+            } catch {
+                print("❌ Catalog search failed, using original ID: \(error)")
+            }
+            
+            await MainActor.run {
+                let track = TrackInPlaylist(
+                    appleMusicSongId: catalogSongId,
+                    title: song.title,
+                    artist: song.artistName,
+                    orderIndex: playlist.tracks.count
+                )
+                track.playlist = playlist
+                modelContext.insert(track)
+                
+                addedTrack = track
+            }
+        }
     }
 }
 
@@ -224,7 +248,7 @@ struct SongRow: View {
             
             Image(systemName: "plus.circle")
                 .font(.title2)
-                .foregroundColor(.accentColor)
+                .foregroundColor(Color(red: 1.0, green: 0.5, blue: 0.3))
         }
         .padding(.vertical, 4)
     }
