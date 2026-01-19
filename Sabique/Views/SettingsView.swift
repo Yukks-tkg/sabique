@@ -7,18 +7,22 @@ import SwiftUI
 
 struct SettingsView: View {
     @Environment(\.dismiss) private var dismiss
-    @AppStorage("autoPlayOnOpen") private var autoPlayOnOpen = false
+    @AppStorage("autoPlayOnOpen") private var autoPlayOnOpen = true
+    @State private var developerTapCount = 0
+    @State private var isDeveloperMode = false
     
     var body: some View {
         NavigationStack {
             List {
-                Section(String(localized: "playback_settings")) {
-                    Toggle(isOn: $autoPlayOnOpen) {
-                        VStack(alignment: .leading, spacing: 4) {
-                            Text(String(localized: "auto_play"))
-                            Text(String(localized: "auto_play_description"))
-                                .font(.caption)
-                                .foregroundColor(.secondary)
+                if isDeveloperMode {
+                    Section(String(localized: "playback_settings")) {
+                        Toggle(isOn: $autoPlayOnOpen) {
+                            VStack(alignment: .leading, spacing: 4) {
+                                Text(String(localized: "auto_play"))
+                                Text(String(localized: "auto_play_description"))
+                                    .font(.caption)
+                                    .foregroundColor(.secondary)
+                            }
                         }
                     }
                 }
@@ -57,7 +61,19 @@ struct SettingsView: View {
                 Section {
                 } footer: {
                     VStack(spacing: 4) {
-                        Text("Sabique v1.0.0")
+                        let fullVersion = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "1.0"
+                        let versionParts = fullVersion.split(separator: ".")
+                        let version = versionParts.prefix(2).joined(separator: ".")
+                        Text("Sabique \(version)")
+                            .onTapGesture {
+                                developerTapCount += 1
+                                if developerTapCount >= 7 {
+                                    withAnimation {
+                                        isDeveloperMode.toggle()
+                                    }
+                                    developerTapCount = 0
+                                }
+                            }
                         Text("© 2026 Yuki Takagi")
                     }
                     .font(.footnote)
