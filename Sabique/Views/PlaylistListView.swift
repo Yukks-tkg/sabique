@@ -44,11 +44,14 @@ struct PlaylistListView: View {
                         } placeholder: {
                             Color.black
                         }
+                        .id(url) // URLが変わったらビューを再作成
+                        .transition(.opacity)
                     } else {
                         Color(.systemBackground)
                     }
                 }
                 .ignoresSafeArea()
+                .animation(.easeInOut(duration: 0.5), value: backgroundArtworkURL)
                 
                 // オーバーレイ
                 Color.black.opacity(0.25)
