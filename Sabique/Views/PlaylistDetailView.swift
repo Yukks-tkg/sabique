@@ -11,6 +11,7 @@ import MusicKit
 
 struct PlaylistDetailView: View {
     @Environment(\.modelContext) private var modelContext
+    @EnvironmentObject private var storeManager: StoreManager
     @Bindable var playlist: Playlist
     
     @State private var showingAddSong = false
@@ -20,6 +21,7 @@ struct PlaylistDetailView: View {
     @State private var isExporting = false
     @State private var exportedFileURL: URL?
     @State private var showingShareSheet = false
+    @State private var showingPaywall = false
     
     // 1曲目のID（並べ替え検知用）
     private var firstTrackId: String? {
@@ -89,7 +91,7 @@ struct PlaylistDetailView: View {
                     }
                     
                     // トラックを追加ボタン
-                    Button(action: { showingAddSong = true }) {
+                    Button(action: { handleAddTrack() }) {
                         HStack(spacing: 12) {
                             Image(systemName: "plus.circle")
                                 .font(.title2)
@@ -194,7 +196,7 @@ struct PlaylistDetailView: View {
             
             // 曲追加ボタン
             ToolbarItem(placement: .navigationBarTrailing) {
-                Button(action: { showingAddSong = true }) {
+                Button(action: { handleAddTrack() }) {
                     Image(systemName: "plus")
                 }
             }
@@ -209,6 +211,23 @@ struct PlaylistDetailView: View {
             if let url = exportedFileURL {
                 ShareSheet(activityItems: [url])
             }
+        }
+        .sheet(isPresented: $showingPaywall) {
+            PaywallView()
+        }
+    }
+    
+    /// トラック追加制限をチェック
+    private var canAddTrack: Bool {
+        storeManager.isPremium || playlist.trackCount < FreeTierLimits.maxTracksPerPlaylist
+    }
+    
+    /// トラック追加ボタンの処理
+    private func handleAddTrack() {
+        if canAddTrack {
+            showingAddSong = true
+        } else {
+            showingPaywall = true
         }
     }
     

@@ -13,6 +13,7 @@ import UniformTypeIdentifiers
 struct PlaylistListView: View {
     @Environment(\.modelContext) private var modelContext
     @EnvironmentObject private var playerManager: ChorusPlayerManager
+    @EnvironmentObject private var storeManager: StoreManager
     @Query(sort: \Playlist.orderIndex) private var playlists: [Playlist]
     
     @State private var showingCreateSheet = false
@@ -24,6 +25,7 @@ struct PlaylistListView: View {
     @State private var showingImportError = false
     @State private var newPlaylistName = ""
     @State private var backgroundArtworkURL: URL?
+    @State private var showingPaywall = false
     
     var body: some View {
         NavigationStack {
@@ -80,7 +82,7 @@ struct PlaylistListView: View {
                             .onMove(perform: movePlaylists)
                             
                             // プレイリストを追加ボタン
-                            Button(action: { showingCreateSheet = true }) {
+                            Button(action: { handleAddPlaylist() }) {
                                 HStack(spacing: 12) {
                                     Image(systemName: "plus.circle")
                                         .font(.title2)
@@ -116,13 +118,13 @@ struct PlaylistListView: View {
                 }
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Menu {
-                        Button(action: { showingCreateSheet = true }) {
+                        Button(action: { handleAddPlaylist() }) {
                             Label(String(localized: "new_playlist"), systemImage: "plus")
                         }
-                        Button(action: { showingImportSheet = true }) {
+                        Button(action: { handleImportAppleMusic() }) {
                             Label(String(localized: "import_apple_music"), systemImage: "music.note")
                         }
-                        Button(action: { showingFileImporter = true }) {
+                        Button(action: { handleImportFile() }) {
                             Label(String(localized: "import_file"), systemImage: "doc.badge.arrow.up")
                         }
                     } label: {
@@ -158,6 +160,41 @@ struct PlaylistListView: View {
             } message: {
                 Text(importError ?? String(localized: "unknown_error"))
             }
+            .sheet(isPresented: $showingPaywall) {
+                PaywallView()
+            }
+        }
+    }
+    
+    /// プレイリスト追加制限をチェック
+    private var canAddPlaylist: Bool {
+        storeManager.isPremium || playlists.count < FreeTierLimits.maxPlaylists
+    }
+    
+    /// プレイリスト追加ボタンの処理
+    private func handleAddPlaylist() {
+        if canAddPlaylist {
+            showingCreateSheet = true
+        } else {
+            showingPaywall = true
+        }
+    }
+    
+    /// Apple Musicインポートの処理
+    private func handleImportAppleMusic() {
+        if canAddPlaylist {
+            showingImportSheet = true
+        } else {
+            showingPaywall = true
+        }
+    }
+    
+    /// ファイルインポートの処理
+    private func handleImportFile() {
+        if canAddPlaylist {
+            showingFileImporter = true
+        } else {
+            showingPaywall = true
         }
     }
     

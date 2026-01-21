@@ -7,13 +7,82 @@ import SwiftUI
 
 struct SettingsView: View {
     @Environment(\.dismiss) private var dismiss
+    @EnvironmentObject private var storeManager: StoreManager
     @AppStorage("autoPlayOnOpen") private var autoPlayOnOpen = true
     @State private var developerTapCount = 0
     @State private var isDeveloperMode = false
+    @State private var showingPaywall = false
+    @State private var isRestoring = false
     
     var body: some View {
         NavigationStack {
             List {
+                // プレミアムセクション
+                if storeManager.isPremium {
+                    Section {
+                        HStack {
+                            Image(systemName: "star.circle.fill")
+                                .foregroundStyle(
+                                    LinearGradient(
+                                        colors: [
+                                            Color(red: 1.0, green: 0.85, blue: 0.3),
+                                            Color(red: 1.0, green: 0.55, blue: 0.3),
+                                            Color(red: 0.95, green: 0.35, blue: 0.35)
+                                        ],
+                                        startPoint: .topLeading,
+                                        endPoint: .bottomTrailing
+                                    )
+                                )
+                            Text(String(localized: "premium_badge"))
+                                .fontWeight(.semibold)
+                            Spacer()
+                            Image(systemName: "checkmark.seal.fill")
+                                .foregroundColor(.green)
+                        }
+                    } header: {
+                        Text(String(localized: "premium_status"))
+                    }
+                } else {
+                    Section {
+                        Button(action: { showingPaywall = true }) {
+                            HStack {
+                                Image(systemName: "star.circle.fill")
+                                    .foregroundStyle(
+                                        LinearGradient(
+                                            colors: [
+                                                Color(red: 1.0, green: 0.85, blue: 0.3),
+                                                Color(red: 1.0, green: 0.55, blue: 0.3),
+                                                Color(red: 0.95, green: 0.35, blue: 0.35)
+                                            ],
+                                            startPoint: .topLeading,
+                                            endPoint: .bottomTrailing
+                                        )
+                                    )
+                                Text(String(localized: "upgrade_to_premium"))
+                                Spacer()
+                                Image(systemName: "chevron.right")
+                                    .foregroundColor(.secondary)
+                            }
+                        }
+                        
+                        Button(action: restorePurchases) {
+                            HStack {
+                                if isRestoring {
+                                    ProgressView()
+                                        .frame(width: 20)
+                                } else {
+                                    Image(systemName: "arrow.counterclockwise")
+                                }
+                                Text(String(localized: "restore_purchases"))
+                                Spacer()
+                            }
+                        }
+                        .disabled(isRestoring)
+                    } header: {
+                        Text(String(localized: "premium_section"))
+                    }
+                }
+                
                 if isDeveloperMode {
                     Section(String(localized: "playback_settings")) {
                         Toggle(isOn: $autoPlayOnOpen) {
@@ -91,10 +160,23 @@ struct SettingsView: View {
                     }
                 }
             }
+            .sheet(isPresented: $showingPaywall) {
+                PaywallView()
+            }
+        }
+    }
+    
+    private func restorePurchases() {
+        isRestoring = true
+        Task {
+            await storeManager.restorePurchases()
+            isRestoring = false
         }
     }
 }
 
 #Preview {
     SettingsView()
+        .environmentObject(StoreManager())
 }
+
