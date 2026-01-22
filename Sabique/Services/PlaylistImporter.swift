@@ -7,12 +7,29 @@ import Foundation
 import MusicKit
 import SwiftData
 
+// MARK: - Import Result
+
+struct ImportResult {
+    let playlist: Playlist
+    let importedTrackCount: Int
+    let skippedTrackCount: Int
+    
+    var hasSkippedTracks: Bool {
+        skippedTrackCount > 0
+    }
+}
+
 // MARK: - Playlist Importer
 
 class PlaylistImporter {
     
     /// JSONファイルからプレイリストをインポート
-    static func importFromFile(url: URL, modelContext: ModelContext) async throws -> Playlist {
+    /// - Parameters:
+    ///   - url: インポートするJSONファイルのURL
+    ///   - modelContext: SwiftDataのモデルコンテキスト
+    ///   - isPremium: プレミアムユーザーかどうか
+    /// - Returns: インポート結果（プレイリスト、インポートされた曲数、スキップされた曲数）
+    static func importFromFile(url: URL, modelContext: ModelContext, isPremium: Bool) async throws -> ImportResult {
         // ファイルにアクセス
         guard url.startAccessingSecurityScopedResource() else {
             throw ImportError.accessDenied
@@ -41,8 +58,15 @@ class PlaylistImporter {
         let playlist = Playlist(name: exportedPlaylist.name, orderIndex: 0)
         modelContext.insert(playlist)
         
+        // 無料版の場合はトラック数を制限
+        let maxTracks = isPremium ? exportedPlaylist.tracks.count : FreeTierLimits.maxTracksPerPlaylist
+        let tracksToImport = Array(exportedPlaylist.tracks.prefix(maxTracks))
+        let skippedCount = max(0, exportedPlaylist.tracks.count - maxTracks)
+        
+        var importedCount = 0
+        
         // トラックを追加
-        for (index, exportedTrack) in exportedPlaylist.tracks.enumerated() {
+        for (index, exportedTrack) in tracksToImport.enumerated() {
             // まずISRCで検索、なければAppleMusicIdで検索
             var songId: String? = nil
             
@@ -73,10 +97,15 @@ class PlaylistImporter {
                 )
                 track.playlist = playlist
                 modelContext.insert(track)
+                importedCount += 1
             }
         }
         
-        return playlist
+        return ImportResult(
+            playlist: playlist,
+            importedTrackCount: importedCount,
+            skippedTrackCount: skippedCount
+        )
     }
     
     /// ISRCで曲を検索

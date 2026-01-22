@@ -1069,6 +1069,38 @@
           }
         }
       }
+    },
+    "import_limit_title" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Import Limited"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "インポート制限"
+          }
+        }
+      }
+    },
+    "import_limit_message_%lld" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld track(s) were not imported due to free version limits. Upgrade to Premium for unlimited tracks."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "無料版の制限により%lld曲がインポートされませんでした。プレミアムにアップグレードすると無制限に追加できます。"
+          }
+        }
+      }
     }
   },
   "version" : "1.1"

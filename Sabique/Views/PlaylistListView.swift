@@ -26,6 +26,8 @@ struct PlaylistListView: View {
     @State private var newPlaylistName = ""
     @State private var backgroundArtworkURL: URL?
     @State private var showingPaywall = false
+    @State private var showingImportLimitAlert = false
+    @State private var skippedTrackCount = 0
     
     var body: some View {
         NavigationStack {
@@ -163,6 +165,14 @@ struct PlaylistListView: View {
             } message: {
                 Text(importError ?? String(localized: "unknown_error"))
             }
+            .alert(String(localized: "import_limit_title"), isPresented: $showingImportLimitAlert) {
+                Button(String(localized: "upgrade_to_premium")) {
+                    showingPaywall = true
+                }
+                Button(String(localized: "ok"), role: .cancel) {}
+            } message: {
+                Text(String(localized: "import_limit_message_\(skippedTrackCount)"))
+            }
             .sheet(isPresented: $showingPaywall) {
                 PaywallView()
             }
@@ -271,9 +281,20 @@ struct PlaylistListView: View {
                         playlist.orderIndex += 1
                     }
                     
-                    let _ = try await PlaylistImporter.importFromFile(url: url, modelContext: modelContext)
+                    let importResult = try await PlaylistImporter.importFromFile(
+                        url: url,
+                        modelContext: modelContext,
+                        isPremium: storeManager.isPremium
+                    )
+                    
                     await MainActor.run {
                         isImporting = false
+                        
+                        // スキップされたトラックがある場合は警告を表示
+                        if importResult.hasSkippedTracks {
+                            skippedTrackCount = importResult.skippedTrackCount
+                            showingImportLimitAlert = true
+                        }
                     }
                 } catch {
                     await MainActor.run {
