@@ -18,6 +18,8 @@ class ChorusPlayerManager: ObservableObject {
     private var tracks: [TrackInPlaylist] = []
     private let player = ApplicationMusicPlayer.shared
     private var timerCancellable: AnyCancellable?
+    private var currentPlayTask: Task<Void, Never>?
+    private var isTransitioning = false
     
     init() {
         // タイマーで制御するため、playbackObserverは使用しない
@@ -34,6 +36,7 @@ class ChorusPlayerManager: ObservableObject {
         
         currentTrackIndex = 0
         isPlaying = true
+        isTransitioning = false
         
         playCurrentTrack()
     }
@@ -41,8 +44,11 @@ class ChorusPlayerManager: ObservableObject {
     /// 再生を停止
     func stop() {
         isPlaying = false
+        isTransitioning = false
         timerCancellable?.cancel()
         timerCancellable = nil
+        currentPlayTask?.cancel()
+        currentPlayTask = nil
         player.stop()
         currentTrack = nil
         print("🛑 再生停止")
@@ -50,6 +56,8 @@ class ChorusPlayerManager: ObservableObject {
     
     /// 次の曲へ
     func next() {
+        guard !isTransitioning else { return }
+        
         currentTrackIndex += 1
         
         if currentTrackIndex >= tracks.count {
@@ -63,6 +71,8 @@ class ChorusPlayerManager: ObservableObject {
     
     /// 前の曲へ
     func previous() {
+        guard !isTransitioning else { return }
+        
         currentTrackIndex -= 1
         
         if currentTrackIndex < 0 {
@@ -81,10 +91,16 @@ class ChorusPlayerManager: ObservableObject {
             return
         }
         
+        // 既存のタスクとタイマーをキャンセル
+        currentPlayTask?.cancel()
+        timerCancellable?.cancel()
+        
+        isTransitioning = true
+        
         let track = tracks[currentTrackIndex]
         currentTrack = track
         
-        Task {
+        currentPlayTask = Task {
             do {
                 // Apple Music IDから曲を取得
                 let request = MusicCatalogResourceRequest<Song>(
@@ -93,8 +109,12 @@ class ChorusPlayerManager: ObservableObject {
                 )
                 let response = try await request.response()
                 
+                // タスクがキャンセルされていないか確認
+                guard !Task.isCancelled else { return }
+                
                 guard let song = response.items.first else {
                     print("曲が見つかりません: \(track.title)")
+                    isTransitioning = false
                     next()
                     return
                 }
@@ -103,17 +123,24 @@ class ChorusPlayerManager: ObservableObject {
                 player.queue = [song]
                 try await player.play()
                 
+                // タスクがキャンセルされていないか確認
+                guard !Task.isCancelled else { return }
+                
                 let startTime = track.chorusStartSeconds ?? 0
                 let endTime = track.chorusEndSeconds ?? (song.duration ?? 0)
                 
                 // 開始位置へシーク
                 player.playbackTime = startTime
                 
+                isTransitioning = false
+                
                 // 次の曲へのタイマーをセット
                 scheduleNextTrack(endTime: endTime)
                 
             } catch {
+                guard !Task.isCancelled else { return }
                 print("再生エラー: \(error)")
+                isTransitioning = false
                 next()
             }
         }
@@ -128,7 +155,7 @@ class ChorusPlayerManager: ObservableObject {
         timerCancellable = Timer.publish(every: 0.1, on: .main, in: .common)
             .autoconnect()
             .sink { [weak self] _ in
-                guard let self = self, self.isPlaying else { return }
+                guard let self = self, self.isPlaying, !self.isTransitioning else { return }
                 
                 let currentTime = self.player.playbackTime
                 
@@ -141,3 +168,4 @@ class ChorusPlayerManager: ObservableObject {
             }
     }
 }
+
