@@ -588,6 +588,22 @@
         }
       }
     },
+    "no_songs_description" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Add tracks using the + button at the top right"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "右上の＋ボタンでトラックを追加しましょう"
+          }
+        }
+      }
+    },
     "no_songs_in_source" : {
       "localizations" : {
         "en" : {

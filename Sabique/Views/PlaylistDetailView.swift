@@ -60,59 +60,76 @@ struct PlaylistDetailView: View {
                 .ignoresSafeArea()
             
             // コンテンツ
-            List {
-                // 曲リスト
-                Section {
-                    if playlist.sortedTracks.isEmpty {
-                        Text(String(localized: "no_songs"))
-                            .foregroundColor(.secondary)
-                            .frame(maxWidth: .infinity, alignment: .center)
-                            .padding()
-                    } else {
-                        ForEach(playlist.sortedTracks) { track in
-                            let isCurrentlyPlaying = playerManager.isPlaying && playerManager.currentTrack?.id == track.id
-                            TrackRow(track: track, isPlaying: isCurrentlyPlaying)
-                                .padding(.horizontal, 8)
-                                .padding(.vertical, 4)
-                                .background(
-                                    RoundedRectangle(cornerRadius: 12)
-                                        .fill(isCurrentlyPlaying ? Color.white.opacity(0.2) : Color.clear)
-                                )
-                                .contentShape(Rectangle())
-                                .onTapGesture {
-                                    selectedTrack = track
-                                    showingChorusEdit = true
+            Group {
+                if playlist.sortedTracks.isEmpty {
+                    VStack(spacing: 24) {
+                        ContentUnavailableView(
+                            String(localized: "no_songs"),
+                            systemImage: "music.note",
+                            description: Text(String(localized: "no_songs_description"))
+                        )
+                        
+                        // トラックを追加ボタン
+                        Button(action: { handleAddTrack() }) {
+                            HStack(spacing: 12) {
+                                Image(systemName: "plus.circle")
+                                    .font(.title2)
+                                    .foregroundColor(.primary)
+                                Text(String(localized: "add_track"))
+                                    .foregroundColor(.primary)
+                            }
+                            .padding(.vertical, 8)
+                        }
+                    }
+                } else {
+                    List {
+                        // 曲リスト
+                        Section {
+                            ForEach(playlist.sortedTracks) { track in
+                                let isCurrentlyPlaying = playerManager.isPlaying && playerManager.currentTrack?.id == track.id
+                                TrackRow(track: track, isPlaying: isCurrentlyPlaying)
+                                    .padding(.horizontal, 8)
+                                    .padding(.vertical, 4)
+                                    .background(
+                                        RoundedRectangle(cornerRadius: 12)
+                                            .fill(isCurrentlyPlaying ? Color.white.opacity(0.2) : Color.clear)
+                                    )
+                                    .contentShape(Rectangle())
+                                    .onTapGesture {
+                                        selectedTrack = track
+                                        showingChorusEdit = true
+                                    }
+                                    .listRowInsets(EdgeInsets(top: 4, leading: 8, bottom: 4, trailing: 8))
+                                    .listRowBackground(Color.clear)
+                            }
+                            .onDelete(perform: deleteTracks)
+                            .onMove(perform: moveTracks)
+                            
+                            // トラックを追加ボタン
+                            Button(action: { handleAddTrack() }) {
+                                HStack(spacing: 12) {
+                                    Image(systemName: "plus.circle")
+                                        .font(.title2)
+                                        .foregroundColor(.primary)
+                                    Text(String(localized: "add_track"))
+                                        .foregroundColor(.primary)
                                 }
-                                .listRowInsets(EdgeInsets(top: 4, leading: 8, bottom: 4, trailing: 8))
-                                .listRowBackground(Color.clear)
-                        }
-                        .onDelete(perform: deleteTracks)
-                        .onMove(perform: moveTracks)
-                    }
-                    
-                    // トラックを追加ボタン
-                    Button(action: { handleAddTrack() }) {
-                        HStack(spacing: 12) {
-                            Image(systemName: "plus.circle")
-                                .font(.title2)
+                                .padding(.vertical, 8)
+                            }
+                            .listRowInsets(EdgeInsets(top: 8, leading: 16, bottom: 8, trailing: 16))
+                            .listRowBackground(Color.clear)
+                        } header: {
+                            Text(playlist.name)
+                                .font(.system(size: 19, weight: .bold))
                                 .foregroundColor(.primary)
-                            Text(String(localized: "add_track"))
-                                .foregroundColor(.primary)
+                                .padding(.top, 10)
                         }
-                        .padding(.vertical, 8)
                     }
-                    .listRowInsets(EdgeInsets(top: 8, leading: 16, bottom: 8, trailing: 16))
-                    .listRowBackground(Color.clear)
-                } header: {
-                    Text(playlist.name)
-                        .font(.system(size: 19, weight: .bold))
-                        .foregroundColor(.primary)
-                        .padding(.top, 10)
+                    .scrollContentBackground(.hidden)
+                    .safeAreaInset(edge: .bottom) {
+                        Color.clear.frame(height: 80) // 下部にスペースを確保
+                    }
                 }
-            }
-            .scrollContentBackground(.hidden)
-            .safeAreaInset(edge: .bottom) {
-                Color.clear.frame(height: 80) // 下部にスペースを確保
             }
             .task(id: firstTrackId) {
                 await loadFirstTrackArtwork()
