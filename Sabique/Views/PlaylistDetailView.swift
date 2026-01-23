@@ -138,6 +138,20 @@ struct PlaylistDetailView: View {
             // 再生コントロール（下部に固定）
             if !playlist.sortedTracks.isEmpty {
                 VStack(spacing: 0) {
+                    // グラデーションフェード
+                    LinearGradient(
+                        stops: [
+                            .init(color: Color.clear, location: 0.0),
+                            .init(color: Color.black.opacity(0.1), location: 0.3),
+                            .init(color: Color.black.opacity(0.4), location: 0.6),
+                            .init(color: Color.black.opacity(0.7), location: 0.85),
+                            .init(color: Color.black.opacity(0.8), location: 1.0)
+                        ],
+                        startPoint: .top,
+                        endPoint: .bottom
+                    )
+                    .frame(height: 60)
+                    
                     HStack(spacing: 20) {
                         // 前のトラックボタン
                         Button(action: { playerManager.previous() }) {
@@ -189,9 +203,9 @@ struct PlaylistDetailView: View {
                     }
                     .frame(maxWidth: .infinity)
                     .padding(.vertical, 12)
+                    .background(Color.black.opacity(0.8))
                 }
                 .frame(maxWidth: .infinity)
-                .background(.ultraThinMaterial)
                 .animation(nil, value: playerManager.isPlaying)
             }
         }
