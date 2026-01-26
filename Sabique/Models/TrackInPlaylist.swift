@@ -16,6 +16,7 @@ final class TrackInPlaylist {
     var artist: String
     var chorusStartSeconds: Double?
     var chorusEndSeconds: Double?
+    var artworkURL: URL?
     var orderIndex: Int
     
     var playlist: Playlist?

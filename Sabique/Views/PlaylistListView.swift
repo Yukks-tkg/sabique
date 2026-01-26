@@ -254,6 +254,12 @@ struct PlaylistListView: View {
         // ランダムにトラックを選択
         let randomTrack = firstTracks.randomElement()!
         
+        // キャッシュがあればそれを使用
+        if let cachedURL = randomTrack.artworkURL {
+            backgroundArtworkURL = cachedURL
+            return
+        }
+        
         do {
             let request = MusicCatalogResourceRequest<Song>(
                 matching: \.id,
@@ -261,7 +267,11 @@ struct PlaylistListView: View {
             )
             let response = try await request.response()
             if let song = response.items.first, let artwork = song.artwork {
-                backgroundArtworkURL = artwork.url(width: 400, height: 400)
+                let url = artwork.url(width: 400, height: 400)
+                backgroundArtworkURL = url
+                
+                // キャッシュに保存
+                randomTrack.artworkURL = url
             }
         } catch {
             print("Background artwork load error: \(error)")
@@ -372,6 +382,12 @@ struct PlaylistRow: View {
     private func loadFirstTrackArtwork() async {
         guard let firstTrack = playlist.sortedTracks.first else { return }
         
+        // キャッシュがあればそれを使用
+        if let cachedURL = firstTrack.artworkURL {
+            artworkURL = cachedURL
+            return
+        }
+        
         do {
             let request = MusicCatalogResourceRequest<Song>(
                 matching: \.id,
@@ -379,7 +395,11 @@ struct PlaylistRow: View {
             )
             let response = try await request.response()
             if let song = response.items.first, let artwork = song.artwork {
-                artworkURL = artwork.url(width: 100, height: 100)
+                let url = artwork.url(width: 100, height: 100)
+                artworkURL = url
+                
+                // キャッシュに保存
+                firstTrack.artworkURL = url
             }
         } catch {
             print("Artwork load error: \(error)")
