@@ -187,6 +187,22 @@
         }
       }
     },
+    "background_settings" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Background Settings"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "背景設定"
+          }
+        }
+      }
+    },
     "cancel" : {
       "localizations" : {
         "en" : {
@@ -199,6 +215,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "キャンセル"
+          }
+        }
+      }
+    },
+    "change" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Change"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "変更"
           }
         }
       }
@@ -231,6 +263,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "作成"
+          }
+        }
+      }
+    },
+    "custom_background_set" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Custom Background"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "カスタム背景"
           }
         }
       }
@@ -925,6 +973,22 @@
         }
       }
     },
+    "reset_to_random" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Reset to Random"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ランダムに戻す"
+          }
+        }
+      }
+    },
     "restore_purchases" : {
       "localizations" : {
         "en" : {
@@ -1001,6 +1065,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "検索中..."
+          }
+        }
+      }
+    },
+    "select_background_artwork" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Select Background Artwork"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "背景アートワークを選択"
           }
         }
       }

@@ -28,84 +28,24 @@ struct PlaylistListView: View {
     @State private var showingPaywall = false
     @State private var showingImportLimitAlert = false
     @State private var skippedTrackCount = 0
+    @AppStorage("customBackgroundArtworkURLString") private var customBackgroundArtworkURLString: String = ""
     
     var body: some View {
         NavigationStack {
             ZStack {
-                // ぼかし背景
-                GeometryReader { geometry in
-                    if let url = backgroundArtworkURL {
-                        AsyncImage(url: url) { image in
-                            image
-                                .resizable()
-                                .aspectRatio(contentMode: .fill)
-                                .frame(width: geometry.size.width, height: geometry.size.height)
-                                .clipped()
-                                .blur(radius: 30)
-                                .opacity(0.6)
-                        } placeholder: {
-                            Color.black
-                        }
-                        .id(url) // URLが変わったらビューを再作成
-                        .transition(.opacity)
-                    } else {
-                        Color(.systemBackground)
-                    }
-                }
-                .ignoresSafeArea()
-                .animation(.easeInOut(duration: 0.5), value: backgroundArtworkURL)
+                backgroundView
                 
                 // オーバーレイ
                 Color.black.opacity(0.25)
                     .ignoresSafeArea()
                 
-                // コンテンツ
-                Group {
-                    if playlists.isEmpty {
-                        ContentUnavailableView(
-                            String(localized: "no_playlists"),
-                            systemImage: "music.note.list",
-                            description: Text(String(localized: "no_playlists_description"))
-                        )
-                    } else {
-                        List {
-                            ForEach(playlists) { playlist in
-                                let isPlayingFromThisPlaylist = playerManager.isPlaying && playlist.sortedTracks.contains(where: { $0.id == playerManager.currentTrack?.id })
-                                NavigationLink(destination: PlaylistDetailView(playlist: playlist)) {
-                                    PlaylistRow(playlist: playlist)
-                                        .padding(.horizontal, 8)
-                                        .padding(.vertical, 4)
-                                        .background(
-                                            RoundedRectangle(cornerRadius: 12)
-                                                .fill(isPlayingFromThisPlaylist ? Color.white.opacity(0.2) : Color.clear)
-                                        )
-                                }
-                                .listRowSeparator(.visible, edges: .bottom)
-                                .listRowBackground(Color.clear)
-                            }
-                            .onDelete(perform: deletePlaylists)
-                            .onMove(perform: movePlaylists)
-                            
-                            // プレイリストを追加ボタン
-                            Button(action: { handleAddPlaylist() }) {
-                                HStack(spacing: 12) {
-                                    Image(systemName: "plus.circle")
-                                        .font(.title2)
-                                        .foregroundColor(.primary)
-                                    Text(String(localized: "add_playlist"))
-                                        .foregroundColor(.primary)
-                                }
-                                .padding(.vertical, 8)
-                            }
-                            .listRowBackground(Color.clear)
-                        }
-                        .listStyle(.plain)
-                        .scrollContentBackground(.hidden)
-                    }
-                }
+                mainContent
             }
             .task(id: playlists.count) {
-                await loadRandomArtwork()
+                await updateBackgroundArtwork()
+            }
+            .task(id: customBackgroundArtworkURLString) {
+                await updateBackgroundArtwork()
             }
             .preferredColorScheme(.dark)
             .navigationBarTitleDisplayMode(.inline)
@@ -243,7 +183,14 @@ struct PlaylistListView: View {
         }
     }
     
-    private func loadRandomArtwork() async {
+    private func updateBackgroundArtwork() async {
+        // 1. カスタム背景設定がある場合はそれを優先
+        if !customBackgroundArtworkURLString.isEmpty, let url = URL(string: customBackgroundArtworkURLString) {
+            backgroundArtworkURL = url
+            return
+        }
+        
+        // 2. 設定がない場合は、既存のランダムロジック
         // 各プレイリストの1番目のトラックを収集
         let firstTracks = playlists.compactMap { $0.sortedTracks.first }
         guard !firstTracks.isEmpty else {
@@ -318,6 +265,78 @@ struct PlaylistListView: View {
         case .failure(let error):
             importError = error.localizedDescription
             showingImportError = true
+        }
+    }
+    
+    // MARK: - Subviews
+    
+    private var backgroundView: some View {
+        GeometryReader { geometry in
+            if let url = backgroundArtworkURL {
+                AsyncImage(url: url) { image in
+                    image
+                        .resizable()
+                        .aspectRatio(contentMode: .fill)
+                        .frame(width: geometry.size.width, height: geometry.size.height)
+                        .clipped()
+                        .blur(radius: 30)
+                        .opacity(0.6)
+                } placeholder: {
+                    Color.black
+                }
+                .id(url) // URLが変わったらビューを再作成
+                .transition(.opacity)
+            } else {
+                Color(.systemBackground)
+            }
+        }
+        .ignoresSafeArea()
+        .animation(.easeInOut(duration: 0.5), value: backgroundArtworkURL)
+    }
+    
+    private var mainContent: some View {
+        Group {
+            if playlists.isEmpty {
+                ContentUnavailableView(
+                    String(localized: "no_playlists"),
+                    systemImage: "music.note.list",
+                    description: Text(String(localized: "no_playlists_description"))
+                )
+            } else {
+                List {
+                    ForEach(playlists) { playlist in
+                        let isPlayingFromThisPlaylist = playerManager.isPlaying && playlist.sortedTracks.contains(where: { $0.id == playerManager.currentTrack?.id })
+                        NavigationLink(destination: PlaylistDetailView(playlist: playlist)) {
+                            PlaylistRow(playlist: playlist)
+                                .padding(.horizontal, 8)
+                                .padding(.vertical, 4)
+                                .background(
+                                    RoundedRectangle(cornerRadius: 12)
+                                        .fill(isPlayingFromThisPlaylist ? Color.white.opacity(0.2) : Color.clear)
+                                )
+                        }
+                        .listRowSeparator(.visible, edges: .bottom)
+                        .listRowBackground(Color.clear)
+                    }
+                    .onDelete(perform: deletePlaylists)
+                    .onMove(perform: movePlaylists)
+                    
+                    // プレイリストを追加ボタン
+                    Button(action: { handleAddPlaylist() }) {
+                        HStack(spacing: 12) {
+                            Image(systemName: "plus.circle")
+                                .font(.title2)
+                                .foregroundColor(.primary)
+                            Text(String(localized: "add_playlist"))
+                                .foregroundColor(.primary)
+                        }
+                        .padding(.vertical, 8)
+                    }
+                    .listRowBackground(Color.clear)
+                }
+                .listStyle(.plain)
+                .scrollContentBackground(.hidden)
+            }
         }
     }
 }

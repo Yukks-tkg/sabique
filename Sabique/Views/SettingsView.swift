@@ -13,6 +13,8 @@ struct SettingsView: View {
     @State private var isDeveloperMode = false
     @State private var showingPaywall = false
     @State private var isRestoring = false
+    @State private var showingArtworkPicker = false
+    @AppStorage("customBackgroundArtworkURLString") private var customBackgroundArtworkURLString: String = ""
     
     var body: some View {
         NavigationStack {
@@ -102,6 +104,49 @@ struct SettingsView: View {
                         .foregroundColor(.secondary)
                 }
                 
+                Section(String(localized: "background_settings")) {
+                    if !customBackgroundArtworkURLString.isEmpty, let url = URL(string: customBackgroundArtworkURLString) {
+                        HStack {
+                            AsyncImage(url: url) { image in
+                                image
+                                    .resizable()
+                                    .aspectRatio(contentMode: .fill)
+                            } placeholder: {
+                                Color.gray
+                            }
+                            .frame(width: 60, height: 60)
+                            .cornerRadius(8)
+                            
+                            VStack(alignment: .leading) {
+                                Text(String(localized: "custom_background_set"))
+                                    .font(.headline)
+                                Button(String(localized: "reset_to_random")) {
+                                    customBackgroundArtworkURLString = ""
+                                    UserDefaults.standard.removeObject(forKey: "customBackgroundSongId")
+                                }
+                                .font(.caption)
+                                .foregroundColor(.red)
+                            }
+                            
+                            Spacer()
+                            
+                            Button(String(localized: "change")) {
+                                showingArtworkPicker = true
+                            }
+                            .buttonStyle(.bordered)
+                        }
+                    } else {
+                        Button(action: { showingArtworkPicker = true }) {
+                            HStack {
+                                Text(String(localized: "select_background_artwork"))
+                                Spacer()
+                                Image(systemName: "chevron.right")
+                                    .foregroundColor(.secondary)
+                            }
+                        }
+                    }
+                }
+                
                 Section(String(localized: "legal_info")) {
                     Link(destination: URL(string: "https://immense-engineer-7f8.notion.site/Privacy-Policy-Sabique-2ed0dee3bb098077b979d500914ffbba")!) {
                         HStack {
@@ -162,6 +207,9 @@ struct SettingsView: View {
             }
             .sheet(isPresented: $showingPaywall) {
                 PaywallView()
+            }
+            .sheet(isPresented: $showingArtworkPicker) {
+                ArtworkPickerView()
             }
         }
     }
