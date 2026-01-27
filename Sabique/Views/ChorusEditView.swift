@@ -28,7 +28,7 @@ struct ChorusEditView: View {
     @State private var skipTimer: AnyCancellable?
     @State private var isPreviewing = false
     @State private var isDraggingSeekbar = false
-
+    @State private var shakeTrigger = 0
     @AppStorage("autoPlayOnOpen") private var autoPlayOnOpen = true
     
     var body: some View {
@@ -147,7 +147,10 @@ struct ChorusEditView: View {
                                 .highPriorityGesture(
                                     DragGesture()
                                         .onChanged { value in
-                                            guard !track.isLocked else { return }
+                                            guard !track.isLocked else {
+                                                withAnimation(.spring(response: 0.4, dampingFraction: 0.5)) { shakeTrigger += 1 }
+                                                return
+                                            }
                                             let progress = min(max(0, value.location.x / geometry.size.width), 1)
                                             let newTime = progress * duration
                                             if let endTime = chorusEnd {
@@ -188,7 +191,10 @@ struct ChorusEditView: View {
                                 .highPriorityGesture(
                                     DragGesture()
                                         .onChanged { value in
-                                            guard !track.isLocked else { return }
+                                            guard !track.isLocked else {
+                                                withAnimation(.spring(response: 0.4, dampingFraction: 0.5)) { shakeTrigger += 1 }
+                                                return
+                                            }
                                             let progress = min(max(0, value.location.x / geometry.size.width), 1)
                                             let newTime = progress * duration
                                             if let startTime = chorusStart {
@@ -328,11 +334,15 @@ struct ChorusEditView: View {
                 
                 // ハイライト設定ボタン（コンパクトカードデザイン）
                 HStack(spacing: 16) {
-                    let isStartDisabled = track.isLocked || (chorusEnd != nil && playbackTime > chorusEnd!)
-                    let isEndDisabled = track.isLocked || (chorusStart != nil && playbackTime < chorusStart!)
+                    let isStartDisabled = chorusEnd != nil && playbackTime > chorusEnd!
+                    let isEndDisabled = chorusStart != nil && playbackTime < chorusStart!
                     
                     // 開始ポイント設定カード
                     Button(action: {
+                        if track.isLocked {
+                            withAnimation(.spring(response: 0.4, dampingFraction: 0.5)) { shakeTrigger += 1 }
+                            return
+                        }
                         chorusStart = playbackTime
                         track.chorusStartSeconds = playbackTime
                     }) {
@@ -369,10 +379,14 @@ struct ChorusEditView: View {
                         )
                     }
                     .disabled(isStartDisabled)
-                    .opacity(isStartDisabled ? 0.4 : 1.0)
+                    .opacity((track.isLocked || isStartDisabled) ? 0.4 : 1.0)
                     
                     // 終了ポイント設定カード
                     Button(action: {
+                        if track.isLocked {
+                            withAnimation(.spring(response: 0.4, dampingFraction: 0.5)) { shakeTrigger += 1 }
+                            return
+                        }
                         chorusEnd = playbackTime
                         track.chorusEndSeconds = playbackTime
                     }) {
@@ -409,7 +423,7 @@ struct ChorusEditView: View {
                         )
                     }
                     .disabled(isEndDisabled)
-                    .opacity(isEndDisabled ? 0.4 : 1.0)
+                    .opacity((track.isLocked || isEndDisabled) ? 0.4 : 1.0)
                 }
                 .padding(.horizontal)
                 
@@ -461,6 +475,7 @@ struct ChorusEditView: View {
                     }) {
                         Image(systemName: track.isLocked ? "lock.fill" : "lock.open")
                             .font(.title2)
+                            .modifier(Shake(animatableData: CGFloat(shakeTrigger)))
                             .foregroundColor(track.isLocked ? .orange : (hasBothCuePoints ? .white : .gray))
                             .frame(width: 44, height: 44)
                             .background(track.isLocked ? Color.orange.opacity(0.2) : Color.white.opacity(0.1))
@@ -735,3 +750,16 @@ struct ChorusEditView: View {
         )
     )
 }
+
+struct Shake: GeometryEffect {
+    var amount: CGFloat = 8
+    var shakesPerUnit = 2
+    var animatableData: CGFloat
+
+    func effectValue(size: CGSize) -> ProjectionTransform {
+        ProjectionTransform(CGAffineTransform(translationX:
+            amount * sin(animatableData * .pi * CGFloat(shakesPerUnit)),
+            y: 0))
+    }
+}
+
