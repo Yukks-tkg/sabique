@@ -127,7 +127,7 @@ struct ChorusEditView: View {
                                 let startX = CGFloat(start / duration) * geometry.size.width
                                 // 縦線
                                 Rectangle()
-                                    .fill(Color.blue)
+                                    .fill(isLocked ? .gray : .blue)
                                     .frame(width: 3, height: 40)
                                     .position(x: startX, y: 18)
                                 
@@ -139,7 +139,7 @@ struct ChorusEditView: View {
                                         .frame(width: 44, height: 44)
                                     // 視覚的な丸
                                     Circle()
-                                        .fill(Color.blue)
+                                        .fill(isLocked ? .gray : .blue)
                                         .frame(width: 16, height: 16)
                                 }
                                 .contentShape(Circle().size(width: 44, height: 44))
@@ -168,7 +168,7 @@ struct ChorusEditView: View {
                                 let endX = CGFloat(end / duration) * geometry.size.width
                                 // 縦線
                                 Rectangle()
-                                    .fill(Color.red)
+                                    .fill(isLocked ? .gray : .red)
                                     .frame(width: 3, height: 40)
                                     .position(x: endX, y: 18)
                                 
@@ -180,7 +180,7 @@ struct ChorusEditView: View {
                                         .frame(width: 44, height: 44)
                                     // 視覚的な丸
                                     Circle()
-                                        .fill(Color.red)
+                                        .fill(isLocked ? .gray : .red)
                                         .frame(width: 16, height: 16)
                                 }
                                 .contentShape(Circle().size(width: 44, height: 44))
