@@ -579,18 +579,19 @@ struct ChorusEditView: View {
                 startTime = 0
             }
             
-            player.playbackTime = startTime
-            await MainActor.run {
-                playbackTime = startTime
-            }
-            
             // 自動再生がオンの場合のみ再生開始
             if autoPlayOnOpen {
                 do {
                     try await player.play()
+                    // 再生開始後に時間を設定（再生開始前にセットすると0にリセットされる場合があるため）
+                    player.playbackTime = startTime
+                    print("✅ Playback started at: \(startTime)")
                 } catch {
                     print("❌ Player play error: \(error)")
                 }
+            } else {
+                // 自動再生オフの場合は、準備だけしておき、時間を設定
+                player.playbackTime = startTime
             }
         }
     }
