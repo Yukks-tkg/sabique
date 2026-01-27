@@ -15,6 +15,8 @@ struct SettingsView: View {
     @State private var isRestoring = false
     @State private var showingArtworkPicker = false
     @AppStorage("customBackgroundArtworkURLString") private var customBackgroundArtworkURLString: String = ""
+    @AppStorage("customBackgroundSongTitle") private var customBackgroundSongTitle: String = ""
+    @AppStorage("customBackgroundArtistName") private var customBackgroundArtistName: String = ""
     
     var body: some View {
         NavigationStack {
@@ -126,11 +128,7 @@ struct SettingsView: View {
                         }
                     }
                     
-                    Section(String(localized: "about_this_app")) {
-                        Text(String(localized: "app_description"))
-                            .font(.subheadline)
-                            .foregroundColor(.secondary)
-                    }
+
                     
                     Section(String(localized: "background_settings")) {
                         if !customBackgroundArtworkURLString.isEmpty, let url = URL(string: customBackgroundArtworkURLString) {
@@ -146,13 +144,24 @@ struct SettingsView: View {
                                 .cornerRadius(8)
                                 
                                 VStack(alignment: .leading) {
-                                    Text(String(localized: "custom_background_set"))
+                                    Text(customBackgroundSongTitle.isEmpty ? String(localized: "custom_background_set") : customBackgroundSongTitle)
                                         .font(.headline)
+                                        .lineLimit(1)
+                                    if !customBackgroundArtistName.isEmpty {
+                                        Text(customBackgroundArtistName)
+                                            .font(.caption)
+                                            .foregroundColor(.secondary)
+                                            .lineLimit(1)
+                                    }
+                                        
                                     Text(String(localized: "reset_to_random"))
                                         .font(.caption)
                                         .foregroundColor(.red)
+                                        .padding(.top, 2)
                                         .onTapGesture {
                                             customBackgroundArtworkURLString = ""
+                                            customBackgroundSongTitle = ""
+                                            customBackgroundArtistName = ""
                                             UserDefaults.standard.removeObject(forKey: "customBackgroundSongId")
                                         }
                                 }
@@ -163,6 +172,7 @@ struct SettingsView: View {
                                     showingArtworkPicker = true
                                 }
                                 .buttonStyle(.bordered)
+                                .foregroundColor(.white)
                             }
                         } else {
                             Button(action: { showingArtworkPicker = true }) {
@@ -174,6 +184,12 @@ struct SettingsView: View {
                                 }
                             }
                         }
+                    }
+                    
+                    Section(String(localized: "about_this_app")) {
+                        Text(String(localized: "app_description"))
+                            .font(.subheadline)
+                            .foregroundColor(.secondary)
                     }
                     
                     Section(String(localized: "legal_info")) {

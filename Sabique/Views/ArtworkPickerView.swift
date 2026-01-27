@@ -15,6 +15,8 @@ struct ArtworkPickerView: View {
     // User Settings for Custom Background
     @AppStorage("customBackgroundSongId") private var customBackgroundSongId: String = ""
     @AppStorage("customBackgroundArtworkURLString") private var customBackgroundArtworkURLString: String = ""
+    @AppStorage("customBackgroundSongTitle") private var customBackgroundSongTitle: String = ""
+    @AppStorage("customBackgroundArtistName") private var customBackgroundArtistName: String = ""
     
     @State private var searchKeyword = ""
     @State private var songs: MusicItemCollection<Song> = []
@@ -262,6 +264,10 @@ struct ArtworkPickerView: View {
     private func selectSong(_ song: Song) {
         // Save ID
         customBackgroundSongId = song.id.rawValue
+        
+        // Save Title and Artist
+        customBackgroundSongTitle = song.title
+        customBackgroundArtistName = song.artistName
         
         // Save Artwork URL (High quality)
         if let artwork = song.artwork {
