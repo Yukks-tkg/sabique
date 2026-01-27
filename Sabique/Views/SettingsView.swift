@@ -120,12 +120,13 @@ struct SettingsView: View {
                             VStack(alignment: .leading) {
                                 Text(String(localized: "custom_background_set"))
                                     .font(.headline)
-                                Button(String(localized: "reset_to_random")) {
-                                    customBackgroundArtworkURLString = ""
-                                    UserDefaults.standard.removeObject(forKey: "customBackgroundSongId")
-                                }
-                                .font(.caption)
-                                .foregroundColor(.red)
+                                Text(String(localized: "reset_to_random"))
+                                    .font(.caption)
+                                    .foregroundColor(.red)
+                                    .onTapGesture {
+                                        customBackgroundArtworkURLString = ""
+                                        UserDefaults.standard.removeObject(forKey: "customBackgroundSongId")
+                                    }
                             }
                             
                             Spacer()
