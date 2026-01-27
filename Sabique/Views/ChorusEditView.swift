@@ -28,7 +28,7 @@ struct ChorusEditView: View {
     @State private var skipTimer: AnyCancellable?
     @State private var isPreviewing = false
     @State private var isDraggingSeekbar = false
-    @State private var isLocked = false
+
     @AppStorage("autoPlayOnOpen") private var autoPlayOnOpen = true
     
     var body: some View {
@@ -127,7 +127,7 @@ struct ChorusEditView: View {
                                 let startX = CGFloat(start / duration) * geometry.size.width
                                 // 縦線
                                 Rectangle()
-                                    .fill(isLocked ? .gray : .blue)
+                                    .fill(track.isLocked ? .gray : .blue)
                                     .frame(width: 3, height: 40)
                                     .position(x: startX, y: 18)
                                 
@@ -139,7 +139,7 @@ struct ChorusEditView: View {
                                         .frame(width: 44, height: 44)
                                     // 視覚的な丸
                                     Circle()
-                                        .fill(isLocked ? .gray : .blue)
+                                        .fill(track.isLocked ? .gray : .blue)
                                         .frame(width: 16, height: 16)
                                 }
                                 .contentShape(Circle().size(width: 44, height: 44))
@@ -147,7 +147,7 @@ struct ChorusEditView: View {
                                 .highPriorityGesture(
                                     DragGesture()
                                         .onChanged { value in
-                                            guard !isLocked else { return }
+                                            guard !track.isLocked else { return }
                                             let progress = min(max(0, value.location.x / geometry.size.width), 1)
                                             let newTime = progress * duration
                                             if let endTime = chorusEnd {
@@ -157,7 +157,7 @@ struct ChorusEditView: View {
                                             }
                                         }
                                         .onEnded { _ in
-                                            guard !isLocked else { return }
+                                            guard !track.isLocked else { return }
                                             track.chorusStartSeconds = chorusStart
                                         }
                                 )
@@ -168,7 +168,7 @@ struct ChorusEditView: View {
                                 let endX = CGFloat(end / duration) * geometry.size.width
                                 // 縦線
                                 Rectangle()
-                                    .fill(isLocked ? .gray : .red)
+                                    .fill(track.isLocked ? .gray : .red)
                                     .frame(width: 3, height: 40)
                                     .position(x: endX, y: 18)
                                 
@@ -180,7 +180,7 @@ struct ChorusEditView: View {
                                         .frame(width: 44, height: 44)
                                     // 視覚的な丸
                                     Circle()
-                                        .fill(isLocked ? .gray : .red)
+                                        .fill(track.isLocked ? .gray : .red)
                                         .frame(width: 16, height: 16)
                                 }
                                 .contentShape(Circle().size(width: 44, height: 44))
@@ -188,7 +188,7 @@ struct ChorusEditView: View {
                                 .highPriorityGesture(
                                     DragGesture()
                                         .onChanged { value in
-                                            guard !isLocked else { return }
+                                            guard !track.isLocked else { return }
                                             let progress = min(max(0, value.location.x / geometry.size.width), 1)
                                             let newTime = progress * duration
                                             if let startTime = chorusStart {
@@ -198,7 +198,7 @@ struct ChorusEditView: View {
                                             }
                                         }
                                         .onEnded { _ in
-                                            guard !isLocked else { return }
+                                            guard !track.isLocked else { return }
                                             track.chorusEndSeconds = chorusEnd
                                         }
                                 )
@@ -328,8 +328,8 @@ struct ChorusEditView: View {
                 
                 // ハイライト設定ボタン（コンパクトカードデザイン）
                 HStack(spacing: 16) {
-                    let isStartDisabled = isLocked || (chorusEnd != nil && playbackTime > chorusEnd!)
-                    let isEndDisabled = isLocked || (chorusStart != nil && playbackTime < chorusStart!)
+                    let isStartDisabled = track.isLocked || (chorusEnd != nil && playbackTime > chorusEnd!)
+                    let isEndDisabled = track.isLocked || (chorusStart != nil && playbackTime < chorusStart!)
                     
                     // 開始ポイント設定カード
                     Button(action: {
@@ -426,13 +426,13 @@ struct ChorusEditView: View {
                     }) {
                         Image(systemName: "eraser")
                             .font(.title2)
-                            .foregroundColor(isLocked ? .gray : .white)
+                            .foregroundColor(track.isLocked ? .gray : .white)
                             .frame(width: 44, height: 44)
                             .background(Color.white.opacity(0.1))
                             .cornerRadius(12)
                     }
-                    .disabled(isLocked || (chorusStart == nil && chorusEnd == nil))
-                    .opacity((isLocked || (chorusStart == nil && chorusEnd == nil)) ? 0.4 : 1.0)
+                    .disabled(track.isLocked || (chorusStart == nil && chorusEnd == nil))
+                    .opacity((track.isLocked || (chorusStart == nil && chorusEnd == nil)) ? 0.4 : 1.0)
                     
                     // ハイライト再生ボタン
                     Button(action: togglePreview) {
@@ -457,13 +457,13 @@ struct ChorusEditView: View {
                     // ロックボタン（両方のキューポイントが設定されているときのみ有効）
                     let hasBothCuePoints = chorusStart != nil && chorusEnd != nil
                     Button(action: {
-                        isLocked.toggle()
+                        track.isLocked.toggle()
                     }) {
-                        Image(systemName: isLocked ? "lock.fill" : "lock.open")
+                        Image(systemName: track.isLocked ? "lock.fill" : "lock.open")
                             .font(.title2)
-                            .foregroundColor(isLocked ? .orange : (hasBothCuePoints ? .white : .gray))
+                            .foregroundColor(track.isLocked ? .orange : (hasBothCuePoints ? .white : .gray))
                             .frame(width: 44, height: 44)
-                            .background(isLocked ? Color.orange.opacity(0.2) : Color.white.opacity(0.1))
+                            .background(track.isLocked ? Color.orange.opacity(0.2) : Color.white.opacity(0.1))
                             .cornerRadius(12)
                     }
                     .disabled(!hasBothCuePoints)

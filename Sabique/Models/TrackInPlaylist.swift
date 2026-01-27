@@ -18,6 +18,7 @@ final class TrackInPlaylist {
     var chorusEndSeconds: Double?
     var artworkURL: URL?
     var orderIndex: Int
+    var isLocked: Bool = false
     
     var playlist: Playlist?
     
@@ -27,7 +28,8 @@ final class TrackInPlaylist {
         artist: String,
         orderIndex: Int,
         chorusStartSeconds: Double? = nil,
-        chorusEndSeconds: Double? = nil
+        chorusEndSeconds: Double? = nil,
+        isLocked: Bool = false
     ) {
         self.id = UUID()
         self.appleMusicSongId = appleMusicSongId
@@ -36,6 +38,7 @@ final class TrackInPlaylist {
         self.orderIndex = orderIndex
         self.chorusStartSeconds = chorusStartSeconds
         self.chorusEndSeconds = chorusEndSeconds
+        self.isLocked = isLocked
     }
     
     /// ハイライト区間が設定済みかどうか
