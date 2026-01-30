@@ -13,9 +13,9 @@ import MusicKit
 enum SongSource: String, CaseIterable, Identifiable {
     case topCharts = "top_charts"
     case topChartsJapan = "top_charts_japan"
+    case topChartsKorea = "top_charts_korea"
     case topChartsUS = "top_charts_us"
     case topChartsUK = "top_charts_uk"
-    case topChartsKorea = "top_charts_korea"
     case topChartsIndia = "top_charts_india"
     case topChartsGermany = "top_charts_germany"
     case library = "library"
