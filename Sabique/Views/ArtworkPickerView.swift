@@ -206,7 +206,7 @@ struct ArtworkPickerView: View {
             await loadLibrarySongs()
         case .topCharts:
             await loadTopChartsSongs(storefrontID: nil)
-        case .topChartsJapan, .topChartsUS, .topChartsUK, .topChartsKorea:
+        case .topChartsJapan, .topChartsUS, .topChartsUK, .topChartsKorea, .topChartsIndia, .topChartsGermany:
             await loadTopChartsSongs(storefrontID: source.storefrontID)
         }
     }

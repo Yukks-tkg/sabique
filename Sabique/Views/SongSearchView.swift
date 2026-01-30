@@ -16,6 +16,8 @@ enum SongSource: String, CaseIterable, Identifiable {
     case topChartsUS = "top_charts_us"
     case topChartsUK = "top_charts_uk"
     case topChartsKorea = "top_charts_korea"
+    case topChartsIndia = "top_charts_india"
+    case topChartsGermany = "top_charts_germany"
     case library = "library"
     case recentlyPlayed = "recently_played"
     
@@ -32,6 +34,8 @@ enum SongSource: String, CaseIterable, Identifiable {
         case .topChartsUS: return "us"
         case .topChartsUK: return "gb"
         case .topChartsKorea: return "kr"
+        case .topChartsIndia: return "in"
+        case .topChartsGermany: return "de"
         default: return nil
         }
     }
@@ -218,7 +222,7 @@ struct SongSearchView: View {
             await loadLibrarySongs()
         case .topCharts:
             await loadTopChartsSongs(storefrontID: nil)
-        case .topChartsJapan, .topChartsUS, .topChartsUK, .topChartsKorea:
+        case .topChartsJapan, .topChartsUS, .topChartsUK, .topChartsKorea, .topChartsIndia, .topChartsGermany:
             await loadTopChartsSongs(storefrontID: source.storefrontID)
         }
     }
