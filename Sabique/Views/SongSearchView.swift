@@ -12,6 +12,10 @@ import MusicKit
 /// 曲ソースの種類
 enum SongSource: String, CaseIterable, Identifiable {
     case topCharts = "top_charts"
+    case topChartsJapan = "top_charts_japan"
+    case topChartsUS = "top_charts_us"
+    case topChartsUK = "top_charts_uk"
+    case topChartsKorea = "top_charts_korea"
     case library = "library"
     case recentlyPlayed = "recently_played"
     
@@ -19,6 +23,17 @@ enum SongSource: String, CaseIterable, Identifiable {
     
     var localizedName: String {
         String(localized: String.LocalizationValue(rawValue))
+    }
+    
+    /// Storefront ID for country-specific charts
+    var storefrontID: String? {
+        switch self {
+        case .topChartsJapan: return "jp"
+        case .topChartsUS: return "us"
+        case .topChartsUK: return "gb"
+        case .topChartsKorea: return "kr"
+        default: return nil
+        }
     }
 }
 
@@ -202,7 +217,9 @@ struct SongSearchView: View {
         case .library:
             await loadLibrarySongs()
         case .topCharts:
-            await loadTopChartsSongs()
+            await loadTopChartsSongs(storefrontID: nil)
+        case .topChartsJapan, .topChartsUS, .topChartsUK, .topChartsKorea:
+            await loadTopChartsSongs(storefrontID: source.storefrontID)
         }
     }
     
@@ -231,15 +248,48 @@ struct SongSearchView: View {
         }
     }
     
-    /// トップチャートの曲を取得
-    private func loadTopChartsSongs() async {
+    /// トップチャートの曲を取得（Storefront指定可能）
+    private func loadTopChartsSongs(storefrontID: String?) async {
         do {
-            let request = MusicCatalogChartsRequest(kinds: [.mostPlayed], types: [Song.self])
-            let response = try await request.response()
-            if let songChart = response.songCharts.first {
-                sourceSongs = Array(songChart.items.prefix(30))
+            if let storefrontID = storefrontID {
+                // Use MusicDataRequest for specific storefront
+                let url = URL(string: "https://api.music.apple.com/v1/catalog/\(storefrontID)/charts?types=songs&limit=30")!
+                let request = MusicDataRequest(urlRequest: URLRequest(url: url))
+                let response = try await request.response()
+                
+                // Parse JSON response
+                let json = try JSONSerialization.jsonObject(with: response.data) as? [String: Any]
+                if let results = json?["results"] as? [String: Any],
+                   let songs = results["songs"] as? [[String: Any]],
+                   let firstChart = songs.first,
+                   let data = firstChart["data"] as? [[String: Any]] {
+                    
+                    // Fetch songs by IDs
+                    let songIDs = data.compactMap { $0["id"] as? String }
+                    var catalogRequest = MusicCatalogResourceRequest<Song>(matching: \.id, memberOf: songIDs.compactMap { MusicItemID($0) })
+                    catalogRequest.limit = 30
+                    let catalogResponse = try await catalogRequest.response()
+                    
+                    // Maintain order from chart
+                    var orderedSongs: [Song] = []
+                    for id in songIDs {
+                        if let song = catalogResponse.items.first(where: { $0.id.rawValue == id }) {
+                            orderedSongs.append(song)
+                        }
+                    }
+                    sourceSongs = orderedSongs
+                } else {
+                    sourceSongs = []
+                }
             } else {
-                sourceSongs = []
+                // Default: use user's storefront
+                let request = MusicCatalogChartsRequest(kinds: [.mostPlayed], types: [Song.self])
+                let response = try await request.response()
+                if let songChart = response.songCharts.first {
+                    sourceSongs = Array(songChart.items.prefix(30))
+                } else {
+                    sourceSongs = []
+                }
             }
         } catch {
             print("Top charts songs load error: \(error)")
