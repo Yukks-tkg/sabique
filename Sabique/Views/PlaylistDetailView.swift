@@ -292,7 +292,10 @@ struct PlaylistDetailView: View {
         if playerManager.isPlaying {
             playerManager.stop()
         } else {
-            playerManager.play(tracks: playlist.sortedTracks)
+            // クロージャで渡すことで、再生中のトラック順変更がリアルタイムで反映される
+            playerManager.play { [playlist] in
+                playlist.sortedTracks
+            }
         }
     }
     

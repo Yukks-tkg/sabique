@@ -15,19 +15,25 @@ class ChorusPlayerManager: ObservableObject {
     @Published var currentTrackIndex = 0
     @Published var currentTrack: TrackInPlaylist?
     
-    private var tracks: [TrackInPlaylist] = []
+    /// トラックリストを取得するクロージャ（常に最新の順序を返す）
+    private var tracksProvider: (() -> [TrackInPlaylist])?
     private let player = ApplicationMusicPlayer.shared
     private var timerCancellable: AnyCancellable?
     private var currentPlayTask: Task<Void, Never>?
     private var isTransitioning = false
+    
+    /// 現在のトラックリスト（常に最新を取得）
+    private var tracks: [TrackInPlaylist] {
+        tracksProvider?() ?? []
+    }
     
     init() {
         // タイマーで制御するため、playbackObserverは使用しない
     }
     
     /// ハイライト連続再生を開始
-    func play(tracks: [TrackInPlaylist]) {
-        self.tracks = tracks
+    func play(tracks: @escaping () -> [TrackInPlaylist]) {
+        self.tracksProvider = tracks
         
         guard !self.tracks.isEmpty else {
             print("曲がありません")
@@ -51,6 +57,7 @@ class ChorusPlayerManager: ObservableObject {
         currentPlayTask = nil
         player.stop()
         currentTrack = nil
+        tracksProvider = nil
         print("🛑 再生停止")
     }
     
@@ -58,7 +65,13 @@ class ChorusPlayerManager: ObservableObject {
     func next() {
         guard !isTransitioning else { return }
         
-        currentTrackIndex += 1
+        // 現在再生中のトラックのIDを使って、最新のリストでの次のトラックを見つける
+        if let currentTrack = currentTrack,
+           let currentIndex = tracks.firstIndex(where: { $0.id == currentTrack.id }) {
+            currentTrackIndex = currentIndex + 1
+        } else {
+            currentTrackIndex += 1
+        }
         
         if currentTrackIndex >= tracks.count {
             // 最後まで再生完了、最初に戻ってリピート
@@ -73,7 +86,13 @@ class ChorusPlayerManager: ObservableObject {
     func previous() {
         guard !isTransitioning else { return }
         
-        currentTrackIndex -= 1
+        // 現在再生中のトラックのIDを使って、最新のリストでの前のトラックを見つける
+        if let currentTrack = currentTrack,
+           let currentIndex = tracks.firstIndex(where: { $0.id == currentTrack.id }) {
+            currentTrackIndex = currentIndex - 1
+        } else {
+            currentTrackIndex -= 1
+        }
         
         if currentTrackIndex < 0 {
             // 最初より前、最後の曲に移動
@@ -86,7 +105,8 @@ class ChorusPlayerManager: ObservableObject {
     
     /// 現在の曲を再生
     private func playCurrentTrack() {
-        guard currentTrackIndex < tracks.count else {
+        let currentTracks = tracks
+        guard currentTrackIndex < currentTracks.count else {
             stop()
             return
         }
@@ -97,7 +117,7 @@ class ChorusPlayerManager: ObservableObject {
         
         isTransitioning = true
         
-        let track = tracks[currentTrackIndex]
+        let track = currentTracks[currentTrackIndex]
         currentTrack = track
         
         currentPlayTask = Task {
@@ -168,4 +188,3 @@ class ChorusPlayerManager: ObservableObject {
             }
     }
 }
-
