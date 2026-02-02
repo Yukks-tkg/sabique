@@ -57,6 +57,8 @@ struct SongSearchView: View {
     @State private var addedTrack: TrackInPlaylist?
     @State private var showingChorusEdit = false
     @State private var searchTask: Task<Void, Never>?
+    @State private var showAddedToast = false
+    @State private var addedSongTitle = ""
     
     /// 表示する曲リスト（検索中は検索結果、それ以外は選択されたソースの曲）
     private var displayedSongs: [Song] {
@@ -208,6 +210,31 @@ struct SongSearchView: View {
                 }
             }
         }
+        .overlay {
+            if showAddedToast {
+                VStack(spacing: 12) {
+                    Image(systemName: "checkmark.circle.fill")
+                        .font(.system(size: 50))
+                        .foregroundColor(.green)
+                    
+                    Text(String(localized: "added_to_list"))
+                        .font(.headline)
+                        .foregroundColor(.white)
+                    
+                    Text(addedSongTitle)
+                        .font(.subheadline)
+                        .foregroundColor(.secondary)
+                        .lineLimit(1)
+                }
+                .padding(24)
+                .background(
+                    RoundedRectangle(cornerRadius: 16)
+                        .fill(.ultraThinMaterial)
+                )
+                .transition(.scale.combined(with: .opacity))
+            }
+        }
+        .animation(.easeInOut(duration: 0.3), value: showAddedToast)
     }
     
     /// 選択されたソースの曲を読み込む
@@ -332,8 +359,15 @@ struct SongSearchView: View {
                 track.playlist = playlist
                 modelContext.insert(track)
                 
-                // ハイライトリストに戻る
-                dismiss()
+                // トースト通知を表示
+                addedSongTitle = song.title
+                showAddedToast = true
+                
+                // 1秒後にトーストを非表示
+                Task {
+                    try? await Task.sleep(nanoseconds: 1_000_000_000)
+                    showAddedToast = false
+                }
             }
         }
     }
