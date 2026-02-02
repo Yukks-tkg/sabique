@@ -99,6 +99,10 @@ struct PlaylistDetailView: View {
                                         )
                                         .contentShape(Rectangle())
                                         .onTapGesture {
+                                            // Set Highlight画面では別の再生が始まるため、Highlight Listの再生を停止
+                                            if playerManager.isPlaying {
+                                                playerManager.stop()
+                                            }
                                             selectedTrack = track
                                             showingChorusEdit = true
                                         }
