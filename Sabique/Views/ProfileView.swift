@@ -108,7 +108,7 @@ struct ProfileView: View {
 
             // 変更ボタン
             Button(action: { showingArtworkPicker = true }) {
-                Text("アイコンを変更")
+                Text("お気に入りのアートワーク")
                     .font(.subheadline)
                     .foregroundColor(.blue)
             }
