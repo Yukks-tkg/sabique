@@ -8,6 +8,7 @@
 import Foundation
 import Combine
 import FirebaseAuth
+import FirebaseFirestore
 import AuthenticationServices
 import CryptoKit
 
@@ -134,8 +135,23 @@ class AuthManager: ObservableObject {
 
     /// Firestoreに新規ユーザー情報を保存
     private func createUserProfile(userId: String, displayName: String?) async {
-        // TODO: Phase 2でFirestoreへの保存を実装
-        print("新規ユーザー作成: \(userId), 名前: \(displayName ?? "未設定")")
+        let db = Firestore.firestore()
+        let userProfile = UserProfile(
+            id: userId,
+            displayName: displayName,
+            createdAt: Date(),
+            publishedPlaylistCount: 0,
+            lastPublishedMonth: UserProfile.getCurrentYearMonth(),
+            isPremium: false,
+            isBanned: false
+        )
+
+        do {
+            try db.collection("users").document(userId).setData(from: userProfile)
+            print("✅ ユーザープロフィール作成成功: \(userId)")
+        } catch {
+            print("❌ ユーザープロフィール作成失敗: \(error)")
+        }
     }
 }
 

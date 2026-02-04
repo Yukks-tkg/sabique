@@ -18,6 +18,28 @@ class CommunityManager: ObservableObject {
 
     // MARK: - 投稿機能
 
+    /// ユーザープロフィールを取得または作成
+    func getUserProfile(userId: String) async throws -> UserProfile {
+        let userDoc = try await db.collection("users").document(userId).getDocument()
+
+        if let profile = try? userDoc.data(as: UserProfile.self) {
+            return profile
+        } else {
+            // プロフィールが存在しない場合は作成
+            let newProfile = UserProfile(
+                id: userId,
+                displayName: nil,
+                createdAt: Date(),
+                publishedPlaylistCount: 0,
+                lastPublishedMonth: UserProfile.getCurrentYearMonth(),
+                isPremium: false,
+                isBanned: false
+            )
+            try db.collection("users").document(userId).setData(from: newProfile)
+            return newProfile
+        }
+    }
+
     /// プレイリストをコミュニティに投稿
     func publishPlaylist(
         playlist: Playlist,
@@ -25,6 +47,19 @@ class CommunityManager: ObservableObject {
         authorName: String?,
         authorIsPremium: Bool
     ) async throws {
+        // ユーザープロフィールを取得
+        let userProfile = try await getUserProfile(userId: authorId)
+
+        // 投稿可能かチェック
+        guard userProfile.canPublish(isPremium: authorIsPremium) else {
+            throw CommunityError.publishLimitReached
+        }
+
+        // BANされていないかチェック
+        guard !userProfile.isBanned else {
+            throw CommunityError.userBanned
+        }
+
         let communityPlaylist = CommunityPlaylist.from(
             playlist: playlist,
             authorId: authorId,
@@ -33,7 +68,24 @@ class CommunityManager: ObservableObject {
         )
 
         do {
+            // プレイリストを投稿
             _ = try db.collection("communityPlaylists").addDocument(from: communityPlaylist)
+
+            // 投稿カウントを更新
+            let currentMonth = UserProfile.getCurrentYearMonth()
+            if currentMonth != userProfile.lastPublishedMonth {
+                // 月が変わっていればリセット
+                try await db.collection("users").document(authorId).updateData([
+                    "publishedPlaylistCount": 1,
+                    "lastPublishedMonth": currentMonth
+                ])
+            } else {
+                // 同じ月ならインクリメント
+                try await db.collection("users").document(authorId).updateData([
+                    "publishedPlaylistCount": FieldValue.increment(Int64(1))
+                ])
+            }
+
             print("✅ プレイリスト投稿成功: \(playlist.name)")
         } catch {
             print("❌ プレイリスト投稿失敗: \(error)")
@@ -161,6 +213,8 @@ enum SortOption {
 enum CommunityError: LocalizedError {
     case playlistNotFound
     case importFailed
+    case publishLimitReached
+    case userBanned
 
     var errorDescription: String? {
         switch self {
@@ -168,6 +222,10 @@ enum CommunityError: LocalizedError {
             return "プレイリストが見つかりません"
         case .importFailed:
             return "インポートに失敗しました"
+        case .publishLimitReached:
+            return "今月の投稿上限に達しました。プレミアム版にアップグレードすると無制限に投稿できます。"
+        case .userBanned:
+            return "このアカウントは利用停止になっています"
         }
     }
 }
