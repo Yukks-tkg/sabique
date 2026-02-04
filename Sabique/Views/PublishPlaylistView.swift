@@ -8,6 +8,7 @@
 import SwiftUI
 import SwiftData
 import FirebaseAuth
+import AuthenticationServices
 
 struct PublishPlaylistView: View {
     @Environment(\.dismiss) private var dismiss
@@ -135,10 +136,33 @@ struct PublishPlaylistView: View {
                 .multilineTextAlignment(.center)
                 .padding(.horizontal)
 
-            Button("閉じる") {
-                dismiss()
-            }
-            .buttonStyle(.bordered)
+            // Apple Sign Inボタン
+            SignInWithAppleButton(
+                .signIn,
+                onRequest: { request in
+                    let nonce = authManager.generateNonce()
+                    request.requestedScopes = [.fullName]
+                    request.nonce = authManager.sha256(nonce)
+                },
+                onCompletion: { result in
+                    switch result {
+                    case .success(let authorization):
+                        Task {
+                            do {
+                                try await authManager.signInWithApple(authorization: authorization)
+                            } catch {
+                                print("❌ サインインエラー: \(error)")
+                            }
+                        }
+                    case .failure(let error):
+                        print("❌ Apple Sign In エラー: \(error)")
+                    }
+                }
+            )
+            .signInWithAppleButtonStyle(.black)
+            .frame(height: 50)
+            .padding(.horizontal, 40)
+            .padding(.top, 20)
         }
     }
 

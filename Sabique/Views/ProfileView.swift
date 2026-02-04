@@ -8,6 +8,7 @@
 import SwiftUI
 import FirebaseAuth
 import MusicKit
+import AuthenticationServices
 
 struct ProfileView: View {
     @EnvironmentObject private var authManager: AuthManager
@@ -297,6 +298,34 @@ struct ProfileView: View {
                 .foregroundColor(.secondary)
                 .multilineTextAlignment(.center)
                 .padding(.horizontal)
+
+            // Apple Sign Inボタン
+            SignInWithAppleButton(
+                .signIn,
+                onRequest: { request in
+                    let nonce = authManager.generateNonce()
+                    request.requestedScopes = [.fullName]
+                    request.nonce = authManager.sha256(nonce)
+                },
+                onCompletion: { result in
+                    switch result {
+                    case .success(let authorization):
+                        Task {
+                            do {
+                                try await authManager.signInWithApple(authorization: authorization)
+                            } catch {
+                                print("❌ サインインエラー: \(error)")
+                            }
+                        }
+                    case .failure(let error):
+                        print("❌ Apple Sign In エラー: \(error)")
+                    }
+                }
+            )
+            .signInWithAppleButtonStyle(.white)
+            .frame(height: 50)
+            .padding(.horizontal, 40)
+            .padding(.top, 20)
         }
     }
 
