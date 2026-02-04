@@ -19,17 +19,27 @@ class AuthManager: ObservableObject {
     // Apple Sign In用のnonce
     private var currentNonce: String?
 
+    // 認証状態監視用のハンドル
+    private var authStateHandle: AuthStateDidChangeListenerHandle?
+
     init() {
         // 既存の認証状態をチェック
         self.currentUser = Auth.auth().currentUser
         self.isSignedIn = currentUser != nil
 
         // 認証状態の変更を監視
-        Auth.auth().addStateDidChangeListener { [weak self] _, user in
+        authStateHandle = Auth.auth().addStateDidChangeListener { [weak self] _, user in
             DispatchQueue.main.async {
                 self?.currentUser = user
                 self?.isSignedIn = user != nil
             }
+        }
+    }
+
+    deinit {
+        // リスナーを削除
+        if let handle = authStateHandle {
+            Auth.auth().removeStateDidChangeListener(handle)
         }
     }
 

@@ -15,6 +15,7 @@ struct SettingsView: View {
     @State private var isRestoring = false
     @State private var showingArtworkPicker = false
     @State private var showingSignInTest = false
+    @State private var showingPublishTest = false
     @AppStorage("customBackgroundArtworkURLString") private var customBackgroundArtworkURLString: String = ""
     @AppStorage("customBackgroundSongTitle") private var customBackgroundSongTitle: String = ""
     @AppStorage("customBackgroundArtistName") private var customBackgroundArtistName: String = ""
@@ -132,6 +133,15 @@ struct SettingsView: View {
                             Button(action: { showingSignInTest = true }) {
                                 HStack {
                                     Text("Apple Sign Inテスト")
+                                    Spacer()
+                                    Image(systemName: "chevron.right")
+                                        .foregroundColor(.secondary)
+                                }
+                            }
+
+                            Button(action: { showingPublishTest = true }) {
+                                HStack {
+                                    Text("プレイリスト投稿テスト")
                                     Spacer()
                                     Image(systemName: "chevron.right")
                                         .foregroundColor(.secondary)
@@ -272,6 +282,9 @@ struct SettingsView: View {
             }
             .sheet(isPresented: $showingSignInTest) {
                 SignInTestView()
+            }
+            .sheet(isPresented: $showingPublishTest) {
+                PublishPlaylistView()
             }
         }
     }

@@ -14,6 +14,7 @@ struct SabiqueApp: App {
     @StateObject private var playerManager = ChorusPlayerManager()
     @StateObject private var storeManager = StoreManager()
     @StateObject private var authManager = AuthManager()
+    @StateObject private var communityManager = CommunityManager()
 
     init() {
         FirebaseApp.configure()
@@ -21,10 +22,11 @@ struct SabiqueApp: App {
 
     var body: some Scene {
         WindowGroup {
-            PlaylistListView()
+            MainTabView()
                 .environmentObject(playerManager)
                 .environmentObject(storeManager)
                 .environmentObject(authManager)
+                .environmentObject(communityManager)
         }
         .modelContainer(for: [Playlist.self, TrackInPlaylist.self])
     }
