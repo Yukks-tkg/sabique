@@ -7,12 +7,17 @@
 
 import SwiftUI
 import SwiftData
+import FirebaseCore
 
 @main
 struct SabiqueApp: App {
     @StateObject private var playerManager = ChorusPlayerManager()
     @StateObject private var storeManager = StoreManager()
-    
+
+    init() {
+        FirebaseApp.configure()
+    }
+
     var body: some Scene {
         WindowGroup {
             PlaylistListView()
