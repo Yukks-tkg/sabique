@@ -160,6 +160,9 @@ struct PublishPlaylistView: View {
                     authorIsPremium: storeManager.isPremium
                 )
 
+                // 一覧を更新
+                try? await communityManager.fetchPlaylists(sortBy: .newest, limit: 20)
+
                 await MainActor.run {
                     isPublishing = false
                     showingSuccess = true

@@ -14,6 +14,8 @@ struct CommunityView: View {
     @State private var selectedFilter: SortOption = .popular
     @State private var showingPublish = false
     @State private var backgroundArtworkURL: URL?
+    @State private var searchText = ""
+    @State private var isSearching = false
 
     var body: some View {
         NavigationStack {
@@ -79,8 +81,13 @@ struct CommunityView: View {
 
     private var mainContent: some View {
         VStack(spacing: 0) {
-            // フィルター切り替え
-            filterPicker
+            // 検索バー
+            searchBar
+
+            // フィルター切り替え（検索中は非表示）
+            if !isSearching {
+                filterPicker
+            }
 
             if communityManager.isLoading {
                 loadingView
@@ -90,6 +97,49 @@ struct CommunityView: View {
                 playlistList
             }
         }
+    }
+
+    private var searchBar: some View {
+        HStack {
+            Image(systemName: "magnifyingglass")
+                .foregroundColor(.secondary)
+
+            TextField("プレイリストを検索", text: $searchText)
+                .textFieldStyle(.plain)
+                .autocorrectionDisabled()
+                .onChange(of: searchText) { _, newValue in
+                    Task {
+                        if newValue.isEmpty {
+                            isSearching = false
+                            await loadPlaylists()
+                        } else {
+                            isSearching = true
+                            try? await Task.sleep(nanoseconds: 500_000_000) // 0.5秒待つ
+                            if searchText == newValue {
+                                try? await communityManager.searchPlaylists(keyword: newValue)
+                            }
+                        }
+                    }
+                }
+
+            if !searchText.isEmpty {
+                Button(action: {
+                    searchText = ""
+                    isSearching = false
+                    Task {
+                        await loadPlaylists()
+                    }
+                }) {
+                    Image(systemName: "xmark.circle.fill")
+                        .foregroundColor(.secondary)
+                }
+            }
+        }
+        .padding(10)
+        .background(Color.white.opacity(0.1))
+        .cornerRadius(10)
+        .padding(.horizontal)
+        .padding(.top, 8)
     }
 
     private var filterPicker: some View {

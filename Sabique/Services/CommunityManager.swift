@@ -101,7 +101,7 @@ class CommunityManager: ObservableObject {
 
     // MARK: - 閲覧機能
 
-    /// プレイリスト一覧を取得（人気順）
+    /// プレイリスト一覧を取得
     func fetchPlaylists(sortBy: SortOption = .popular, limit: Int = 20) async throws {
         await MainActor.run { isLoading = true }
 
@@ -135,6 +135,45 @@ class CommunityManager: ObservableObject {
                 self.isLoading = false
             }
             print("❌ プレイリスト取得失敗: \(error)")
+            throw error
+        }
+    }
+
+    /// プレイリストを検索
+    func searchPlaylists(keyword: String, limit: Int = 20) async throws {
+        await MainActor.run { isLoading = true }
+
+        do {
+            // Firestoreの制限により、完全一致検索のみ
+            // プレイリスト名に含まれる検索（部分一致）はクライアント側でフィルタリング
+            let snapshot = try await db.collection("communityPlaylists")
+                .order(by: "likeCount", descending: true)
+                .limit(to: 100)  // 多めに取得してフィルタリング
+                .getDocuments()
+
+            let allPlaylists = snapshot.documents.compactMap { document -> CommunityPlaylist? in
+                try? document.data(as: CommunityPlaylist.self)
+            }
+
+            // クライアント側でフィルタリング（大文字小文字を区別しない）
+            let lowercasedKeyword = keyword.lowercased()
+            let filteredPlaylists = allPlaylists.filter { playlist in
+                playlist.name.lowercased().contains(lowercasedKeyword) ||
+                (playlist.authorName?.lowercased().contains(lowercasedKeyword) ?? false)
+            }
+
+            await MainActor.run {
+                self.playlists = Array(filteredPlaylists.prefix(limit))
+                self.isLoading = false
+            }
+
+            print("✅ 検索完了: \(filteredPlaylists.count)件")
+        } catch {
+            await MainActor.run {
+                self.errorMessage = "検索に失敗しました"
+                self.isLoading = false
+            }
+            print("❌ 検索失敗: \(error)")
             throw error
         }
     }
