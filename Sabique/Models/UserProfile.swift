@@ -16,6 +16,7 @@ struct UserProfile: Codable {
     var profileArtworkURL: String?  // プロフィールアイコン（アートワークURL）
     var profileSongTitle: String?  // プロフィールアイコンの曲名
     var profileArtistName: String?  // プロフィールアイコンのアーティスト名
+    var countryCode: String?  // 国コード（ISO 3166-1 alpha-2: "JP", "US", "GB" など）
     var createdAt: Date
     var publishedPlaylistCount: Int
     var lastPublishedMonth: String  // "2026-02" 形式
@@ -29,6 +30,7 @@ struct UserProfile: Codable {
         case profileArtworkURL
         case profileSongTitle
         case profileArtistName
+        case countryCode
         case createdAt
         case publishedPlaylistCount
         case lastPublishedMonth

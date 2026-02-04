@@ -34,4 +34,11 @@ final class Playlist {
     var sortedTracks: [TrackInPlaylist] {
         tracks.sorted { $0.orderIndex < $1.orderIndex }
     }
+
+    /// 全てのトラックにハイライト区間が設定されているかチェック
+    var allTracksHaveChorus: Bool {
+        return !tracks.isEmpty && tracks.allSatisfy { track in
+            track.chorusStartSeconds != nil && track.chorusEndSeconds != nil
+        }
+    }
 }

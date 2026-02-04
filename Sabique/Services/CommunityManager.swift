@@ -291,6 +291,14 @@ class CommunityManager: ObservableObject {
         ])
         print("✅ プロフィールアートワーク更新成功")
     }
+
+    /// 国コードを更新
+    func updateCountryCode(userId: String, countryCode: String) async throws {
+        try await db.collection("users").document(userId).updateData([
+            "countryCode": countryCode
+        ])
+        print("✅ 国コード更新成功: \(countryCode)")
+    }
 }
 
 // MARK: - Sort Option

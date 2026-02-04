@@ -62,11 +62,11 @@ class AuthManager: ObservableObject {
             throw AuthError.tokenSerializationFailed
         }
 
-        // Firebaseの認証情報を作成
+        // Firebaseの認証情報を作成（fullNameは渡さない）
         let credential = OAuthProvider.appleCredential(
             withIDToken: idTokenString,
             rawNonce: nonce,
-            fullName: appleIDCredential.fullName
+            fullName: nil
         )
 
         // Firebaseにサインイン
@@ -78,7 +78,7 @@ class AuthManager: ObservableObject {
         if result.additionalUserInfo?.isNewUser == true {
             await createUserProfile(
                 userId: result.user.uid,
-                displayName: appleIDCredential.fullName?.givenName
+                displayName: nil  // 本名は保存しない
             )
         }
     }
@@ -136,6 +136,10 @@ class AuthManager: ObservableObject {
     /// Firestoreに新規ユーザー情報を保存
     private func createUserProfile(userId: String, displayName: String?) async {
         let db = Firestore.firestore()
+
+        // デバイスの国コードを自動検出
+        let detectedCountryCode = Locale.current.region?.identifier
+
         let userProfile = UserProfile(
             id: userId,
             displayName: displayName,
@@ -143,6 +147,7 @@ class AuthManager: ObservableObject {
             profileArtworkURL: nil,
             profileSongTitle: nil,
             profileArtistName: nil,
+            countryCode: detectedCountryCode,
             createdAt: Date(),
             publishedPlaylistCount: 0,
             lastPublishedMonth: UserProfile.getCurrentYearMonth(),

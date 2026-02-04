@@ -141,7 +141,7 @@ struct PublishPlaylistView: View {
                 .signIn,
                 onRequest: { request in
                     let nonce = authManager.generateNonce()
-                    request.requestedScopes = [.fullName]
+                    request.requestedScopes = []  // 本名は要求しない
                     request.nonce = authManager.sha256(nonce)
                 },
                 onCompletion: { result in
@@ -171,6 +171,32 @@ struct PublishPlaylistView: View {
     private func publishPlaylist() {
         guard let playlist = selectedPlaylist else { return }
         guard let userId = authManager.currentUser?.uid else { return }
+
+        // 最低トラック数チェック
+        guard playlist.trackCount >= FreeTierLimits.minTracksForPublish else {
+            errorMessage = "投稿には最低\(FreeTierLimits.minTracksForPublish)曲必要です"
+            showingError = true
+            return
+        }
+
+        // 最大トラック数チェック
+        let maxTracks = storeManager.isPremium ? FreeTierLimits.maxTracksForPublishPremium : FreeTierLimits.maxTracksPerPlaylist
+        guard playlist.trackCount <= maxTracks else {
+            if storeManager.isPremium {
+                errorMessage = "投稿できるのは最大\(maxTracks)曲までです"
+            } else {
+                errorMessage = "無料版では最大\(maxTracks)曲まで投稿できます。プレミアムにアップグレードすると\(FreeTierLimits.maxTracksForPublishPremium)曲まで投稿可能です"
+            }
+            showingError = true
+            return
+        }
+
+        // 全てのトラックにハイライトが設定されているかチェック
+        guard playlist.allTracksHaveChorus else {
+            errorMessage = "全ての曲にハイライト区間を設定してください"
+            showingError = true
+            return
+        }
 
         isPublishing = true
 

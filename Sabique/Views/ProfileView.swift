@@ -20,6 +20,7 @@ struct ProfileView: View {
     @State private var isEditingNickname = false
     @State private var showingArtworkPicker = false
     @State private var showingSettings = false
+    @State private var showingCountryPicker = false
     @State private var isLoading = false
     @AppStorage("customBackgroundArtworkURLString") private var customBackgroundArtworkURLString: String = ""
 
@@ -76,6 +77,9 @@ struct ProfileView: View {
 
                 // ニックネーム
                 nicknameSection
+
+                // 国設定
+                countrySection
 
                 // ステータス
                 statusSection
@@ -206,6 +210,37 @@ struct ProfileView: View {
         .cornerRadius(12)
     }
 
+    private var countrySection: some View {
+        VStack(spacing: 12) {
+            HStack {
+                Text("国/地域")
+                    .font(.subheadline)
+                    .foregroundColor(.secondary)
+                Spacer()
+                Button(action: { showingCountryPicker = true }) {
+                    HStack {
+                        Text(countryName(for: userProfile?.countryCode))
+                            .font(.subheadline)
+                        Image(systemName: "chevron.right")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                    }
+                }
+            }
+        }
+        .padding()
+        .background(Color.white.opacity(0.05))
+        .cornerRadius(12)
+        .sheet(isPresented: $showingCountryPicker) {
+            CountryPickerView(
+                selectedCountryCode: userProfile?.countryCode,
+                onSelect: { countryCode in
+                    updateCountryCode(countryCode)
+                }
+            )
+        }
+    }
+
     private var statusSection: some View {
         VStack(spacing: 16) {
             // プレミアムステータス
@@ -304,7 +339,7 @@ struct ProfileView: View {
                 .signIn,
                 onRequest: { request in
                     let nonce = authManager.generateNonce()
-                    request.requestedScopes = [.fullName]
+                    request.requestedScopes = []  // 本名は要求しない
                     request.nonce = authManager.sha256(nonce)
                 },
                 onCompletion: { result in
@@ -384,6 +419,111 @@ struct ProfileView: View {
                 print("❌ アートワーク更新エラー: \(error)")
             }
         }
+    }
+
+    private func updateCountryCode(_ countryCode: String) {
+        guard let userId = authManager.currentUser?.uid else { return }
+
+        // 空文字列の場合はnilとして扱う
+        let finalCountryCode = countryCode.isEmpty ? "" : countryCode
+
+        Task {
+            do {
+                try await communityManager.updateCountryCode(userId: userId, countryCode: finalCountryCode)
+                await loadUserProfile()
+            } catch {
+                print("❌ 国コード更新エラー: \(error)")
+            }
+        }
+    }
+
+    private func countryName(for code: String?) -> String {
+        guard let code = code, !code.isEmpty else { return "未設定" }
+        return Locale.current.localizedString(forRegionCode: code) ?? code
+    }
+}
+
+// MARK: - CountryPickerView
+
+struct CountryPickerView: View {
+    @Environment(\.dismiss) private var dismiss
+    let selectedCountryCode: String?
+    let onSelect: (String) -> Void
+
+    // 主要な国のリスト
+    private let popularCountries = [
+        "JP", "US", "GB", "CA", "AU", "DE", "FR", "KR", "CN", "IN",
+        "BR", "MX", "ES", "IT", "RU", "NL", "SE", "NO", "FI", "DK"
+    ]
+
+    var body: some View {
+        NavigationStack {
+            List {
+                // 未設定オプション
+                Section {
+                    Button(action: {
+                        onSelect("")
+                        dismiss()
+                    }) {
+                        HStack {
+                            Text("未設定")
+                                .foregroundColor(.primary)
+                            Spacer()
+                            if selectedCountryCode == nil || selectedCountryCode == "" {
+                                Image(systemName: "checkmark")
+                                    .foregroundColor(.blue)
+                            }
+                        }
+                    }
+                }
+
+                // 国リスト
+                Section {
+                    ForEach(popularCountries, id: \.self) { code in
+                        Button(action: {
+                            onSelect(code)
+                            dismiss()
+                        }) {
+                            HStack {
+                                Text(flagEmoji(for: code))
+                                    .font(.title3)
+                                Text(countryName(for: code))
+                                    .foregroundColor(.primary)
+                                Spacer()
+                                if code == selectedCountryCode {
+                                    Image(systemName: "checkmark")
+                                        .foregroundColor(.blue)
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            .navigationTitle("国/地域を選択")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("キャンセル") {
+                        dismiss()
+                    }
+                }
+            }
+        }
+    }
+
+    private func countryName(for code: String) -> String {
+        return Locale.current.localizedString(forRegionCode: code) ?? code
+    }
+
+    private func flagEmoji(for countryCode: String) -> String {
+        let base: UInt32 = 127397
+        var emoji = ""
+        for scalar in countryCode.uppercased().unicodeScalars {
+            if let scalarValue = UnicodeScalar(base + scalar.value) {
+                emoji.append(String(scalarValue))
+            }
+        }
+        return emoji
     }
 }
 
