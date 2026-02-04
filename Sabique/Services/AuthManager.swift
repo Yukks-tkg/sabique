@@ -139,6 +139,10 @@ class AuthManager: ObservableObject {
         let userProfile = UserProfile(
             id: userId,
             displayName: displayName,
+            nickname: nil,
+            profileArtworkURL: nil,
+            profileSongTitle: nil,
+            profileArtistName: nil,
             createdAt: Date(),
             publishedPlaylistCount: 0,
             lastPublishedMonth: UserProfile.getCurrentYearMonth(),

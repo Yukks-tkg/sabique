@@ -12,6 +12,10 @@ import FirebaseFirestore
 struct UserProfile: Codable {
     @DocumentID var id: String?
     var displayName: String?
+    var nickname: String?  // 表示用ニックネーム
+    var profileArtworkURL: String?  // プロフィールアイコン（アートワークURL）
+    var profileSongTitle: String?  // プロフィールアイコンの曲名
+    var profileArtistName: String?  // プロフィールアイコンのアーティスト名
     var createdAt: Date
     var publishedPlaylistCount: Int
     var lastPublishedMonth: String  // "2026-02" 形式
@@ -21,6 +25,10 @@ struct UserProfile: Codable {
     enum CodingKeys: String, CodingKey {
         case id
         case displayName
+        case nickname
+        case profileArtworkURL
+        case profileSongTitle
+        case profileArtistName
         case createdAt
         case publishedPlaylistCount
         case lastPublishedMonth

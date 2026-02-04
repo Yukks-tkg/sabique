@@ -271,6 +271,26 @@ class CommunityManager: ObservableObject {
         try await db.collection("communityPlaylists").document(id).delete()
         print("✅ プレイリスト削除成功")
     }
+
+    // MARK: - プロフィール更新機能
+
+    /// ニックネームを更新
+    func updateNickname(userId: String, nickname: String) async throws {
+        try await db.collection("users").document(userId).updateData([
+            "nickname": nickname
+        ])
+        print("✅ ニックネーム更新成功")
+    }
+
+    /// プロフィールアートワークを更新
+    func updateProfileArtwork(userId: String, artworkURL: String, songTitle: String, artistName: String) async throws {
+        try await db.collection("users").document(userId).updateData([
+            "profileArtworkURL": artworkURL,
+            "profileSongTitle": songTitle,
+            "profileArtistName": artistName
+        ])
+        print("✅ プロフィールアートワーク更新成功")
+    }
 }
 
 // MARK: - Sort Option

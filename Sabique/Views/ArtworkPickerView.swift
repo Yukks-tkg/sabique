@@ -11,7 +11,10 @@ import MusicKit
 
 struct ArtworkPickerView: View {
     @Environment(\.dismiss) private var dismiss
-    
+
+    // Callback for profile artwork selection
+    var onArtworkSelected: ((Song) -> Void)?
+
     // User Settings for Custom Background
     @AppStorage("customBackgroundSongId") private var customBackgroundSongId: String = ""
     @AppStorage("customBackgroundArtworkURLString") private var customBackgroundArtworkURLString: String = ""
@@ -297,13 +300,21 @@ struct ArtworkPickerView: View {
     }
     
     private func selectSong(_ song: Song) {
+        // If callback is provided (for profile icon), use it instead
+        if let onArtworkSelected = onArtworkSelected {
+            onArtworkSelected(song)
+            dismiss()
+            return
+        }
+
+        // Otherwise, save to AppStorage (for background)
         // Save ID
         customBackgroundSongId = song.id.rawValue
-        
+
         // Save Title and Artist
         customBackgroundSongTitle = song.title
         customBackgroundArtistName = song.artistName
-        
+
         // Save Artwork URL (High quality)
         if let artwork = song.artwork {
             // Using a reasonably high resolution for background (e.g. 600x600 or device dependent if needed)
@@ -312,7 +323,7 @@ struct ArtworkPickerView: View {
                 customBackgroundArtworkURLString = url.absoluteString
             }
         }
-        
+
         dismiss()
     }
 }

@@ -12,8 +12,20 @@ import Combine
 /// アプリ内課金を管理するクラス
 @MainActor
 class StoreManager: ObservableObject {
-    /// プレミアム版が購入済みかどうか
+    /// プレミアム版が購入済みかどうか（デバッグモード考慮）
     @Published private(set) var isPremium: Bool = false
+
+    #if DEBUG
+    /// デバッグ用：プレミアム状態を強制的に無料版にする
+    @Published var debugForceFreeMode: Bool = false {
+        didSet {
+            // デバッグモードが変更されたら購入状態を再計算
+            Task {
+                await updatePurchaseStatus()
+            }
+        }
+    }
+    #endif
     
     /// 取得した製品情報
     @Published private(set) var products: [Product] = []
@@ -124,6 +136,14 @@ class StoreManager: ObservableObject {
     
     /// 購入状態を更新
     private func updatePurchaseStatus() async {
+        #if DEBUG
+        // デバッグモードで無料版強制が有効な場合は常にfalse
+        if debugForceFreeMode {
+            isPremium = false
+            return
+        }
+        #endif
+
         for await result in Transaction.currentEntitlements {
             do {
                 let transaction = try checkVerified(result)

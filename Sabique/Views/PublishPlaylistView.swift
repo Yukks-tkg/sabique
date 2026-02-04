@@ -152,11 +152,14 @@ struct PublishPlaylistView: View {
 
         Task {
             do {
-                let displayName = authManager.currentUser?.displayName
+                // ユーザープロフィールを取得してニックネームを使用
+                let userProfile = try await communityManager.getUserProfile(userId: userId)
+                let authorName = userProfile.nickname ?? authManager.currentUser?.displayName
+
                 try await communityManager.publishPlaylist(
                     playlist: playlist,
                     authorId: userId,
-                    authorName: displayName,
+                    authorName: authorName,
                     authorIsPremium: storeManager.isPremium
                 )
 

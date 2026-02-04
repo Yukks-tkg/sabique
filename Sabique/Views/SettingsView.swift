@@ -129,6 +129,27 @@ struct SettingsView: View {
                             }
                         }
 
+                        #if DEBUG
+                        Section("デバッグ設定") {
+                            Toggle(isOn: $storeManager.debugForceFreeMode) {
+                                VStack(alignment: .leading, spacing: 4) {
+                                    Text("無料版として動作")
+                                    Text("プレミアム購入済みでも無料版の制限をテストできます")
+                                        .font(.caption)
+                                        .foregroundColor(.secondary)
+                                }
+                            }
+
+                            HStack {
+                                Text("現在の状態:")
+                                Spacer()
+                                Text(storeManager.isPremium ? "プレミアム" : "無料版")
+                                    .fontWeight(.semibold)
+                                    .foregroundColor(storeManager.isPremium ? .green : .orange)
+                            }
+                        }
+                        #endif
+
                         Section("開発者向け") {
                             Button(action: { showingSignInTest = true }) {
                                 HStack {

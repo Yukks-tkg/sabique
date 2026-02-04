@@ -26,6 +26,13 @@ struct MainTabView: View {
                     Label("みんなのプレイリスト", systemImage: "globe")
                 }
                 .tag(1)
+
+            // Tab 3: プロフィール
+            ProfileView()
+                .tabItem {
+                    Label("プロフィール", systemImage: "person.circle")
+                }
+                .tag(2)
         }
         .preferredColorScheme(.dark)
     }

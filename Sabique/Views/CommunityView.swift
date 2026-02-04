@@ -13,7 +13,7 @@ struct CommunityView: View {
     @EnvironmentObject private var authManager: AuthManager
     @State private var selectedFilter: SortOption = .popular
     @State private var showingPublish = false
-    @State private var backgroundArtworkURL: URL?
+    @AppStorage("customBackgroundArtworkURLString") private var customBackgroundArtworkURLString: String = ""
     @State private var searchText = ""
     @State private var isSearching = false
 
@@ -24,8 +24,10 @@ struct CommunityView: View {
                 backgroundView
 
                 // オーバーレイ
-                Color.black.opacity(0.25)
-                    .ignoresSafeArea()
+                if !customBackgroundArtworkURLString.isEmpty {
+                    Color.black.opacity(0.25)
+                        .ignoresSafeArea()
+                }
 
                 // メインコンテンツ
                 mainContent
@@ -42,7 +44,6 @@ struct CommunityView: View {
             }
             .task {
                 await loadPlaylists()
-                await updateBackgroundArtwork()
             }
             .refreshable {
                 await loadPlaylists()
@@ -57,7 +58,7 @@ struct CommunityView: View {
 
     private var backgroundView: some View {
         GeometryReader { geometry in
-            if let url = backgroundArtworkURL {
+            if !customBackgroundArtworkURLString.isEmpty, let url = URL(string: customBackgroundArtworkURLString) {
                 AsyncImage(url: url) { image in
                     image
                         .resizable()
@@ -67,16 +68,13 @@ struct CommunityView: View {
                         .blur(radius: 30)
                         .opacity(0.6)
                 } placeholder: {
-                    Color.black
+                    Color(.systemGroupedBackground)
                 }
-                .id(url)
-                .transition(.opacity)
             } else {
-                Color(.systemBackground)
+                Color(.systemGroupedBackground)
             }
         }
         .ignoresSafeArea()
-        .animation(.easeInOut(duration: 0.5), value: backgroundArtworkURL)
     }
 
     private var mainContent: some View {
@@ -205,15 +203,6 @@ struct CommunityView: View {
         }
     }
 
-    private func updateBackgroundArtwork() async {
-        guard let firstPlaylist = communityManager.playlists.first,
-              !firstPlaylist.tracks.isEmpty else {
-            return
-        }
-
-        // TODO: MusicKitで実際のアートワークURLを取得
-        // 仮でダミーURLを設定（後で実装）
-    }
 }
 
 // MARK: - CommunityPlaylistCard
