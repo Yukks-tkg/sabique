@@ -14,6 +14,7 @@ struct SettingsView: View {
     @State private var showingPaywall = false
     @State private var isRestoring = false
     @State private var showingArtworkPicker = false
+    @State private var showingSignInTest = false
     @AppStorage("customBackgroundArtworkURLString") private var customBackgroundArtworkURLString: String = ""
     @AppStorage("customBackgroundSongTitle") private var customBackgroundSongTitle: String = ""
     @AppStorage("customBackgroundArtistName") private var customBackgroundArtistName: String = ""
@@ -122,6 +123,17 @@ struct SettingsView: View {
                                     Text(String(localized: "auto_play"))
                                     Text(String(localized: "auto_play_description"))
                                         .font(.caption)
+                                        .foregroundColor(.secondary)
+                                }
+                            }
+                        }
+
+                        Section("開発者向け") {
+                            Button(action: { showingSignInTest = true }) {
+                                HStack {
+                                    Text("Apple Sign Inテスト")
+                                    Spacer()
+                                    Image(systemName: "chevron.right")
                                         .foregroundColor(.secondary)
                                 }
                             }
@@ -257,6 +269,9 @@ struct SettingsView: View {
             }
             .sheet(isPresented: $showingArtworkPicker) {
                 ArtworkPickerView()
+            }
+            .sheet(isPresented: $showingSignInTest) {
+                SignInTestView()
             }
         }
     }

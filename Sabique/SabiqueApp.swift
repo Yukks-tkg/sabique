@@ -13,6 +13,7 @@ import FirebaseCore
 struct SabiqueApp: App {
     @StateObject private var playerManager = ChorusPlayerManager()
     @StateObject private var storeManager = StoreManager()
+    @StateObject private var authManager = AuthManager()
 
     init() {
         FirebaseApp.configure()
@@ -23,6 +24,7 @@ struct SabiqueApp: App {
             PlaylistListView()
                 .environmentObject(playerManager)
                 .environmentObject(storeManager)
+                .environmentObject(authManager)
         }
         .modelContainer(for: [Playlist.self, TrackInPlaylist.self])
     }
