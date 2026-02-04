@@ -47,6 +47,12 @@ class CommunityManager: ObservableObject {
         authorName: String?,
         authorIsPremium: Bool
     ) async throws {
+        // プレイリスト名のバリデーション
+        let validationResult = PlaylistValidator.validate(playlistName: playlist.name)
+        guard validationResult.isValid else {
+            throw CommunityError.validationFailed(validationResult.errorMessage ?? "不正な入力です")
+        }
+
         // ユーザープロフィールを取得
         let userProfile = try await getUserProfile(userId: authorId)
 
@@ -166,6 +172,33 @@ class CommunityManager: ObservableObject {
         print("✅ インポート成功: \(communityPlaylist.name)")
     }
 
+    // MARK: - 報告機能
+
+    /// プレイリストを報告
+    func reportPlaylist(
+        playlistId: String,
+        reporterUserId: String,
+        reason: ReportReason,
+        comment: String?
+    ) async throws {
+        let report = PlaylistReport(
+            id: nil,
+            playlistId: playlistId,
+            reporterUserId: reporterUserId,
+            reason: reason.rawValue,
+            comment: comment,
+            createdAt: Date()
+        )
+
+        do {
+            _ = try db.collection("reports").addDocument(from: report)
+            print("✅ 報告送信成功")
+        } catch {
+            print("❌ 報告送信失敗: \(error)")
+            throw error
+        }
+    }
+
     // MARK: - いいね機能
 
     /// いいね数をインクリメント
@@ -215,6 +248,7 @@ enum CommunityError: LocalizedError {
     case importFailed
     case publishLimitReached
     case userBanned
+    case validationFailed(String)
 
     var errorDescription: String? {
         switch self {
@@ -226,6 +260,8 @@ enum CommunityError: LocalizedError {
             return "今月の投稿上限に達しました。プレミアム版にアップグレードすると無制限に投稿できます。"
         case .userBanned:
             return "このアカウントは利用停止になっています"
+        case .validationFailed(let message):
+            return message
         }
     }
 }

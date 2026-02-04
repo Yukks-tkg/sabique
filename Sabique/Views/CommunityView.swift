@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import MusicKit
 
 struct CommunityView: View {
     @EnvironmentObject private var communityManager: CommunityManager
@@ -169,12 +170,13 @@ struct CommunityView: View {
 
 struct CommunityPlaylistCard: View {
     let playlist: CommunityPlaylist
+    @State private var artworkURL: URL?
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             HStack(spacing: 12) {
-                // アートワーク（仮）
-                placeholderArtwork
+                // アートワーク
+                artworkView
 
                 VStack(alignment: .leading, spacing: 4) {
                     // プレイリスト名
@@ -238,6 +240,27 @@ struct CommunityPlaylistCard: View {
         .padding()
         .background(Color.white.opacity(0.1))
         .cornerRadius(12)
+        .task {
+            await loadArtwork()
+        }
+    }
+
+    private var artworkView: some View {
+        Group {
+            if let url = artworkURL {
+                AsyncImage(url: url) { image in
+                    image
+                        .resizable()
+                        .aspectRatio(contentMode: .fill)
+                } placeholder: {
+                    placeholderArtwork
+                }
+                .frame(width: 60, height: 60)
+                .cornerRadius(8)
+            } else {
+                placeholderArtwork
+            }
+        }
     }
 
     private var placeholderArtwork: some View {
@@ -255,6 +278,26 @@ struct CommunityPlaylistCard: View {
             Image(systemName: "music.note.list")
                 .foregroundColor(.blue)
                 .font(.title3)
+        }
+    }
+
+    private func loadArtwork() async {
+        guard let firstTrack = playlist.tracks.first else { return }
+
+        do {
+            let request = MusicCatalogResourceRequest<Song>(
+                matching: \.id,
+                equalTo: MusicItemID(firstTrack.appleMusicId)
+            )
+            let response = try await request.response()
+            if let song = response.items.first, let artwork = song.artwork {
+                let url = artwork.url(width: 120, height: 120)
+                await MainActor.run {
+                    artworkURL = url
+                }
+            }
+        } catch {
+            print("アートワーク取得エラー: \(error)")
         }
     }
 }

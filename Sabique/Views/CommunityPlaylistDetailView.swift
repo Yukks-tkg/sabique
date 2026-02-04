@@ -17,6 +17,7 @@ struct CommunityPlaylistDetailView: View {
     @State private var hasLiked = false
     @State private var showingImportSuccess = false
     @State private var showingImportError = false
+    @State private var showingReport = false
     @State private var errorMessage = ""
 
     var body: some View {
@@ -43,13 +44,16 @@ struct CommunityPlaylistDetailView: View {
         .toolbar {
             ToolbarItem(placement: .navigationBarTrailing) {
                 Menu {
-                    Button(action: {}) {
+                    Button(action: { showingReport = true }) {
                         Label("不適切な内容を報告", systemImage: "exclamationmark.triangle")
                     }
                 } label: {
                     Image(systemName: "ellipsis.circle")
                 }
             }
+        }
+        .sheet(isPresented: $showingReport) {
+            ReportPlaylistView(playlist: playlist)
         }
         .alert("インポート完了", isPresented: $showingImportSuccess) {
             Button("OK", role: .cancel) {}
