@@ -4,6 +4,8 @@
 //
 
 import SwiftUI
+import FirebaseAuth
+import AuthenticationServices
 
 struct SettingsView: View {
     @Environment(\.dismiss) private var dismiss
@@ -97,6 +99,37 @@ struct SettingsView: View {
                             Text("アカウント")
                         } footer: {
                             Text("アカウントを削除すると、投稿したプレイリストやいいね履歴など、すべてのデータが完全に削除されます。")
+                                .font(.caption)
+                        }
+                    } else {
+                        // 未サインイン時
+                        Section {
+                            SignInWithAppleButton(
+                                .signIn,
+                                onRequest: { request in
+                                    let nonce = authManager.generateNonce()
+                                    request.requestedScopes = [.email]
+                                    request.nonce = authManager.sha256(nonce)
+                                },
+                                onCompletion: { result in
+                                    switch result {
+                                    case .success(let authorization):
+                                        Task {
+                                            try? await authManager.signInWithApple(authorization: authorization)
+                                        }
+                                    case .failure(let error):
+                                        print("Sign in with Apple failed: \(error)")
+                                    }
+                                }
+                            )
+                            .signInWithAppleButtonStyle(.white)
+                            .frame(height: 50)
+                            .listRowBackground(Color.clear)
+                            .listRowInsets(EdgeInsets(top: 0, leading: 20, bottom: 0, trailing: 20))
+                        } header: {
+                            Text("アカウント")
+                        } footer: {
+                            Text("サインインすると、コミュニティにプレイリストを投稿したり、他のユーザーのプレイリストにいいねができます。")
                                 .font(.caption)
                         }
                     }

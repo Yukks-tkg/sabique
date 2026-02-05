@@ -8,7 +8,6 @@
 import SwiftUI
 import SwiftData
 import MusicKit
-import UniformTypeIdentifiers
 
 struct PlaylistListView: View {
     @Environment(\.modelContext) private var modelContext
@@ -19,8 +18,6 @@ struct PlaylistListView: View {
     @State private var showingCreateSheet = false
     @State private var showingSettings = false
     @State private var showingImportSheet = false
-    @State private var showingFileImporter = false
-    @State private var isImporting = false
     @State private var importError: String?
     @State private var showingImportError = false
     @State private var newPlaylistName = ""
@@ -69,9 +66,6 @@ struct PlaylistListView: View {
                         Button(action: { handleImportAppleMusic() }) {
                             Label(String(localized: "import_apple_music"), systemImage: "music.note")
                         }
-                        Button(action: { handleImportFile() }) {
-                            Label(String(localized: "import_file"), systemImage: "doc.badge.arrow.up")
-                        }
                     } label: {
                         Image(systemName: "plus")
                             .font(.title3)
@@ -92,13 +86,6 @@ struct PlaylistListView: View {
                 AppleMusicPlaylistImportView { importedPlaylist in
                     // インポート成功時の処理（必要に応じて）
                 }
-            }
-            .fileImporter(
-                isPresented: $showingFileImporter,
-                allowedContentTypes: [UTType.json, UTType(filenameExtension: "sabique") ?? UTType.data],
-                allowsMultipleSelection: false
-            ) { result in
-                handleFileImport(result: result)
             }
             .alert(String(localized: "import_error"), isPresented: $showingImportError) {
                 Button(String(localized: "ok"), role: .cancel) {}
@@ -137,15 +124,6 @@ struct PlaylistListView: View {
     private func handleImportAppleMusic() {
         if canAddPlaylist {
             showingImportSheet = true
-        } else {
-            showingPaywall = true
-        }
-    }
-    
-    /// ファイルインポートの処理
-    private func handleImportFile() {
-        if canAddPlaylist {
-            showingFileImporter = true
         } else {
             showingPaywall = true
         }
@@ -222,49 +200,6 @@ struct PlaylistListView: View {
             }
         } catch {
             print("Background artwork load error: \(error)")
-        }
-    }
-    
-    private func handleFileImport(result: Result<[URL], Error>) {
-        switch result {
-        case .success(let urls):
-            guard let url = urls.first else { return }
-            isImporting = true
-            
-            Task {
-                do {
-                    // 既存のプレイリストのorderIndexを更新
-                    for playlist in playlists {
-                        playlist.orderIndex += 1
-                    }
-                    
-                    let importResult = try await PlaylistImporter.importFromFile(
-                        url: url,
-                        modelContext: modelContext,
-                        isPremium: storeManager.isPremium
-                    )
-                    
-                    await MainActor.run {
-                        isImporting = false
-                        
-                        // スキップされたトラックがある場合は警告を表示
-                        if importResult.hasSkippedTracks {
-                            skippedTrackCount = importResult.skippedTrackCount
-                            showingImportLimitAlert = true
-                        }
-                    }
-                } catch {
-                    await MainActor.run {
-                        importError = error.localizedDescription
-                        showingImportError = true
-                        isImporting = false
-                    }
-                }
-            }
-            
-        case .failure(let error):
-            importError = error.localizedDescription
-            showingImportError = true
         }
     }
     

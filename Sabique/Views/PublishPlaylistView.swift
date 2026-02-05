@@ -19,6 +19,9 @@ struct PublishPlaylistView: View {
 
     @Query(sort: \Playlist.orderIndex) private var playlists: [Playlist]
 
+    // 外部から指定されたプレイリスト（PlaylistDetailViewから開く場合）
+    var preselectedPlaylist: Playlist?
+
     @State private var selectedPlaylist: Playlist?
     @State private var isPublishing = false
     @State private var showingSuccess = false
@@ -65,6 +68,12 @@ struct PublishPlaylistView: View {
                 Button("OK", role: .cancel) {}
             } message: {
                 Text(errorMessage)
+            }
+            .onAppear {
+                // preselectedPlaylistが指定されていれば自動選択
+                if let preselected = preselectedPlaylist {
+                    selectedPlaylist = preselected
+                }
             }
         }
     }
@@ -123,11 +132,11 @@ struct PublishPlaylistView: View {
 
     var signInPromptView: some View {
         VStack(spacing: 20) {
-            Image(systemName: "person.crop.circle.badge.plus")
+            Image(systemName: "person.crop.circle.badge.questionmark")
                 .font(.system(size: 60))
-                .foregroundColor(.blue)
+                .foregroundColor(.secondary)
 
-            Text("サインインが必要です")
+            Text("サインインしてください")
                 .font(.headline)
 
             Text("プレイリストを投稿するにはApple IDでサインインしてください")
@@ -159,7 +168,7 @@ struct PublishPlaylistView: View {
                     }
                 }
             )
-            .signInWithAppleButtonStyle(.black)
+            .signInWithAppleButtonStyle(.white)
             .frame(height: 50)
             .padding(.horizontal, 40)
             .padding(.top, 20)

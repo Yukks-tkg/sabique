@@ -18,9 +18,7 @@ struct PlaylistDetailView: View {
     @State private var selectedTrack: TrackInPlaylist?
     @State private var showingChorusEdit = false
     @State private var backgroundArtworkURL: URL?
-    @State private var isExporting = false
-    @State private var exportedFileURL: URL?
-    @State private var showingShareSheet = false
+    @State private var showingPublish = false
     @State private var showingPaywall = false
     @State private var shouldScrollToBottom = false
     @State private var previousTrackCount = 0
@@ -230,19 +228,14 @@ struct PlaylistDetailView: View {
         .navigationTitle(String(localized: "highlight_list"))
         .preferredColorScheme(.dark)
         .toolbar {
-            // エクスポートボタン
+            // コミュニティに投稿ボタン
             ToolbarItem(placement: .navigationBarTrailing) {
-                Button(action: exportPlaylist) {
-                    if isExporting {
-                        ProgressView()
-                            .tint(.white)
-                    } else {
-                        Image(systemName: "square.and.arrow.up")
-                    }
+                Button(action: { showingPublish = true }) {
+                    Image(systemName: "square.and.arrow.up")
                 }
-                .disabled(isExporting || playlist.sortedTracks.isEmpty)
+                .disabled(playlist.sortedTracks.isEmpty)
             }
-            
+
             // 曲追加ボタン
             ToolbarItem(placement: .navigationBarTrailing) {
                 Button(action: { handleAddTrack() }) {
@@ -268,10 +261,8 @@ struct PlaylistDetailView: View {
         .sheet(item: $selectedTrack) { track in
             ChorusEditView(track: track)
         }
-        .sheet(isPresented: $showingShareSheet) {
-            if let url = exportedFileURL {
-                ShareSheet(activityItems: [url])
-            }
+        .sheet(isPresented: $showingPublish) {
+            PublishPlaylistView(preselectedPlaylist: playlist)
         }
         .sheet(isPresented: $showingPaywall) {
             PaywallView()
@@ -340,35 +331,6 @@ struct PlaylistDetailView: View {
         }
     }
     
-    private func exportPlaylist() {
-        isExporting = true
-        Task {
-            do {
-                let fileURL = try await PlaylistExporter.exportToFile(playlist: playlist)
-                await MainActor.run {
-                    exportedFileURL = fileURL
-                    showingShareSheet = true
-                    isExporting = false
-                }
-            } catch {
-                print("Export error: \(error)")
-                await MainActor.run {
-                    isExporting = false
-                }
-            }
-        }
-    }
-}
-
-// MARK: - ShareSheet
-struct ShareSheet: UIViewControllerRepresentable {
-    let activityItems: [Any]
-    
-    func makeUIViewController(context: Context) -> UIActivityViewController {
-        UIActivityViewController(activityItems: activityItems, applicationActivities: nil)
-    }
-    
-    func updateUIViewController(_ uiViewController: UIActivityViewController, context: Context) {}
 }
 
 // MARK: - TrackRow
