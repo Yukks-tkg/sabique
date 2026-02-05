@@ -23,6 +23,8 @@ struct CommunityPlaylistDetailView: View {
     @State private var showingImportError = false
     @State private var showingReport = false
     @State private var errorMessage = ""
+    @State private var playingTrackId: String?
+    @State private var isLoadingTrack = false
 
     init(playlist: CommunityPlaylist) {
         self.playlist = playlist
@@ -190,31 +192,59 @@ struct CommunityPlaylistDetailView: View {
             Text("収録曲")
                 .font(.headline)
 
-            ForEach(Array(playlist.tracks.enumerated()), id: \.element.id) { index, track in
-                HStack {
-                    Text("\(index + 1)")
-                        .font(.caption)
-                        .foregroundColor(.secondary)
-                        .frame(width: 20)
+            VStack(spacing: 0) {
+                ForEach(Array(playlist.tracks.enumerated()), id: \.element.id) { index, track in
+                    Button(action: {
+                        playTrack(track)
+                    }) {
+                        HStack {
+                            // 再生中インジケーター or 番号
+                            if playingTrackId == track.id {
+                                if isLoadingTrack {
+                                    ProgressView()
+                                        .frame(width: 20)
+                                } else {
+                                    Image(systemName: "speaker.wave.2.fill")
+                                        .font(.caption)
+                                        .foregroundColor(.blue)
+                                        .frame(width: 20)
+                                }
+                            } else {
+                                Text("\(index + 1)")
+                                    .font(.caption)
+                                    .foregroundColor(.secondary)
+                                    .frame(width: 20)
+                            }
 
-                    VStack(alignment: .leading, spacing: 4) {
-                        Text(track.title)
-                            .font(.subheadline)
-                        Text(track.artist)
-                            .font(.caption)
-                            .foregroundColor(.secondary)
+                            VStack(alignment: .leading, spacing: 4) {
+                                Text(track.title)
+                                    .font(.subheadline)
+                                    .foregroundColor(playingTrackId == track.id ? .blue : .primary)
+                                Text(track.artist)
+                                    .font(.caption)
+                                    .foregroundColor(.secondary)
+                            }
+
+                            Spacer()
+
+                            // サビ区間
+                            if let start = track.chorusStart, let end = track.chorusEnd {
+                                Text("\(formatTime(start)) - \(formatTime(end))")
+                                    .font(.caption2)
+                                    .foregroundColor(.secondary)
+                            }
+                        }
+                        .padding(.vertical, 12)
+                        .contentShape(Rectangle())
                     }
+                    .buttonStyle(.plain)
 
-                    Spacer()
-
-                    // サビ区間
-                    if let start = track.chorusStart, let end = track.chorusEnd {
-                        Text("\(formatTime(start)) - \(formatTime(end))")
-                            .font(.caption2)
-                            .foregroundColor(.secondary)
+                    // 最後の行以外に仕切り線を追加
+                    if index < playlist.tracks.count - 1 {
+                        Divider()
+                            .background(Color.white.opacity(0.2))
                     }
                 }
-                .padding(.vertical, 8)
             }
         }
         .padding()
@@ -323,6 +353,57 @@ struct CommunityPlaylistDetailView: View {
             }
         } catch {
             print("アートワーク取得エラー: \(error)")
+        }
+    }
+
+    private func playTrack(_ track: CommunityTrack) {
+        // 同じ曲をタップしたら停止
+        if playingTrackId == track.id {
+            ApplicationMusicPlayer.shared.stop()
+            playingTrackId = nil
+            return
+        }
+
+        playingTrackId = track.id
+        isLoadingTrack = true
+
+        Task {
+            do {
+                // Apple Musicから曲を取得
+                let request = MusicCatalogResourceRequest<Song>(
+                    matching: \.id,
+                    equalTo: MusicItemID(track.appleMusicId)
+                )
+                let response = try await request.response()
+
+                guard let song = response.items.first else {
+                    await MainActor.run {
+                        isLoadingTrack = false
+                        playingTrackId = nil
+                    }
+                    return
+                }
+
+                // 再生キューを設定して再生
+                let player = ApplicationMusicPlayer.shared
+                player.queue = [song]
+                try await player.play()
+
+                // サビ区間があれば、その位置にシーク
+                if let chorusStart = track.chorusStart {
+                    player.playbackTime = chorusStart
+                }
+
+                await MainActor.run {
+                    isLoadingTrack = false
+                }
+            } catch {
+                print("再生エラー: \(error)")
+                await MainActor.run {
+                    isLoadingTrack = false
+                    playingTrackId = nil
+                }
+            }
         }
     }
 }

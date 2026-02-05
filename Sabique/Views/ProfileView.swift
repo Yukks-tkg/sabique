@@ -21,6 +21,7 @@ struct ProfileView: View {
     @State private var showingArtworkPicker = false
     @State private var showingSettings = false
     @State private var showingCountryPicker = false
+    @State private var showingProfileEdit = false
     @State private var isLoading = false
     @State private var totalLikes: Int = 0
     @State private var totalDownloads: Int = 0
@@ -47,12 +48,18 @@ struct ProfileView: View {
                     signedOutView
                 }
             }
-            .navigationTitle("プロフィール")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
                     Button(action: { showingSettings = true }) {
                         Image(systemName: "gearshape")
+                    }
+                }
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    if authManager.isSignedIn {
+                        Button(action: { showingProfileEdit = true }) {
+                            Image(systemName: "pencil")
+                        }
                     }
                 }
             }
@@ -74,6 +81,16 @@ struct ProfileView: View {
                     }
                 )
             }
+            .sheet(isPresented: $showingProfileEdit) {
+                ProfileEditSheet(
+                    userProfile: $userProfile,
+                    onSave: {
+                        Task {
+                            await loadUserProfile()
+                        }
+                    }
+                )
+            }
             .task {
                 await loadUserProfile()
             }
@@ -92,11 +109,6 @@ struct ProfileView: View {
                 // ステータスカード
                 statusSection
 
-                // デバッグ情報（一時的）
-                Text("Debug: プレイリスト数 = \(myPublishedPlaylists.count)")
-                    .font(.caption)
-                    .foregroundColor(.yellow)
-
                 // 投稿プレイリスト一覧
                 if !myPublishedPlaylists.isEmpty {
                     myPlaylistsSection
@@ -113,125 +125,49 @@ struct ProfileView: View {
     }
 
     private var profileHeaderSection: some View {
-        VStack(spacing: 24) {
+        VStack(spacing: 16) {
             // アートワーク
-            VStack(spacing: 16) {
-                if let artworkURLString = userProfile?.profileArtworkURL,
-                   let artworkURL = URL(string: artworkURLString) {
-                    AsyncImage(url: artworkURL) { image in
-                        image
-                            .resizable()
-                            .aspectRatio(contentMode: .fill)
-                            .frame(width: 160, height: 160)
-                            .cornerRadius(20)
-                            .shadow(color: .black.opacity(0.3), radius: 12, x: 0, y: 6)
-                    } placeholder: {
-                        defaultProfileIconLarge
-                    }
-                } else {
+            if let artworkURLString = userProfile?.profileArtworkURL,
+               let artworkURL = URL(string: artworkURLString) {
+                AsyncImage(url: artworkURL) { image in
+                    image
+                        .resizable()
+                        .aspectRatio(contentMode: .fill)
+                        .frame(width: 140, height: 140)
+                        .cornerRadius(20)
+                        .shadow(color: .black.opacity(0.3), radius: 12, x: 0, y: 6)
+                } placeholder: {
                     defaultProfileIconLarge
                 }
+            } else {
+                defaultProfileIconLarge
+            }
 
-                // 曲情報
-                if let songTitle = userProfile?.profileSongTitle {
-                    VStack(spacing: 4) {
-                        Text(songTitle)
-                            .font(.callout)
-                            .fontWeight(.semibold)
-                        if let artistName = userProfile?.profileArtistName {
-                            Text(artistName)
-                                .font(.caption)
-                                .foregroundColor(.secondary)
-                        }
+            // 曲情報
+            if let songTitle = userProfile?.profileSongTitle {
+                VStack(spacing: 4) {
+                    Text(songTitle)
+                        .font(.callout)
+                        .fontWeight(.semibold)
+                    if let artistName = userProfile?.profileArtistName {
+                        Text(artistName)
+                            .font(.caption)
+                            .foregroundColor(.secondary)
                     }
-                }
-
-                // 変更ボタン
-                Button(action: { showingArtworkPicker = true }) {
-                    Text("お気に入りのアートワーク")
-                        .font(.subheadline)
-                        .foregroundColor(.blue)
                 }
             }
 
-            // プロフィール情報カード
-            VStack(spacing: 16) {
-                // ニックネーム
-                if isEditingNickname {
-                    VStack(spacing: 8) {
-                        HStack {
-                            TextField("ニックネーム", text: $nickname)
-                                .textFieldStyle(.roundedBorder)
-                                .autocapitalization(.none)
-                                .onChange(of: nickname) { oldValue, newValue in
-                                    if newValue.count > maxNicknameLength {
-                                        nickname = String(newValue.prefix(maxNicknameLength))
-                                    }
-                                }
+            // ニックネーム + 国旗（表示のみ）
+            HStack(spacing: 8) {
+                Text(userProfile?.nickname ?? "ニックネーム未設定")
+                    .font(.title2)
+                    .fontWeight(.bold)
 
-                            Button("保存") {
-                                saveNickname()
-                            }
-                            .buttonStyle(.borderedProminent)
-                            .disabled(nickname.isEmpty || nickname.count > maxNicknameLength)
-
-                            Button("キャンセル") {
-                                isEditingNickname = false
-                                nickname = userProfile?.nickname ?? ""
-                            }
-                            .buttonStyle(.bordered)
-                        }
-
-                        // 文字数カウンター
-                        HStack {
-                            Spacer()
-                            Text("\(nickname.count)/\(maxNicknameLength)")
-                                .font(.caption2)
-                                .foregroundColor(nickname.count > maxNicknameLength ? .red : .secondary)
-                        }
-                    }
-                } else {
-                    HStack {
-                        Text(userProfile?.nickname ?? "ニックネーム未設定")
-                            .font(.title2)
-                            .fontWeight(.bold)
-
-                        // 国旗表示
-                        if let countryCode = userProfile?.countryCode, !countryCode.isEmpty {
-                            Text(flagEmoji(for: countryCode))
-                                .font(.title2)
-                        }
-
-                        Button(action: { isEditingNickname = true }) {
-                            Image(systemName: "pencil.circle.fill")
-                                .foregroundColor(.blue)
-                        }
-                    }
-                }
-
-                Divider()
-
-                // 国/地域
-                HStack {
-                    Label("国/地域", systemImage: "globe")
-                        .font(.subheadline)
-                        .foregroundColor(.secondary)
-                    Spacer()
-                    Button(action: { showingCountryPicker = true }) {
-                        HStack(spacing: 4) {
-                            Text(countryName(for: userProfile?.countryCode))
-                                .font(.subheadline)
-                            Image(systemName: "chevron.right")
-                                .font(.caption)
-                                .foregroundColor(.secondary)
-                        }
-                    }
+                if let countryCode = userProfile?.countryCode, !countryCode.isEmpty {
+                    Text(flagEmoji(for: countryCode))
+                        .font(.title2)
                 }
             }
-            .padding()
-            .background(Color(.systemBackground))
-            .cornerRadius(16)
-            .shadow(color: .black.opacity(0.1), radius: 8, x: 0, y: 2)
         }
     }
 
@@ -402,47 +338,124 @@ struct ProfileView: View {
             VStack(spacing: 12) {
                 ForEach(myPublishedPlaylists) { playlist in
                     NavigationLink(destination: CommunityPlaylistDetailView(playlist: playlist)) {
-                        HStack(spacing: 12) {
-                            // プレイリスト情報
-                            VStack(alignment: .leading, spacing: 4) {
-                                Text(playlist.name)
-                                    .font(.subheadline)
-                                    .fontWeight(.semibold)
-                                    .foregroundColor(.primary)
-                                    .lineLimit(1)
-
-                                HStack(spacing: 12) {
-                                    Label("\(playlist.tracks.count)曲", systemImage: "music.note.list")
-                                        .font(.caption)
-                                        .foregroundColor(.secondary)
-
-                                    Label("\(playlist.likeCount)", systemImage: "heart.fill")
-                                        .font(.caption)
-                                        .foregroundColor(.red)
-
-                                    Label("\(playlist.downloadCount)", systemImage: "arrow.down.circle.fill")
-                                        .font(.caption)
-                                        .foregroundColor(.blue)
-                                }
-                            }
-
-                            Spacer()
-
-                            Image(systemName: "chevron.right")
-                                .font(.caption)
-                                .foregroundColor(.secondary)
-                        }
-                        .padding()
-                        .background(Color(.systemBackground))
-                        .cornerRadius(12)
-                        .shadow(color: .black.opacity(0.05), radius: 4, x: 0, y: 2)
+                        MyPublishedPlaylistCard(playlist: playlist)
                     }
+                    .buttonStyle(.plain)
                 }
             }
         }
     }
+}
 
-    private var signedOutView: some View {
+// MARK: - MyPublishedPlaylistCard
+
+struct MyPublishedPlaylistCard: View {
+    let playlist: CommunityPlaylist
+    @State private var artworkURL: URL?
+
+    var body: some View {
+        HStack(spacing: 12) {
+            // アートワーク
+            artworkView
+
+            // プレイリスト情報
+            VStack(alignment: .leading, spacing: 4) {
+                Text(playlist.name)
+                    .font(.subheadline)
+                    .fontWeight(.semibold)
+                    .foregroundColor(.primary)
+                    .lineLimit(1)
+
+                HStack(spacing: 12) {
+                    Label("\(playlist.tracks.count)曲", systemImage: "music.note.list")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+
+                    Label("\(playlist.likeCount)", systemImage: "heart.fill")
+                        .font(.caption)
+                        .foregroundColor(.red)
+
+                    Label("\(playlist.downloadCount)", systemImage: "arrow.down.circle.fill")
+                        .font(.caption)
+                        .foregroundColor(.blue)
+                }
+            }
+
+            Spacer()
+
+            Image(systemName: "chevron.right")
+                .font(.caption)
+                .foregroundColor(.secondary)
+        }
+        .padding()
+        .background(Color.white.opacity(0.1))
+        .cornerRadius(12)
+        .task {
+            await loadArtwork()
+        }
+    }
+
+    private var artworkView: some View {
+        Group {
+            if let url = artworkURL {
+                AsyncImage(url: url) { image in
+                    image
+                        .resizable()
+                        .aspectRatio(contentMode: .fill)
+                } placeholder: {
+                    placeholderArtwork
+                }
+                .frame(width: 50, height: 50)
+                .cornerRadius(8)
+            } else {
+                placeholderArtwork
+            }
+        }
+    }
+
+    private var placeholderArtwork: some View {
+        ZStack {
+            RoundedRectangle(cornerRadius: 8)
+                .fill(
+                    LinearGradient(
+                        colors: [.blue.opacity(0.3), .purple.opacity(0.3)],
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    )
+                )
+                .frame(width: 50, height: 50)
+
+            Image(systemName: "music.note.list")
+                .foregroundColor(.blue)
+                .font(.body)
+        }
+    }
+
+    private func loadArtwork() async {
+        guard let firstTrack = playlist.tracks.first else { return }
+
+        do {
+            let request = MusicCatalogResourceRequest<Song>(
+                matching: \.id,
+                equalTo: MusicItemID(firstTrack.appleMusicId)
+            )
+            let response = try await request.response()
+            if let song = response.items.first, let artwork = song.artwork {
+                let url = artwork.url(width: 100, height: 100)
+                await MainActor.run {
+                    artworkURL = url
+                }
+            }
+        } catch {
+            print("アートワーク取得エラー: \(error)")
+        }
+    }
+}
+
+// MARK: - ProfileView Extension (SignedOutView & Actions)
+
+extension ProfileView {
+    var signedOutView: some View {
         VStack(spacing: 20) {
             Image(systemName: "person.crop.circle.badge.questionmark")
                 .font(.system(size: 60))
@@ -489,7 +502,7 @@ struct ProfileView: View {
 
     // MARK: - Actions
 
-    private func loadUserProfile() async {
+    func loadUserProfile() async {
         guard let userId = authManager.currentUser?.uid else {
             print("❌ ユーザーIDが取得できません")
             return
@@ -550,7 +563,7 @@ struct ProfileView: View {
         }
     }
 
-    private func saveNickname() {
+    func saveNickname() {
         guard let userId = authManager.currentUser?.uid else { return }
         guard !nickname.isEmpty else { return }
         guard nickname.count <= maxNicknameLength else { return }
@@ -568,7 +581,7 @@ struct ProfileView: View {
         }
     }
 
-    private func updateProfileArtwork(song: Song) {
+    func updateProfileArtwork(song: Song) {
         guard let userId = authManager.currentUser?.uid else { return }
         guard let artworkURL = song.artwork?.url(width: 300, height: 300) else { return }
 
@@ -587,7 +600,7 @@ struct ProfileView: View {
         }
     }
 
-    private func updateCountryCode(_ countryCode: String) {
+    func updateCountryCode(_ countryCode: String) {
         guard let userId = authManager.currentUser?.uid else { return }
 
         // 空文字列の場合はnilとして扱う
@@ -603,8 +616,285 @@ struct ProfileView: View {
         }
     }
 
-    private func countryName(for code: String?) -> String {
+    func countryName(for code: String?) -> String {
         guard let code = code, !code.isEmpty else { return "未設定" }
+        return Locale.current.localizedString(forRegionCode: code) ?? code
+    }
+
+    func flagEmoji(for countryCode: String) -> String {
+        let base: UInt32 = 127397
+        var emoji = ""
+        for scalar in countryCode.uppercased().unicodeScalars {
+            if let scalarValue = UnicodeScalar(base + scalar.value) {
+                emoji.append(String(scalarValue))
+            }
+        }
+        return emoji
+    }
+}
+
+// MARK: - ProfileEditSheet
+
+struct ProfileEditSheet: View {
+    @Environment(\.dismiss) private var dismiss
+    @EnvironmentObject private var authManager: AuthManager
+    @EnvironmentObject private var communityManager: CommunityManager
+
+    @Binding var userProfile: UserProfile?
+    let onSave: () -> Void
+
+    @State private var nickname: String = ""
+    @State private var selectedCountryCode: String = ""
+    @State private var showingArtworkPicker = false
+    @State private var showingCountryPicker = false
+    @State private var isSaving = false
+    @FocusState private var isNicknameFocused: Bool
+
+    private let maxNicknameLength = 10
+
+    var body: some View {
+        NavigationStack {
+            ZStack {
+                // 背景
+                Color(.systemGroupedBackground)
+                    .ignoresSafeArea()
+
+                ScrollView {
+                    VStack(spacing: 24) {
+                        // アートワークセクション
+                        artworkSection
+                            .padding(.top, 20)
+
+                        // ニックネームセクション
+                        nicknameSection
+
+                        // 国/地域セクション
+                        countrySection
+
+                        Spacer(minLength: 50)
+                    }
+                    .padding(.horizontal)
+                }
+            }
+            .navigationTitle("プロフィール編集")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button(action: { dismiss() }) {
+                        Image(systemName: "xmark")
+                            .font(.body)
+                            .foregroundColor(.secondary)
+                    }
+                }
+                ToolbarItem(placement: .confirmationAction) {
+                    if isSaving {
+                        ProgressView()
+                    } else {
+                        Button("保存") {
+                            saveProfile()
+                        }
+                        .fontWeight(.semibold)
+                        .disabled(nickname.isEmpty)
+                    }
+                }
+            }
+            .sheet(isPresented: $showingArtworkPicker) {
+                ArtworkPickerView(
+                    onArtworkSelected: { song in
+                        updateArtwork(song: song)
+                    }
+                )
+            }
+            .sheet(isPresented: $showingCountryPicker) {
+                CountryPickerView(
+                    selectedCountryCode: selectedCountryCode,
+                    onSelect: { code in
+                        selectedCountryCode = code
+                    }
+                )
+            }
+            .onAppear {
+                nickname = userProfile?.nickname ?? ""
+                selectedCountryCode = userProfile?.countryCode ?? ""
+            }
+        }
+    }
+
+    // MARK: - Subviews
+
+    private var artworkSection: some View {
+        VStack(spacing: 16) {
+            // アートワーク
+            if let artworkURLString = userProfile?.profileArtworkURL,
+               let artworkURL = URL(string: artworkURLString) {
+                AsyncImage(url: artworkURL) { image in
+                    image
+                        .resizable()
+                        .aspectRatio(contentMode: .fill)
+                        .frame(width: 120, height: 120)
+                        .cornerRadius(20)
+                        .shadow(color: .black.opacity(0.2), radius: 8, x: 0, y: 4)
+                } placeholder: {
+                    defaultArtwork
+                }
+            } else {
+                defaultArtwork
+            }
+
+            // 曲情報
+            if let songTitle = userProfile?.profileSongTitle {
+                VStack(spacing: 4) {
+                    Text(songTitle)
+                        .font(.subheadline)
+                        .fontWeight(.medium)
+                    if let artistName = userProfile?.profileArtistName {
+                        Text(artistName)
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                    }
+                }
+            }
+
+            // 変更ボタン
+            Button(action: { showingArtworkPicker = true }) {
+                Text("アートワークを変更")
+                    .font(.subheadline)
+                    .foregroundColor(.blue)
+            }
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, 20)
+        .background(Color(.secondarySystemGroupedBackground))
+        .cornerRadius(16)
+    }
+
+    private var nicknameSection: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text("ニックネーム")
+                .font(.subheadline)
+                .foregroundColor(.secondary)
+                .padding(.horizontal, 4)
+
+            HStack {
+                TextField("ニックネームを入力", text: $nickname)
+                    .focused($isNicknameFocused)
+                    .autocapitalization(.none)
+                    .onChange(of: nickname) { _, newValue in
+                        if newValue.count > maxNicknameLength {
+                            nickname = String(newValue.prefix(maxNicknameLength))
+                        }
+                    }
+
+                Text("\(nickname.count)/\(maxNicknameLength)")
+                    .font(.caption)
+                    .foregroundColor(nickname.count >= maxNicknameLength ? .orange : .secondary)
+            }
+            .padding()
+            .background(Color(.secondarySystemGroupedBackground))
+            .cornerRadius(12)
+        }
+    }
+
+    private var countrySection: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text("国/地域")
+                .font(.subheadline)
+                .foregroundColor(.secondary)
+                .padding(.horizontal, 4)
+
+            Button(action: { showingCountryPicker = true }) {
+                HStack {
+                    if selectedCountryCode.isEmpty {
+                        Text("未設定")
+                            .foregroundColor(.secondary)
+                    } else {
+                        Text(flagEmoji(for: selectedCountryCode))
+                            .font(.title2)
+                        Text(countryName(for: selectedCountryCode))
+                            .foregroundColor(.primary)
+                    }
+
+                    Spacer()
+
+                    Image(systemName: "chevron.right")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                }
+                .padding()
+                .background(Color(.secondarySystemGroupedBackground))
+                .cornerRadius(12)
+            }
+        }
+    }
+
+    private var defaultArtwork: some View {
+        ZStack {
+            RoundedRectangle(cornerRadius: 16)
+                .fill(
+                    LinearGradient(
+                        colors: [.blue.opacity(0.3), .purple.opacity(0.3)],
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    )
+                )
+                .frame(width: 100, height: 100)
+
+            Image(systemName: "music.note")
+                .font(.system(size: 40))
+                .foregroundColor(.blue)
+        }
+    }
+
+    private func saveProfile() {
+        guard let userId = authManager.currentUser?.uid else { return }
+        isSaving = true
+
+        Task {
+            do {
+                // ニックネーム更新
+                if nickname != userProfile?.nickname {
+                    try await communityManager.updateNickname(userId: userId, nickname: nickname)
+                }
+
+                // 国コード更新
+                if selectedCountryCode != userProfile?.countryCode {
+                    try await communityManager.updateCountryCode(userId: userId, countryCode: selectedCountryCode)
+                }
+
+                await MainActor.run {
+                    isSaving = false
+                    onSave()
+                    dismiss()
+                }
+            } catch {
+                print("❌ プロフィール保存エラー: \(error)")
+                await MainActor.run {
+                    isSaving = false
+                }
+            }
+        }
+    }
+
+    private func updateArtwork(song: Song) {
+        guard let userId = authManager.currentUser?.uid else { return }
+        guard let artworkURL = song.artwork?.url(width: 300, height: 300) else { return }
+
+        Task {
+            do {
+                try await communityManager.updateProfileArtwork(
+                    userId: userId,
+                    artworkURL: artworkURL.absoluteString,
+                    songTitle: song.title,
+                    artistName: song.artistName
+                )
+                onSave()
+            } catch {
+                print("❌ アートワーク更新エラー: \(error)")
+            }
+        }
+    }
+
+    private func countryName(for code: String) -> String {
         return Locale.current.localizedString(forRegionCode: code) ?? code
     }
 

@@ -17,23 +17,37 @@ SabiqueはSwiftUIとMusicKitを使用したiOS向け音楽プレイリスト管�
 ```
 Sabique/
 ├── Models/                  # データモデル
-│   ├── Playlist.swift      # プレイリストモデル（SwiftData）
-│   ├── TrackInPlaylist.swift # トラックモデル（SwiftData）
-│   └── PurchaseState.swift  # 課金状態管理
+│   ├── Playlist.swift           # プレイリストモデル（SwiftData）
+│   ├── TrackInPlaylist.swift    # トラックモデル（SwiftData）
+│   ├── PurchaseState.swift      # 課金状態管理
+│   ├── CommunityPlaylist.swift  # コミュニティプレイリストモデル
+│   ├── UserProfile.swift        # ユーザープロファイルモデル
+│   └── PlaylistReport.swift     # 通報モデル
 ├── Views/                   # UI層
-│   ├── PlaylistListView.swift        # プレイリスト一覧画面
-│   ├── PlaylistDetailView.swift      # プレイリスト詳細画面
-│   ├── ChorusEditView.swift          # ハイライト編集画面
-│   ├── SongSearchView.swift          # 曲検索画面
+│   ├── MainTabView.swift                # メインタブナビゲーション
+│   ├── PlaylistListView.swift           # プレイリスト一覧画面
+│   ├── PlaylistDetailView.swift         # プレイリスト詳細画面
+│   ├── ChorusEditView.swift             # ハイライト編集画面
+│   ├── SongSearchView.swift             # 曲検索画面
 │   ├── AppleMusicPlaylistImportView.swift # Apple Music連携
-│   ├── ArtworkPickerView.swift       # アートワーク選択画面
-│   ├── SettingsView.swift            # 設定画面
-│   └── PaywallView.swift             # 課金画面
+│   ├── ArtworkPickerView.swift          # アートワーク選択画面
+│   ├── SettingsView.swift               # 設定画面
+│   ├── PaywallView.swift                # 課金画面
+│   ├── ProfileView.swift                # プロフィール画面
+│   ├── CommunityView.swift              # コミュニティ一覧画面
+│   ├── CommunityPlaylistDetailView.swift # コミュニティプレイリスト詳細
+│   ├── PublishPlaylistView.swift        # プレイリスト公開画面
+│   ├── ReportPlaylistView.swift         # 通報画面
+│   └── SignInTestView.swift             # サインインテスト画面
 ├── Services/                # ビジネスロジック層
 │   ├── ChorusPlayerManager.swift     # ハイライト再生管理
 │   ├── PlaylistImporter.swift        # プレイリストインポート処理
 │   ├── PlaylistExporter.swift        # プレイリストエクスポート処理
-│   └── StoreManager.swift            # App Store課金管理
+│   ├── StoreManager.swift            # App Store課金管理
+│   ├── AuthManager.swift             # 認証管理（Sign in with Apple）
+│   ├── CommunityManager.swift        # コミュニティ機能管理
+│   ├── LikeManager.swift             # いいね機能管理
+│   └── PlaylistValidator.swift       # プレイリスト検証
 ├── ContentView.swift        # 旧音楽プレーヤー画面（現在未使用）
 └── SabiqueApp.swift        # アプリエントリーポイント
 ```
@@ -58,6 +72,18 @@ Sabique/
 - `orderIndex: Int` - プレイリスト内での表示順序
 - `isLocked: Bool` - ロック状態（無料版制限用）
 - `playlist: Playlist?` - 所属プレイリスト
+
+### CommunityPlaylist（コミュニティプレイリスト）
+- Firestore上で管理される公開プレイリスト
+- ユーザーが自分のプレイリストをコミュニティに公開可能
+- いいね数、ダウンロード数でランキング
+
+### UserProfile（ユーザープロファイル）
+- Sign in with Appleによる認証情報
+- 表示名、プロフィール画像等
+
+### PlaylistReport（通報）
+- 不適切なプレイリストの通報機能
 
 ## 主要サービス
 
@@ -119,6 +145,36 @@ App Store課金管理を担当します。
 - 購入処理
 - リストア処理
 
+### AuthManager
+Sign in with Appleによる認証を管理します。
+
+**主要機能:**
+- Apple ID認証
+- ユーザーセッション管理
+- サインアウト処理
+
+### CommunityManager
+コミュニティ機能を管理します（Firestore連携）。
+
+**主要機能:**
+- プレイリストの公開・非公開
+- コミュニティプレイリストの取得
+- ランキング（いいね数、ダウンロード数）
+
+### LikeManager
+いいね機能を管理します。
+
+**主要機能:**
+- プレイリストへのいいね/いいね解除
+- いいね状態の取得
+
+### PlaylistValidator
+プレイリストの検証を担当します。
+
+**主要機能:**
+- 公開前のプレイリスト検証
+- コンテンツポリシーチェック
+
 ## 無料版制限（FreeTierLimits）
 - 最大プレイリスト数: 3
 - プレイリストあたりの最大曲数: 20
@@ -127,10 +183,12 @@ App Store課金管理を担当します。
 
 ### フレームワーク
 - **SwiftUI** - UI構築
-- **SwiftData** - データ永続化
+- **SwiftData** - ローカルデータ永続化
 - **MusicKit** - Apple Music連携
 - **Combine** - リアクティブプログラミング
 - **StoreKit 2** - App内課金
+- **Firebase/Firestore** - コミュニティデータ管理
+- **AuthenticationServices** - Sign in with Apple
 
 ### デザインパターン
 - **MVVM** - Model-View-ViewModelパターン
@@ -171,23 +229,52 @@ SwiftDataを使用してプレイリストとトラックを永続化。
 
 ## 主要な画面フロー
 
-1. **PlaylistListView** - アプリ起動時の画面
+### メインタブ（MainTabView）
+アプリはタブベースのナビゲーションを採用。
+
+1. **PlaylistListView** - マイプレイリストタブ
    - プレイリスト一覧表示
    - 新規作成、Apple Musicインポート、ファイルインポート
 
-2. **PlaylistDetailView** - プレイリスト詳細
+2. **CommunityView** - コミュニティタブ
+   - 公開プレイリスト一覧
+   - ランキング表示（いいね数、ダウンロード数）
+   - プレイリスト検索
+
+3. **ProfileView** - プロフィールタブ
+   - ユーザー情報表示
+   - 自分が公開したプレイリスト一覧
+   - 設定へのアクセス
+
+### 詳細画面
+
+4. **PlaylistDetailView** - プレイリスト詳細
    - トラック一覧表示
    - ハイライト再生開始
    - 曲の追加・削除・並び替え
+   - プレイリスト公開機能
 
-3. **ChorusEditView** - ハイライト編集
+5. **CommunityPlaylistDetailView** - コミュニティプレイリスト詳細
+   - 公開プレイリストの詳細表示
+   - いいね機能
+   - ダウンロード（インポート）機能
+   - 通報機能
+
+6. **ChorusEditView** - ハイライト編集
    - 曲の再生
    - 開始/終了位置の設定
    - 波形表示（未実装）
 
-4. **SongSearchView** - 曲検索
+7. **SongSearchView** - 曲検索
    - Apple Music Catalogから曲を検索
    - プレイリストへの追加
+
+8. **PublishPlaylistView** - プレイリスト公開
+   - 公開設定
+   - 説明文入力
+
+9. **ReportPlaylistView** - 通報画面
+   - 不適切なコンテンツの通報
 
 ## 開発時の注意点
 
@@ -219,7 +306,6 @@ SwiftDataを使用してプレイリストとトラックを永続化。
 
 ## 今後の拡張案
 - 波形表示の実装
-- プレイリストのシェア機能
-- ソーシャル機能（コミュニティプレイリスト）
 - オフライン再生対応
 - ウィジェット対応
+- コミュニティ機能の拡張（フォロー、コメント等）
