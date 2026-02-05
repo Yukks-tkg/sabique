@@ -8,6 +8,7 @@ import SwiftUI
 struct SettingsView: View {
     @Environment(\.dismiss) private var dismiss
     @EnvironmentObject private var storeManager: StoreManager
+    @EnvironmentObject private var authManager: AuthManager
     @AppStorage("autoPlayOnOpen") private var autoPlayOnOpen = true
     @State private var developerTapCount = 0
     @State private var isDeveloperMode = false
@@ -51,6 +52,31 @@ struct SettingsView: View {
                 }
                 
                 List {
+                    // アカウントセクション
+                    if authManager.isSignedIn {
+                        Section {
+                            HStack {
+                                Label("Apple IDで連携中", systemImage: "applelogo")
+                                    .font(.subheadline)
+                                Spacer()
+                                Image(systemName: "checkmark.circle.fill")
+                                    .foregroundColor(.green)
+                            }
+
+                            Button(action: { authManager.signOut() }) {
+                                HStack {
+                                    Image(systemName: "rectangle.portrait.and.arrow.right")
+                                    Text("サインアウト")
+                                        .fontWeight(.medium)
+                                    Spacer()
+                                }
+                                .foregroundColor(.red)
+                            }
+                        } header: {
+                            Text("アカウント")
+                        }
+                    }
+
                     // プレミアムセクション
                     if storeManager.isPremium {
                         Section {
@@ -322,5 +348,6 @@ struct SettingsView: View {
 #Preview {
     SettingsView()
         .environmentObject(StoreManager())
+        .environmentObject(AuthManager())
 }
 

@@ -22,7 +22,12 @@ struct ProfileView: View {
     @State private var showingSettings = false
     @State private var showingCountryPicker = false
     @State private var isLoading = false
+    @State private var totalLikes: Int = 0
+    @State private var totalDownloads: Int = 0
+    @State private var myPublishedPlaylists: [CommunityPlaylist] = []
     @AppStorage("customBackgroundArtworkURLString") private var customBackgroundArtworkURLString: String = ""
+
+    private let maxNicknameLength = 10
 
     var body: some View {
         NavigationStack {
@@ -45,7 +50,7 @@ struct ProfileView: View {
             .navigationTitle("プロフィール")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
-                ToolbarItem(placement: .navigationBarTrailing) {
+                ToolbarItem(placement: .navigationBarLeading) {
                     Button(action: { showingSettings = true }) {
                         Image(systemName: "gearshape")
                     }
@@ -61,6 +66,14 @@ struct ProfileView: View {
                     }
                 )
             }
+            .sheet(isPresented: $showingCountryPicker) {
+                CountryPickerView(
+                    selectedCountryCode: userProfile?.countryCode,
+                    onSelect: { countryCode in
+                        updateCountryCode(countryCode)
+                    }
+                )
+            }
             .task {
                 await loadUserProfile()
             }
@@ -71,66 +84,154 @@ struct ProfileView: View {
 
     private var signedInView: some View {
         ScrollView {
-            VStack(spacing: 24) {
-                // プロフィールアイコン
-                profileIconSection
+            VStack(spacing: 20) {
+                // プロフィールヘッダー（アイコン + 基本情報）
+                profileHeaderSection
+                    .padding(.top, 8)
 
-                // ニックネーム
-                nicknameSection
-
-                // 国設定
-                countrySection
-
-                // ステータス
+                // ステータスカード
                 statusSection
 
-                // アカウント情報
-                accountSection
+                // デバッグ情報（一時的）
+                Text("Debug: プレイリスト数 = \(myPublishedPlaylists.count)")
+                    .font(.caption)
+                    .foregroundColor(.yellow)
+
+                // 投稿プレイリスト一覧
+                if !myPublishedPlaylists.isEmpty {
+                    myPlaylistsSection
+                } else {
+                    Text("投稿プレイリストがありません")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                }
 
                 Spacer(minLength: 50)
             }
-            .padding()
+            .padding(.horizontal)
         }
     }
 
-    private var profileIconSection: some View {
-        VStack(spacing: 12) {
+    private var profileHeaderSection: some View {
+        VStack(spacing: 24) {
             // アートワーク
-            if let artworkURLString = userProfile?.profileArtworkURL,
-               let artworkURL = URL(string: artworkURLString) {
-                AsyncImage(url: artworkURL) { image in
-                    image
-                        .resizable()
-                        .aspectRatio(contentMode: .fill)
-                        .frame(width: 120, height: 120)
-                        .cornerRadius(16)
-                } placeholder: {
-                    defaultProfileIcon
+            VStack(spacing: 16) {
+                if let artworkURLString = userProfile?.profileArtworkURL,
+                   let artworkURL = URL(string: artworkURLString) {
+                    AsyncImage(url: artworkURL) { image in
+                        image
+                            .resizable()
+                            .aspectRatio(contentMode: .fill)
+                            .frame(width: 160, height: 160)
+                            .cornerRadius(20)
+                            .shadow(color: .black.opacity(0.3), radius: 12, x: 0, y: 6)
+                    } placeholder: {
+                        defaultProfileIconLarge
+                    }
+                } else {
+                    defaultProfileIconLarge
                 }
-            } else {
-                defaultProfileIcon
+
+                // 曲情報
+                if let songTitle = userProfile?.profileSongTitle {
+                    VStack(spacing: 4) {
+                        Text(songTitle)
+                            .font(.callout)
+                            .fontWeight(.semibold)
+                        if let artistName = userProfile?.profileArtistName {
+                            Text(artistName)
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+                        }
+                    }
+                }
+
+                // 変更ボタン
+                Button(action: { showingArtworkPicker = true }) {
+                    Text("お気に入りのアートワーク")
+                        .font(.subheadline)
+                        .foregroundColor(.blue)
+                }
             }
 
-            // 変更ボタン
-            Button(action: { showingArtworkPicker = true }) {
-                Text("お気に入りのアートワーク")
-                    .font(.subheadline)
-                    .foregroundColor(.blue)
-            }
+            // プロフィール情報カード
+            VStack(spacing: 16) {
+                // ニックネーム
+                if isEditingNickname {
+                    VStack(spacing: 8) {
+                        HStack {
+                            TextField("ニックネーム", text: $nickname)
+                                .textFieldStyle(.roundedBorder)
+                                .autocapitalization(.none)
+                                .onChange(of: nickname) { oldValue, newValue in
+                                    if newValue.count > maxNicknameLength {
+                                        nickname = String(newValue.prefix(maxNicknameLength))
+                                    }
+                                }
 
-            // 曲情報
-            if let songTitle = userProfile?.profileSongTitle {
-                VStack(spacing: 4) {
-                    Text(songTitle)
-                        .font(.caption)
-                        .fontWeight(.semibold)
-                    if let artistName = userProfile?.profileArtistName {
-                        Text(artistName)
-                            .font(.caption2)
-                            .foregroundColor(.secondary)
+                            Button("保存") {
+                                saveNickname()
+                            }
+                            .buttonStyle(.borderedProminent)
+                            .disabled(nickname.isEmpty || nickname.count > maxNicknameLength)
+
+                            Button("キャンセル") {
+                                isEditingNickname = false
+                                nickname = userProfile?.nickname ?? ""
+                            }
+                            .buttonStyle(.bordered)
+                        }
+
+                        // 文字数カウンター
+                        HStack {
+                            Spacer()
+                            Text("\(nickname.count)/\(maxNicknameLength)")
+                                .font(.caption2)
+                                .foregroundColor(nickname.count > maxNicknameLength ? .red : .secondary)
+                        }
+                    }
+                } else {
+                    HStack {
+                        Text(userProfile?.nickname ?? "ニックネーム未設定")
+                            .font(.title2)
+                            .fontWeight(.bold)
+
+                        // 国旗表示
+                        if let countryCode = userProfile?.countryCode, !countryCode.isEmpty {
+                            Text(flagEmoji(for: countryCode))
+                                .font(.title2)
+                        }
+
+                        Button(action: { isEditingNickname = true }) {
+                            Image(systemName: "pencil.circle.fill")
+                                .foregroundColor(.blue)
+                        }
+                    }
+                }
+
+                Divider()
+
+                // 国/地域
+                HStack {
+                    Label("国/地域", systemImage: "globe")
+                        .font(.subheadline)
+                        .foregroundColor(.secondary)
+                    Spacer()
+                    Button(action: { showingCountryPicker = true }) {
+                        HStack(spacing: 4) {
+                            Text(countryName(for: userProfile?.countryCode))
+                                .font(.subheadline)
+                            Image(systemName: "chevron.right")
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+                        }
                     }
                 }
             }
+            .padding()
+            .background(Color(.systemBackground))
+            .cornerRadius(16)
+            .shadow(color: .black.opacity(0.1), radius: 8, x: 0, y: 2)
         }
     }
 
@@ -150,6 +251,25 @@ struct ProfileView: View {
                 .font(.system(size: 50))
                 .foregroundColor(.white)
         }
+    }
+
+    private var defaultProfileIconLarge: some View {
+        ZStack {
+            RoundedRectangle(cornerRadius: 20)
+                .fill(
+                    LinearGradient(
+                        colors: [.blue.opacity(0.6), .purple.opacity(0.6)],
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    )
+                )
+                .frame(width: 160, height: 160)
+
+            Image(systemName: "person.fill")
+                .font(.system(size: 70))
+                .foregroundColor(.white)
+        }
+        .shadow(color: .black.opacity(0.3), radius: 12, x: 0, y: 6)
     }
 
     private var backgroundView: some View {
@@ -173,73 +293,6 @@ struct ProfileView: View {
         .ignoresSafeArea()
     }
 
-    private var nicknameSection: some View {
-        VStack(spacing: 12) {
-            if isEditingNickname {
-                HStack {
-                    TextField("ニックネーム", text: $nickname)
-                        .textFieldStyle(.roundedBorder)
-                        .autocapitalization(.none)
-
-                    Button("保存") {
-                        saveNickname()
-                    }
-                    .buttonStyle(.borderedProminent)
-
-                    Button("キャンセル") {
-                        isEditingNickname = false
-                        nickname = userProfile?.nickname ?? ""
-                    }
-                    .buttonStyle(.bordered)
-                }
-            } else {
-                HStack {
-                    Text(userProfile?.nickname ?? "ニックネーム未設定")
-                        .font(.title2)
-                        .fontWeight(.bold)
-
-                    Button(action: { isEditingNickname = true }) {
-                        Image(systemName: "pencil.circle.fill")
-                            .foregroundColor(.blue)
-                    }
-                }
-            }
-        }
-        .padding()
-        .background(Color.white.opacity(0.05))
-        .cornerRadius(12)
-    }
-
-    private var countrySection: some View {
-        VStack(spacing: 12) {
-            HStack {
-                Text("国/地域")
-                    .font(.subheadline)
-                    .foregroundColor(.secondary)
-                Spacer()
-                Button(action: { showingCountryPicker = true }) {
-                    HStack {
-                        Text(countryName(for: userProfile?.countryCode))
-                            .font(.subheadline)
-                        Image(systemName: "chevron.right")
-                            .font(.caption)
-                            .foregroundColor(.secondary)
-                    }
-                }
-            }
-        }
-        .padding()
-        .background(Color.white.opacity(0.05))
-        .cornerRadius(12)
-        .sheet(isPresented: $showingCountryPicker) {
-            CountryPickerView(
-                selectedCountryCode: userProfile?.countryCode,
-                onSelect: { countryCode in
-                    updateCountryCode(countryCode)
-                }
-            )
-        }
-    }
 
     private var statusSection: some View {
         VStack(spacing: 16) {
@@ -248,73 +301,143 @@ struct ProfileView: View {
                 HStack {
                     Image(systemName: "crown.fill")
                         .foregroundColor(.yellow)
+                        .font(.title3)
                     Text("プレミアムユーザー")
                         .fontWeight(.semibold)
                     Spacer()
                     Image(systemName: "checkmark.seal.fill")
                         .foregroundColor(.green)
+                        .font(.title3)
                 }
                 .padding()
-                .background(Color.yellow.opacity(0.1))
-                .cornerRadius(12)
+                .background(
+                    LinearGradient(
+                        colors: [Color.yellow.opacity(0.2), Color.orange.opacity(0.1)],
+                        startPoint: .leading,
+                        endPoint: .trailing
+                    )
+                )
+                .cornerRadius(16)
             }
 
-            // 投稿数
-            HStack(spacing: 30) {
-                VStack {
-                    Text("\(userProfile?.publishedPlaylistCount ?? 0)")
-                        .font(.title2)
-                        .bold()
-                    Text("今月の投稿")
-                        .font(.caption)
-                        .foregroundColor(.secondary)
+            // 統計カード
+            VStack(spacing: 0) {
+                // 上段：いいねとインポート
+                HStack(spacing: 0) {
+                    VStack(spacing: 8) {
+                        HStack(spacing: 4) {
+                            Image(systemName: "heart.fill")
+                                .font(.title3)
+                                .foregroundColor(.red)
+                            Text("\(totalLikes)")
+                                .font(.system(size: 32, weight: .bold))
+                        }
+                        Text("合計いいね")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                    }
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 20)
+
+                    Divider()
+                        .frame(height: 50)
+
+                    VStack(spacing: 8) {
+                        HStack(spacing: 4) {
+                            Image(systemName: "arrow.down.circle.fill")
+                                .font(.title3)
+                                .foregroundColor(.blue)
+                            Text("\(totalDownloads)")
+                                .font(.system(size: 32, weight: .bold))
+                        }
+                        Text("インポート数")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                    }
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 20)
                 }
 
                 Divider()
-                    .frame(height: 40)
 
-                VStack {
-                    let remaining = userProfile?.remainingPublishesThisMonth(isPremium: storeManager.isPremium) ?? 0
-                    Text(storeManager.isPremium ? "∞" : "\(remaining)")
-                        .font(.title2)
-                        .bold()
-                    Text("残り投稿数")
-                        .font(.caption)
-                        .foregroundColor(.secondary)
+                // 下段：今月の投稿と残り投稿数
+                HStack(spacing: 0) {
+                    VStack(spacing: 8) {
+                        Text("\(userProfile?.publishedPlaylistCount ?? 0)")
+                            .font(.system(size: 32, weight: .bold))
+                        Text("今月の投稿")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                    }
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 20)
+
+                    Divider()
+                        .frame(height: 50)
+
+                    VStack(spacing: 8) {
+                        let remaining = userProfile?.remainingPublishesThisMonth(isPremium: storeManager.isPremium) ?? 0
+                        Text(storeManager.isPremium ? "∞" : "\(remaining)")
+                            .font(.system(size: 32, weight: .bold))
+                        Text("残り投稿数")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                    }
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 20)
                 }
             }
-            .padding()
-            .background(Color.white.opacity(0.05))
-            .cornerRadius(12)
+            .background(Color(.systemBackground))
+            .cornerRadius(16)
+            .shadow(color: .black.opacity(0.1), radius: 8, x: 0, y: 2)
         }
     }
 
-    private var accountSection: some View {
-        VStack(spacing: 12) {
-            // Apple ID
-            HStack {
-                Image(systemName: "applelogo")
-                Text("Apple IDで連携中")
-                    .font(.subheadline)
-                Spacer()
-                Image(systemName: "checkmark.circle.fill")
-                    .foregroundColor(.green)
-            }
-            .padding()
-            .background(Color.white.opacity(0.05))
-            .cornerRadius(12)
+    private var myPlaylistsSection: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text("投稿したプレイリスト")
+                .font(.headline)
+                .padding(.horizontal, 4)
 
-            // サインアウトボタン
-            Button(action: { authManager.signOut() }) {
-                HStack {
-                    Image(systemName: "rectangle.portrait.and.arrow.right")
-                    Text("サインアウト")
+            VStack(spacing: 12) {
+                ForEach(myPublishedPlaylists) { playlist in
+                    NavigationLink(destination: CommunityPlaylistDetailView(playlist: playlist)) {
+                        HStack(spacing: 12) {
+                            // プレイリスト情報
+                            VStack(alignment: .leading, spacing: 4) {
+                                Text(playlist.name)
+                                    .font(.subheadline)
+                                    .fontWeight(.semibold)
+                                    .foregroundColor(.primary)
+                                    .lineLimit(1)
+
+                                HStack(spacing: 12) {
+                                    Label("\(playlist.tracks.count)曲", systemImage: "music.note.list")
+                                        .font(.caption)
+                                        .foregroundColor(.secondary)
+
+                                    Label("\(playlist.likeCount)", systemImage: "heart.fill")
+                                        .font(.caption)
+                                        .foregroundColor(.red)
+
+                                    Label("\(playlist.downloadCount)", systemImage: "arrow.down.circle.fill")
+                                        .font(.caption)
+                                        .foregroundColor(.blue)
+                                }
+                            }
+
+                            Spacer()
+
+                            Image(systemName: "chevron.right")
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+                        }
+                        .padding()
+                        .background(Color(.systemBackground))
+                        .cornerRadius(12)
+                        .shadow(color: .black.opacity(0.05), radius: 4, x: 0, y: 2)
+                    }
                 }
-                .frame(maxWidth: .infinity)
-                .padding()
-                .background(Color.red.opacity(0.2))
-                .foregroundColor(.red)
-                .cornerRadius(12)
             }
         }
     }
@@ -367,27 +490,70 @@ struct ProfileView: View {
     // MARK: - Actions
 
     private func loadUserProfile() async {
-        guard let userId = authManager.currentUser?.uid else { return }
+        guard let userId = authManager.currentUser?.uid else {
+            print("❌ ユーザーIDが取得できません")
+            return
+        }
 
+        print("🔄 プロフィール読み込み開始: \(userId)")
         isLoading = true
+
+        // プロフィールを取得（必須）
         do {
             let profile = try await communityManager.getUserProfile(userId: userId)
+            print("✅ プロフィール取得成功: nickname=\(profile.nickname ?? "nil")")
             await MainActor.run {
                 userProfile = profile
                 nickname = profile.nickname ?? ""
-                isLoading = false
             }
         } catch {
             print("❌ プロフィール読み込みエラー: \(error)")
             await MainActor.run {
                 isLoading = false
             }
+            return
+        }
+
+        // 統計情報を並行取得（失敗しても続行）
+        var likes = 0
+        var downloads = 0
+        var playlists: [CommunityPlaylist] = []
+
+        do {
+            likes = try await communityManager.getTotalLikesForUser(userId: userId)
+            print("✅ いいね数取得成功: \(likes)")
+        } catch {
+            print("❌ いいね数取得エラー: \(error)")
+        }
+
+        do {
+            downloads = try await communityManager.getTotalDownloadsForUser(userId: userId)
+            print("✅ インポート数取得成功: \(downloads)")
+        } catch {
+            print("❌ インポート数取得エラー: \(error)")
+        }
+
+        do {
+            playlists = try await communityManager.getUserPlaylists(userId: userId)
+            print("✅ プレイリスト一覧取得成功: \(playlists.count)件")
+        } catch {
+            print("❌ プレイリスト一覧取得エラー: \(error)")
+        }
+
+        print("✅ 統計情報取得完了: likes=\(likes), downloads=\(downloads), playlists=\(playlists.count)")
+
+        await MainActor.run {
+            totalLikes = likes
+            totalDownloads = downloads
+            myPublishedPlaylists = playlists
+            isLoading = false
         }
     }
 
     private func saveNickname() {
         guard let userId = authManager.currentUser?.uid else { return }
         guard !nickname.isEmpty else { return }
+        guard nickname.count <= maxNicknameLength else { return }
 
         Task {
             do {
@@ -440,6 +606,17 @@ struct ProfileView: View {
     private func countryName(for code: String?) -> String {
         guard let code = code, !code.isEmpty else { return "未設定" }
         return Locale.current.localizedString(forRegionCode: code) ?? code
+    }
+
+    private func flagEmoji(for countryCode: String) -> String {
+        let base: UInt32 = 127397
+        var emoji = ""
+        for scalar in countryCode.uppercased().unicodeScalars {
+            if let scalarValue = UnicodeScalar(base + scalar.value) {
+                emoji.append(String(scalarValue))
+            }
+        }
+        return emoji
     }
 }
 

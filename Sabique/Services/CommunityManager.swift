@@ -53,6 +53,25 @@ class CommunityManager: ObservableObject {
             throw CommunityError.validationFailed(validationResult.errorMessage ?? "不正な入力です")
         }
 
+        // トラック数のバリデーション（サーバー側で再チェック）
+        let trackCount = playlist.tracks.count
+        guard trackCount >= 3 else {
+            throw CommunityError.validationFailed("投稿には最低3曲必要です")
+        }
+
+        let maxTracks = authorIsPremium ? 100 : 3
+        guard trackCount <= maxTracks else {
+            throw CommunityError.validationFailed("投稿できる曲数は最大\(maxTracks)曲までです")
+        }
+
+        // 全ての曲にハイライトが設定されているか検証
+        let allTracksHaveChorus = playlist.tracks.allSatisfy { track in
+            track.chorusStartSeconds != nil && track.chorusEndSeconds != nil
+        }
+        guard allTracksHaveChorus else {
+            throw CommunityError.validationFailed("全ての曲にハイライト区間を設定してください")
+        }
+
         // ユーザープロフィールを取得
         let userProfile = try await getUserProfile(userId: authorId)
 
@@ -276,28 +295,137 @@ class CommunityManager: ObservableObject {
 
     /// ニックネームを更新
     func updateNickname(userId: String, nickname: String) async throws {
+        // ニックネームのバリデーション
+        let trimmedNickname = nickname.trimmingCharacters(in: .whitespacesAndNewlines)
+
+        guard !trimmedNickname.isEmpty else {
+            throw CommunityError.validationFailed("ニックネームを入力してください")
+        }
+
+        guard trimmedNickname.count <= 10 else {
+            throw CommunityError.validationFailed("ニックネームは10文字以内にしてください")
+        }
+
+        // 不正な文字のチェック（制御文字やゼロ幅文字など）
+        let allowedCharacterSet = CharacterSet.alphanumerics
+            .union(.punctuationCharacters)
+            .union(.whitespaces)
+            .union(CharacterSet(charactersIn: "あ-んア-ンー一-龯ぁ-ゔァ-ヴｱ-ﾝﾞﾟ"))
+
+        if trimmedNickname.unicodeScalars.contains(where: { !allowedCharacterSet.contains($0) }) {
+            // 基本的な文字以外が含まれている場合は警告（ただしエラーにはしない - 多言語対応のため）
+            print("⚠️ ニックネームに特殊文字が含まれています: \(trimmedNickname)")
+        }
+
         try await db.collection("users").document(userId).updateData([
-            "nickname": nickname
+            "nickname": trimmedNickname
         ])
         print("✅ ニックネーム更新成功")
     }
 
     /// プロフィールアートワークを更新
     func updateProfileArtwork(userId: String, artworkURL: String, songTitle: String, artistName: String) async throws {
+        // URLの検証
+        guard let url = URL(string: artworkURL), url.scheme == "https" else {
+            throw CommunityError.validationFailed("無効なアートワークURLです")
+        }
+
+        // Apple Music CDNのURLかチェック（セキュリティ強化）
+        let allowedHosts = ["is1-ssl.mzstatic.com", "is2-ssl.mzstatic.com", "is3-ssl.mzstatic.com",
+                           "is4-ssl.mzstatic.com", "is5-ssl.mzstatic.com"]
+        guard let host = url.host, allowedHosts.contains(host) else {
+            throw CommunityError.validationFailed("Apple Music以外のアートワークは使用できません")
+        }
+
+        // 曲名とアーティスト名の長さチェック
+        let trimmedTitle = songTitle.trimmingCharacters(in: .whitespacesAndNewlines)
+        let trimmedArtist = artistName.trimmingCharacters(in: .whitespacesAndNewlines)
+
+        guard trimmedTitle.count <= 200 else {
+            throw CommunityError.validationFailed("曲名が長すぎます")
+        }
+
+        guard trimmedArtist.count <= 200 else {
+            throw CommunityError.validationFailed("アーティスト名が長すぎます")
+        }
+
         try await db.collection("users").document(userId).updateData([
             "profileArtworkURL": artworkURL,
-            "profileSongTitle": songTitle,
-            "profileArtistName": artistName
+            "profileSongTitle": trimmedTitle,
+            "profileArtistName": trimmedArtist
         ])
         print("✅ プロフィールアートワーク更新成功")
     }
 
     /// 国コードを更新
     func updateCountryCode(userId: String, countryCode: String) async throws {
+        // 国コードの検証（ISO 3166-1 alpha-2形式: 2文字の大文字、または空文字）
+        let trimmedCode = countryCode.trimmingCharacters(in: .whitespacesAndNewlines)
+
+        if !trimmedCode.isEmpty {
+            // 空でない場合は2文字の大文字アルファベットか検証
+            guard trimmedCode.count == 2,
+                  trimmedCode.allSatisfy({ $0.isLetter && $0.isUppercase }) else {
+                throw CommunityError.validationFailed("無効な国コードです")
+            }
+        }
+
         try await db.collection("users").document(userId).updateData([
-            "countryCode": countryCode
+            "countryCode": trimmedCode
         ])
-        print("✅ 国コード更新成功: \(countryCode)")
+        print("✅ 国コード更新成功: \(trimmedCode)")
+    }
+
+    /// ユーザーが投稿したプレイリストの合計いいね数を取得
+    func getTotalLikesForUser(userId: String) async throws -> Int {
+        let snapshot = try await db.collection("communityPlaylists")
+            .whereField("authorId", isEqualTo: userId)
+            .getDocuments()
+
+        let totalLikes = snapshot.documents.reduce(0) { sum, document in
+            let likeCount = document.data()["likeCount"] as? Int ?? 0
+            return sum + likeCount
+        }
+
+        return totalLikes
+    }
+
+    /// ユーザーが投稿したプレイリストの合計インポート数を取得
+    func getTotalDownloadsForUser(userId: String) async throws -> Int {
+        let snapshot = try await db.collection("communityPlaylists")
+            .whereField("authorId", isEqualTo: userId)
+            .getDocuments()
+
+        let totalDownloads = snapshot.documents.reduce(0) { sum, document in
+            let downloadCount = document.data()["downloadCount"] as? Int ?? 0
+            return sum + downloadCount
+        }
+
+        return totalDownloads
+    }
+
+    /// ユーザーが投稿したプレイリスト一覧を取得
+    func getUserPlaylists(userId: String) async throws -> [CommunityPlaylist] {
+        print("🔍 getUserPlaylists開始: userId=\(userId)")
+
+        let snapshot = try await db.collection("communityPlaylists")
+            .whereField("authorId", isEqualTo: userId)
+            // インデックスが作成されるまで一時的にソートを無効化
+            // .order(by: "createdAt", descending: true)
+            .getDocuments()
+
+        print("📦 Firestore検索結果: \(snapshot.documents.count)件")
+
+        let playlists = snapshot.documents.compactMap { document -> CommunityPlaylist? in
+            let playlist = try? document.data(as: CommunityPlaylist.self)
+            if playlist == nil {
+                print("⚠️ プレイリスト変換失敗: \(document.documentID)")
+            }
+            return playlist
+        }
+
+        print("✅ getUserPlaylists完了: \(playlists.count)件のプレイリストを返却")
+        return playlists
     }
 }
 
