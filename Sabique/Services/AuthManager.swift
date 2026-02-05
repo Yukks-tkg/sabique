@@ -94,6 +94,24 @@ class AuthManager: ObservableObject {
         }
     }
 
+    /// アカウント削除（Firebase Authのユーザーを削除）
+    func deleteAccount() async throws {
+        guard let user = Auth.auth().currentUser else {
+            throw AuthError.userNotFound
+        }
+
+        // Firebase Authenticationのユーザーを削除
+        try await user.delete()
+
+        // ローカル状態をリセット
+        await MainActor.run {
+            self.currentUser = nil
+            self.isSignedIn = false
+        }
+
+        print("✅ Firebase Authアカウント削除成功")
+    }
+
     /// Nonceを生成（セキュリティのため）
     func generateNonce() -> String {
         let nonce = randomNonceString()
@@ -171,6 +189,8 @@ enum AuthError: LocalizedError {
     case invalidNonce
     case missingToken
     case tokenSerializationFailed
+    case userNotFound
+    case deletionFailed
 
     var errorDescription: String? {
         switch self {
@@ -182,6 +202,10 @@ enum AuthError: LocalizedError {
             return "認証トークンが見つかりません"
         case .tokenSerializationFailed:
             return "認証トークンの処理に失敗しました"
+        case .userNotFound:
+            return "ユーザーが見つかりません"
+        case .deletionFailed:
+            return "アカウントの削除に失敗しました"
         }
     }
 }

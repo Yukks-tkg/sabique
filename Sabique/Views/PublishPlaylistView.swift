@@ -210,7 +210,9 @@ struct PublishPlaylistView: View {
                     playlist: playlist,
                     authorId: userId,
                     authorName: authorName,
-                    authorIsPremium: storeManager.isPremium
+                    authorIsPremium: storeManager.isPremium,
+                    authorCountryCode: userProfile.countryCode,
+                    authorArtworkURL: userProfile.profileArtworkURL
                 )
 
                 // 一覧を更新

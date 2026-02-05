@@ -32,7 +32,7 @@ struct CommunityView: View {
                 // メインコンテンツ
                 mainContent
             }
-            .navigationTitle("みんなのプレイリスト")
+            .navigationTitle("コミュニティ")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
@@ -232,9 +232,14 @@ struct CommunityPlaylistCard: View {
                     }
 
                     // 投稿者
-                    Text("by \(playlist.authorName ?? "匿名")")
-                        .font(.caption)
-                        .foregroundColor(.secondary)
+                    HStack(spacing: 4) {
+                        Text("by \(playlist.authorName ?? "匿名")")
+                        if let countryCode = playlist.authorCountryCode, !countryCode.isEmpty {
+                            Text(flagEmoji(for: countryCode))
+                        }
+                    }
+                    .font(.caption)
+                    .foregroundColor(.secondary)
 
                     // 曲数
                     Text("\(playlist.tracks.count)曲")
@@ -338,6 +343,17 @@ struct CommunityPlaylistCard: View {
         } catch {
             print("アートワーク取得エラー: \(error)")
         }
+    }
+
+    private func flagEmoji(for countryCode: String) -> String {
+        let base: UInt32 = 127397
+        var emoji = ""
+        for scalar in countryCode.uppercased().unicodeScalars {
+            if let unicodeScalar = UnicodeScalar(base + scalar.value) {
+                emoji.append(String(unicodeScalar))
+            }
+        }
+        return emoji
     }
 }
 

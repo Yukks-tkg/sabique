@@ -9,6 +9,7 @@ struct SettingsView: View {
     @Environment(\.dismiss) private var dismiss
     @EnvironmentObject private var storeManager: StoreManager
     @EnvironmentObject private var authManager: AuthManager
+    @EnvironmentObject private var communityManager: CommunityManager
     @AppStorage("autoPlayOnOpen") private var autoPlayOnOpen = true
     @State private var developerTapCount = 0
     @State private var isDeveloperMode = false
@@ -17,6 +18,10 @@ struct SettingsView: View {
     @State private var showingArtworkPicker = false
     @State private var showingSignInTest = false
     @State private var showingPublishTest = false
+    @State private var showingDeleteAccountAlert = false
+    @State private var isDeletingAccount = false
+    @State private var deleteAccountError: String?
+    @State private var showingDeleteAccountError = false
     @AppStorage("customBackgroundArtworkURLString") private var customBackgroundArtworkURLString: String = ""
     @AppStorage("customBackgroundSongTitle") private var customBackgroundSongTitle: String = ""
     @AppStorage("customBackgroundArtistName") private var customBackgroundArtistName: String = ""
@@ -70,10 +75,29 @@ struct SettingsView: View {
                                         .fontWeight(.medium)
                                     Spacer()
                                 }
+                                .foregroundColor(.orange)
+                            }
+
+                            Button(action: { showingDeleteAccountAlert = true }) {
+                                HStack {
+                                    if isDeletingAccount {
+                                        ProgressView()
+                                            .frame(width: 20)
+                                    } else {
+                                        Image(systemName: "trash")
+                                    }
+                                    Text("アカウントを削除")
+                                        .fontWeight(.medium)
+                                    Spacer()
+                                }
                                 .foregroundColor(.red)
                             }
+                            .disabled(isDeletingAccount)
                         } header: {
                             Text("アカウント")
+                        } footer: {
+                            Text("アカウントを削除すると、投稿したプレイリストやいいね履歴など、すべてのデータが完全に削除されます。")
+                                .font(.caption)
                         }
                     }
 
@@ -333,14 +357,54 @@ struct SettingsView: View {
             .sheet(isPresented: $showingPublishTest) {
                 PublishPlaylistView()
             }
+            .alert("アカウントを削除しますか？", isPresented: $showingDeleteAccountAlert) {
+                Button("キャンセル", role: .cancel) { }
+                Button("削除する", role: .destructive) {
+                    deleteAccount()
+                }
+            } message: {
+                Text("この操作は取り消せません。投稿したプレイリスト、いいね履歴、プロフィール情報など、すべてのデータが完全に削除されます。")
+            }
+            .alert("エラー", isPresented: $showingDeleteAccountError) {
+                Button("OK", role: .cancel) { }
+            } message: {
+                Text(deleteAccountError ?? "アカウントの削除に失敗しました")
+            }
         }
     }
-    
+
     private func restorePurchases() {
         isRestoring = true
         Task {
             await storeManager.restorePurchases()
             isRestoring = false
+        }
+    }
+
+    private func deleteAccount() {
+        guard let userId = authManager.currentUser?.uid else { return }
+
+        isDeletingAccount = true
+
+        Task {
+            do {
+                // 1. Firestoreのユーザーデータを全て削除
+                try await communityManager.deleteAllUserData(userId: userId)
+
+                // 2. Firebase Authのアカウントを削除
+                try await authManager.deleteAccount()
+
+                await MainActor.run {
+                    isDeletingAccount = false
+                    dismiss()
+                }
+            } catch {
+                await MainActor.run {
+                    isDeletingAccount = false
+                    deleteAccountError = error.localizedDescription
+                    showingDeleteAccountError = true
+                }
+            }
         }
     }
 }
@@ -349,5 +413,6 @@ struct SettingsView: View {
     SettingsView()
         .environmentObject(StoreManager())
         .environmentObject(AuthManager())
+        .environmentObject(CommunityManager())
 }
 

@@ -45,7 +45,9 @@ class CommunityManager: ObservableObject {
         playlist: Playlist,
         authorId: String,
         authorName: String?,
-        authorIsPremium: Bool
+        authorIsPremium: Bool,
+        authorCountryCode: String?,
+        authorArtworkURL: String?
     ) async throws {
         // プレイリスト名のバリデーション
         let validationResult = PlaylistValidator.validate(playlistName: playlist.name)
@@ -89,7 +91,9 @@ class CommunityManager: ObservableObject {
             playlist: playlist,
             authorId: authorId,
             authorName: authorName,
-            authorIsPremium: authorIsPremium
+            authorIsPremium: authorIsPremium,
+            authorCountryCode: authorCountryCode,
+            authorArtworkURL: authorArtworkURL
         )
 
         do {
@@ -426,6 +430,50 @@ class CommunityManager: ObservableObject {
 
         print("✅ getUserPlaylists完了: \(playlists.count)件のプレイリストを返却")
         return playlists
+    }
+
+    // MARK: - アカウント削除機能
+
+    /// ユーザーの全データを削除（アカウント削除時に使用）
+    func deleteAllUserData(userId: String) async throws {
+        print("🗑️ ユーザーデータ削除開始: \(userId)")
+
+        // 1. ユーザーが投稿した全プレイリストを削除
+        let playlistsSnapshot = try await db.collection("communityPlaylists")
+            .whereField("authorId", isEqualTo: userId)
+            .getDocuments()
+
+        for document in playlistsSnapshot.documents {
+            try await document.reference.delete()
+            print("  ✅ プレイリスト削除: \(document.documentID)")
+        }
+        print("✅ \(playlistsSnapshot.documents.count)件のプレイリストを削除")
+
+        // 2. ユーザーのいいね履歴を削除（likesコレクションがある場合）
+        let likesSnapshot = try await db.collection("likes")
+            .whereField("userId", isEqualTo: userId)
+            .getDocuments()
+
+        for document in likesSnapshot.documents {
+            try await document.reference.delete()
+        }
+        print("✅ \(likesSnapshot.documents.count)件のいいね履歴を削除")
+
+        // 3. ユーザーの通報履歴を削除
+        let reportsSnapshot = try await db.collection("reports")
+            .whereField("reporterUserId", isEqualTo: userId)
+            .getDocuments()
+
+        for document in reportsSnapshot.documents {
+            try await document.reference.delete()
+        }
+        print("✅ \(reportsSnapshot.documents.count)件の通報履歴を削除")
+
+        // 4. ユーザープロフィールを削除
+        try await db.collection("users").document(userId).delete()
+        print("✅ ユーザープロフィールを削除")
+
+        print("🗑️ ユーザーデータ削除完了: \(userId)")
     }
 }
 

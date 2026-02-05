@@ -126,6 +126,11 @@ struct ProfileView: View {
 
     private var profileHeaderSection: some View {
         VStack(spacing: 16) {
+            // お気に入りの一曲ラベル
+            Text("お気に入りの一曲")
+                .font(.caption)
+                .foregroundColor(.secondary)
+
             // アートワーク
             if let artworkURLString = userProfile?.profileArtworkURL,
                let artworkURL = URL(string: artworkURLString) {
@@ -323,9 +328,8 @@ struct ProfileView: View {
                     .padding(.vertical, 20)
                 }
             }
-            .background(Color(.systemBackground))
+            .background(Color.white.opacity(0.1))
             .cornerRadius(16)
-            .shadow(color: .black.opacity(0.1), radius: 8, x: 0, y: 2)
         }
     }
 

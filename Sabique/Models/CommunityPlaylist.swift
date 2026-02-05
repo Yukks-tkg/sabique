@@ -15,6 +15,8 @@ struct CommunityPlaylist: Identifiable, Codable {
     var authorId: String
     var authorName: String?
     var authorIsPremium: Bool
+    var authorCountryCode: String?   // 投稿時の国コード（スナップショット）
+    var authorArtworkURL: String?    // 投稿時のアートワークURL（スナップショット）
     var tracks: [CommunityTrack]
     var songIds: [String]  // 検索用（曲IDのリスト）
     var likeCount: Int
@@ -27,6 +29,8 @@ struct CommunityPlaylist: Identifiable, Codable {
         case authorId
         case authorName
         case authorIsPremium
+        case authorCountryCode
+        case authorArtworkURL
         case tracks
         case songIds
         case likeCount
@@ -64,7 +68,9 @@ extension CommunityPlaylist {
         playlist: Playlist,
         authorId: String,
         authorName: String?,
-        authorIsPremium: Bool
+        authorIsPremium: Bool,
+        authorCountryCode: String?,
+        authorArtworkURL: String?
     ) -> CommunityPlaylist {
         let communityTracks = playlist.sortedTracks.map { track in
             CommunityTrack(
@@ -86,6 +92,8 @@ extension CommunityPlaylist {
             authorId: authorId,
             authorName: authorName,
             authorIsPremium: authorIsPremium,
+            authorCountryCode: authorCountryCode,
+            authorArtworkURL: authorArtworkURL,
             tracks: communityTracks,
             songIds: songIds,
             likeCount: 0,

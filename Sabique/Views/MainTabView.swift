@@ -20,10 +20,10 @@ struct MainTabView: View {
                 }
                 .tag(0)
 
-            // Tab 2: みんなのプレイリスト
+            // Tab 2: コミュニティ
             CommunityView()
                 .tabItem {
-                    Label("みんなのプレイリスト", systemImage: "globe")
+                    Label("コミュニティ", systemImage: "globe")
                 }
                 .tag(1)
 
