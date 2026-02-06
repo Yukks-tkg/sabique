@@ -280,8 +280,8 @@ struct PlaylistDetailView: View {
         .sheet(isPresented: $showingPaywall) {
             PaywallView()
         }
-        .alert("プレイリスト名を変更", isPresented: $showingRenameAlert) {
-            TextField("プレイリスト名", text: $newPlaylistName)
+        .alert("リスト名を変更", isPresented: $showingRenameAlert) {
+            TextField("リスト名", text: $newPlaylistName)
                 .onChange(of: newPlaylistName) { _, newValue in
                     // 50文字制限
                     if newValue.count > PlaylistValidator.maxNameLength {

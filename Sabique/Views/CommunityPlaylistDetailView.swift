@@ -114,13 +114,13 @@ struct CommunityPlaylistDetailView: View {
         } message: {
             Text(errorMessage)
         }
-        .alert("プレイリストを削除しますか？", isPresented: $showingDeleteConfirm) {
+        .alert("ハイライトリストを削除しますか？", isPresented: $showingDeleteConfirm) {
             Button("キャンセル", role: .cancel) { }
             Button("削除する", role: .destructive) {
                 deletePlaylist()
             }
         } message: {
-            Text("この操作は取り消せません。プレイリストはコミュニティから完全に削除されます。")
+            Text("この操作は取り消せません。ハイライトリストはコミュニティから完全に削除されます。")
         }
     }
 
@@ -258,7 +258,8 @@ struct CommunityPlaylistDetailView: View {
                                     .foregroundColor(.secondary)
                             }
                         }
-                        .padding(.vertical, 12)
+                        .padding(.top, 12)
+                        .padding(.bottom, index < playlist.tracks.count - 1 ? 12 : 0)
                         .contentShape(Rectangle())
                     }
                     .buttonStyle(.plain)
@@ -328,7 +329,7 @@ struct CommunityPlaylistDetailView: View {
                         // 無料会員で曲がスキップされた場合
                         successMessage = "\(result.importedCount)曲をインポートしました。残り\(result.skippedCount)曲はプレミアムでインポート可能です。"
                     } else {
-                        successMessage = "プレイリストをインポートしました"
+                        successMessage = "ハイライトリストをインポートしました"
                     }
                     showingImportSuccess = true
                 }

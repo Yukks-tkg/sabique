@@ -54,14 +54,14 @@ struct PlaylistListView: View {
                     }
                 }
                 ToolbarItem(placement: .principal) {
-                    Text(String(localized: "playlists"))
+                    Text("マイリスト")
                         .font(.headline)
                         .bold()
                 }
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Menu {
                         Button(action: { handleAddPlaylist() }) {
-                            Label(String(localized: "new_playlist"), systemImage: "plus")
+                            Label("新規ハイライトリスト", systemImage: "plus")
                         }
                         Button(action: { handleImportAppleMusic() }) {
                             Label(String(localized: "import_apple_music"), systemImage: "music.note")
@@ -256,13 +256,13 @@ struct PlaylistListView: View {
                     .onDelete(perform: deletePlaylists)
                     .onMove(perform: movePlaylists)
                     
-                    // プレイリストを追加ボタン
+                    // ハイライトリストを追加ボタン
                     Button(action: { handleAddPlaylist() }) {
                         HStack(spacing: 12) {
                             Image(systemName: "plus.circle")
                                 .font(.title2)
                                 .foregroundColor(.primary)
-                            Text(String(localized: "add_playlist"))
+                            Text("ハイライトリストを追加")
                                 .foregroundColor(.primary)
                         }
                         .padding(.vertical, 8)
@@ -370,7 +370,7 @@ struct CreatePlaylistSheet: View {
     var body: some View {
         NavigationStack {
             Form {
-                TextField(String(localized: "playlist_name"), text: $playlistName)
+                TextField("リスト名", text: $playlistName)
                     .onChange(of: playlistName) { _, newValue in
                         // 50文字制限
                         if newValue.count > PlaylistValidator.maxNameLength {
@@ -378,11 +378,15 @@ struct CreatePlaylistSheet: View {
                         }
                     }
             }
-            .navigationTitle(String(localized: "new_playlist"))
+            .navigationTitle("新規ハイライトリスト")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
-                    Button(String(localized: "cancel"), action: onCancel)
+                    Button(action: onCancel) {
+                        Image(systemName: "xmark")
+                            .font(.body)
+                            .foregroundColor(.secondary)
+                    }
                 }
                 ToolbarItem(placement: .confirmationAction) {
                     Button(String(localized: "create"), action: onCreate)

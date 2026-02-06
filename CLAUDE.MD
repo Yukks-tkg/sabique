@@ -4,12 +4,13 @@
 SabiqueはSwiftUIとMusicKitを使用したiOS向け音楽プレイリスト管理アプリケーションです。Apple Musicと連携し、プレイリストの作成、曲のハイライト（サビ）区間の設定、連続再生などの機能を提供します。
 
 ## 主要機能
-- プレイリストの作成・管理・削除
+- プレイリストの作成・管理・削除・リネーム
 - Apple Musicからのプレイリストインポート
-- プレイリストのエクスポート・インポート（.sabiqueファイル）
 - 曲のハイライト（サビ）区間の設定と連続再生
 - カスタム背景アートワーク設定
 - プレミアム機能（In-App Purchase対応）
+- コミュニティ機能（プレイリスト公開・共有）
+- Sign in with Apple認証
 
 ## アーキテクチャ
 
@@ -19,7 +20,7 @@ Sabique/
 ├── Models/                  # データモデル
 │   ├── Playlist.swift           # プレイリストモデル（SwiftData）
 │   ├── TrackInPlaylist.swift    # トラックモデル（SwiftData）
-│   ├── PurchaseState.swift      # 課金状態管理
+│   ├── PurchaseState.swift      # 課金状態管理・FreeTierLimits定義
 │   ├── CommunityPlaylist.swift  # コミュニティプレイリストモデル
 │   ├── UserProfile.swift        # ユーザープロファイルモデル
 │   └── PlaylistReport.swift     # 通報モデル
@@ -56,7 +57,7 @@ Sabique/
 
 ### Playlist（プレイリスト）
 - `id: UUID` - 一意識別子
-- `name: String` - プレイリスト名
+- `name: String` - プレイリスト名（最大50文字）
 - `createdAt: Date` - 作成日時
 - `orderIndex: Int` - 表示順序
 - `tracks: [TrackInPlaylist]` - 含まれる曲のリスト（カスケード削除）
@@ -77,10 +78,17 @@ Sabique/
 - Firestore上で管理される公開プレイリスト
 - ユーザーが自分のプレイリストをコミュニティに公開可能
 - いいね数、ダウンロード数でランキング
+- 投稿時のスナップショット情報を保持:
+  - `authorName` - 投稿時のニックネーム
+  - `authorIsPremium` - 投稿時のプレミアム状態
+  - `authorCountryCode` - 投稿時の国コード（国旗表示用）
+  - `authorArtworkURL` - 投稿時のプロフィール画像
 
 ### UserProfile（ユーザープロファイル）
 - Sign in with Appleによる認証情報
-- 表示名、プロフィール画像等
+- 表示名（ニックネーム、最大10文字）
+- 国コード（ISO 3166-1 alpha-2形式）
+- プロフィール画像URL
 
 ### PlaylistReport（通報）
 - 不適切なプレイリストの通報機能
@@ -109,33 +117,12 @@ Sabique/
 - JSONファイル（.sabique）からのインポート
 - ISRC（国際標準レコーディングコード）による曲の照合
 - リージョン間での曲ID変換
-- 無料版の曲数制限対応
+- 無料版の曲数制限対応（最大3曲）
 
 **インポートフロー:**
 1. ISRCで曲を検索
 2. 見つからない場合はApple Music IDで検証
 3. 有効なIDが見つかった曲のみインポート
-
-### PlaylistExporter
-プレイリストのエクスポート処理を担当します。
-
-**エクスポート形式:**
-```json
-{
-  "name": "プレイリスト名",
-  "exportedAt": "2026-02-04T12:00:00Z",
-  "tracks": [
-    {
-      "appleMusicId": "...",
-      "isrc": "...",
-      "title": "曲名",
-      "artist": "アーティスト名",
-      "chorusStart": 45.0,
-      "chorusEnd": 75.0
-    }
-  ]
-}
-```
 
 ### StoreManager
 App Store課金管理を担当します。
@@ -152,21 +139,29 @@ Sign in with Appleによる認証を管理します。
 - Apple ID認証
 - ユーザーセッション管理
 - サインアウト処理
+- アカウント削除（Apple要件準拠）
 
 ### CommunityManager
 コミュニティ機能を管理します（Firestore連携）。
 
 **主要機能:**
-- プレイリストの公開・非公開
-- コミュニティプレイリストの取得
+- プレイリストの公開・削除
+- コミュニティプレイリストの取得（人気・新着を同時取得）
 - ランキング（いいね数、ダウンロード数）
+- プレイリストのインポート（無料版は3曲制限）
+- ユーザーデータの全削除（アカウント削除時）
+
+**データ管理:**
+- `popularPlaylists` - 人気順プレイリスト
+- `newestPlaylists` - 新着順プレイリスト
+- `fetchAllPlaylists()` - 両方を同時に取得
 
 ### LikeManager
 いいね機能を管理します。
 
 **主要機能:**
 - プレイリストへのいいね/いいね解除
-- いいね状態の取得
+- いいね状態の取得（UserDefaultsで管理）
 
 ### PlaylistValidator
 プレイリストの検証を担当します。
@@ -174,10 +169,12 @@ Sign in with Appleによる認証を管理します。
 **主要機能:**
 - 公開前のプレイリスト検証
 - コンテンツポリシーチェック
+- 文字数制限（プレイリスト名: 最大50文字）
 
 ## 無料版制限（FreeTierLimits）
-- 最大プレイリスト数: 3
-- プレイリストあたりの最大曲数: 20
+- 最大プレイリスト数: 2
+- プレイリストあたりの最大曲数: 3
+- コミュニティからのインポート: 最大3曲
 
 ## 使用技術
 
@@ -188,11 +185,12 @@ Sign in with Appleによる認証を管理します。
 - **Combine** - リアクティブプログラミング
 - **StoreKit 2** - App内課金
 - **Firebase/Firestore** - コミュニティデータ管理
+- **FirebaseAuth** - 認証管理
 - **AuthenticationServices** - Sign in with Apple
 
 ### デザインパターン
 - **MVVM** - Model-View-ViewModelパターン
-- **ObservableObject** - 状態管理（ChorusPlayerManager, StoreManager）
+- **ObservableObject** - 状態管理（ChorusPlayerManager, StoreManager, CommunityManager, AuthManager）
 - **Environment** - 依存性注入（ModelContext, PlayerManager等）
 
 ## Apple Music連携
@@ -227,6 +225,11 @@ SwiftDataを使用してプレイリストとトラックを永続化。
 - プレイリスト一覧: ドラッグ＆ドロップで並び替え可能
 - トラック一覧: スワイプで削除、並び替え対応
 
+### コミュニティ画面
+- 人気・新着タブを横スワイプで切り替え可能（TabView pageスタイル）
+- 両方のリストを事前読み込みしてスムーズな切り替え
+- プレイリスト検索機能
+
 ## 主要な画面フロー
 
 ### メインタブ（MainTabView）
@@ -234,15 +237,16 @@ SwiftDataを使用してプレイリストとトラックを永続化。
 
 1. **PlaylistListView** - マイプレイリストタブ
    - プレイリスト一覧表示
-   - 新規作成、Apple Musicインポート、ファイルインポート
+   - 新規作成、Apple Musicインポート
 
 2. **CommunityView** - コミュニティタブ
-   - 公開プレイリスト一覧
+   - 公開プレイリスト一覧（人気・新着）
    - ランキング表示（いいね数、ダウンロード数）
    - プレイリスト検索
 
 3. **ProfileView** - プロフィールタブ
-   - ユーザー情報表示
+   - ユーザー情報表示・編集
+   - メンバーシップ状態（Sabique Premiumメンバー / Sabiqueメンバー）
    - 自分が公開したプレイリスト一覧
    - 設定へのアクセス
 
@@ -252,29 +256,32 @@ SwiftDataを使用してプレイリストとトラックを永続化。
    - トラック一覧表示
    - ハイライト再生開始
    - 曲の追加・削除・並び替え
+   - プレイリスト名の編集（ペンシルアイコン）
    - プレイリスト公開機能
 
 5. **CommunityPlaylistDetailView** - コミュニティプレイリスト詳細
    - 公開プレイリストの詳細表示
+   - 曲のタップで試聴再生
    - いいね機能
-   - ダウンロード（インポート）機能
-   - 通報機能
+   - インポート機能（無料版は3曲制限）
+   - 自分の投稿: 削除ボタン表示
+   - 他人の投稿: 通報ボタン表示
 
 6. **ChorusEditView** - ハイライト編集
    - 曲の再生
    - 開始/終了位置の設定
-   - 波形表示（未実装）
 
 7. **SongSearchView** - 曲検索
    - Apple Music Catalogから曲を検索
    - プレイリストへの追加
 
 8. **PublishPlaylistView** - プレイリスト公開
+   - プレイリスト選択（アートワーク表示）
    - 公開設定
-   - 説明文入力
 
-9. **ReportPlaylistView** - 通報画面
-   - 不適切なコンテンツの通報
+9. **SettingsView** - 設定画面
+   - Sign in with Appleボタン（未サインイン時）
+   - アカウント削除機能
 
 ## 開発時の注意点
 
@@ -286,14 +293,28 @@ SwiftDataを使用してプレイリストとトラックを永続化。
 ### データの整合性
 - プレイリスト削除時はトラックもカスケード削除
 - `orderIndex`で並び順を管理（0が最上位）
+- コミュニティプレイリスト削除時はFirestoreから完全削除
 
 ### パフォーマンス
 - アートワークURLをキャッシュして再取得を防止
 - `@Query`でデータベースからの自動更新
+- コミュニティ画面で人気・新着を同時取得してスワイプをスムーズに
 
 ### 課金制限
 - 無料版は`FreeTierLimits`で制限
 - プレミアム判定は`StoreManager.isPremium`
+- コミュニティからのインポートも曲数制限適用
+
+### Firebaseセキュリティルール
+```javascript
+// communityPlaylists コレクション
+match /communityPlaylists/{playlistId} {
+  allow read: if true;
+  allow create: if request.auth != null;
+  allow update, delete: if request.auth != null
+                        && request.auth.uid == resource.data.authorId;
+}
+```
 
 ## テスト
 - **SabiqueTests/** - 単体テスト

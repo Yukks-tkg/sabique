@@ -98,7 +98,7 @@ struct SettingsView: View {
                         } header: {
                             Text("アカウント")
                         } footer: {
-                            Text("アカウントを削除すると、投稿したプレイリストやいいね履歴など、すべてのデータが完全に削除されます。")
+                            Text("アカウントを削除すると、投稿したハイライトリストやいいね履歴など、すべてのデータが完全に削除されます。")
                                 .font(.caption)
                         }
                     } else {
@@ -129,7 +129,7 @@ struct SettingsView: View {
                         } header: {
                             Text("アカウント")
                         } footer: {
-                            Text("サインインすると、コミュニティにプレイリストを投稿したり、他のユーザーのプレイリストにいいねができます。")
+                            Text("サインインすると、コミュニティにハイライトリストを投稿したり、他のユーザーのハイライトリストにいいねができます。")
                                 .font(.caption)
                         }
                     }
@@ -396,7 +396,7 @@ struct SettingsView: View {
                     deleteAccount()
                 }
             } message: {
-                Text("この操作は取り消せません。投稿したプレイリスト、いいね履歴、プロフィール情報など、すべてのデータが完全に削除されます。")
+                Text("この操作は取り消せません。投稿したハイライトリスト、いいね履歴、プロフィール情報など、すべてのデータが完全に削除されます。")
             }
             .alert("エラー", isPresented: $showingDeleteAccountError) {
                 Button("OK", role: .cancel) { }

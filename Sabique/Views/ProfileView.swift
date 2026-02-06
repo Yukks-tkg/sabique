@@ -113,11 +113,11 @@ struct ProfileView: View {
                 // ステータスカード
                 statusSection
 
-                // 投稿プレイリスト一覧
+                // 投稿ハイライトリスト一覧
                 if !myPublishedPlaylists.isEmpty {
                     myPlaylistsSection
                 } else {
-                    Text("投稿プレイリストがありません")
+                    Text("投稿したハイライトリストがありません")
                         .font(.caption)
                         .foregroundColor(.secondary)
                 }
@@ -362,7 +362,7 @@ struct ProfileView: View {
 
     private var myPlaylistsSection: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text("投稿したプレイリスト")
+            Text("投稿したハイライトリスト")
                 .font(.headline)
                 .padding(.horizontal, 4)
 

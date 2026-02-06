@@ -159,7 +159,7 @@ struct CommunityView: View {
             Image(systemName: "magnifyingglass")
                 .foregroundColor(.secondary)
 
-            TextField("プレイリストを検索", text: $searchText)
+            TextField("ハイライトリストを検索", text: $searchText)
                 .textFieldStyle(.plain)
                 .autocorrectionDisabled()
                 .onChange(of: searchText) { _, newValue in
@@ -223,7 +223,7 @@ struct CommunityView: View {
         VStack {
             Spacer()
             ContentUnavailableView(
-                "プレイリストがありません",
+                "ハイライトリストがありません",
                 systemImage: "music.note.list",
                 description: Text("最初の投稿者になりましょう！")
             )
@@ -279,17 +279,9 @@ struct CommunityPlaylistCard: View {
 
                 VStack(alignment: .leading, spacing: 4) {
                     // プレイリスト名
-                    HStack {
-                        Text(playlist.name)
-                            .font(.headline)
-                            .lineLimit(2)
-
-                        if playlist.authorIsPremium {
-                            Image(systemName: "crown.fill")
-                                .foregroundColor(.yellow)
-                                .font(.caption)
-                        }
-                    }
+                    Text(playlist.name)
+                        .font(.headline)
+                        .lineLimit(2)
 
                     // 投稿者
                     Group {

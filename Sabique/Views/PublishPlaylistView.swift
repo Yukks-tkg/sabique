@@ -41,7 +41,7 @@ struct PublishPlaylistView: View {
                     signInPromptView
                 }
             }
-            .navigationTitle("プレイリストを投稿")
+            .navigationTitle("ハイライトリストを投稿")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
@@ -65,7 +65,7 @@ struct PublishPlaylistView: View {
                     dismiss()
                 }
             } message: {
-                Text("プレイリストをコミュニティに投稿しました！")
+                Text("ハイライトリストをコミュニティに投稿しました！")
             }
             .alert("エラー", isPresented: $showingError) {
                 Button("OK", role: .cancel) {}
@@ -88,9 +88,9 @@ struct PublishPlaylistView: View {
             Section {
                 if playlists.isEmpty {
                     ContentUnavailableView(
-                        "プレイリストがありません",
+                        "ハイライトリストがありません",
                         systemImage: "music.note.list",
-                        description: Text("まずはプレイリストを作成してください")
+                        description: Text("まずはハイライトリストを作成してください")
                     )
                 } else {
                     ForEach(playlists) { playlist in
@@ -105,7 +105,7 @@ struct PublishPlaylistView: View {
                     }
                 }
             } header: {
-                Text("投稿するプレイリストを選択")
+                Text("投稿するハイライトリストを選択")
             } footer: {
                 if let selected = selectedPlaylist {
                     VStack(alignment: .leading, spacing: 8) {
@@ -142,7 +142,7 @@ struct PublishPlaylistView: View {
             Text("サインインしてください")
                 .font(.headline)
 
-            Text("プレイリストを投稿するにはApple IDでサインインしてください")
+            Text("ハイライトリストを投稿するにはApple IDでサインインしてください")
                 .font(.subheadline)
                 .foregroundColor(.secondary)
                 .multilineTextAlignment(.center)

@@ -13,10 +13,10 @@ struct MainTabView: View {
 
     var body: some View {
         TabView(selection: $selectedTab) {
-            // Tab 1: マイプレイリスト
+            // Tab 1: マイリスト
             PlaylistListView()
                 .tabItem {
-                    Label("マイプレイリスト", systemImage: "music.note.list")
+                    Label("マイリスト", systemImage: "music.note.list")
                 }
                 .tag(0)
 
