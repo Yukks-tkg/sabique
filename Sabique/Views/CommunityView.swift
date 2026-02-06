@@ -43,10 +43,10 @@ struct CommunityView: View {
                 }
             }
             .task {
-                await loadPlaylists()
+                await loadAllPlaylists()
             }
             .refreshable {
-                await loadPlaylists()
+                await loadAllPlaylists()
             }
             .sheet(isPresented: $showingPublish) {
                 PublishPlaylistView()
@@ -104,36 +104,53 @@ struct CommunityView: View {
             // タブヘッダー
             filterPicker
 
-            // スワイプ可能なコンテンツ
+            // スワイプ可能なTabView（両方のリストを事前読み込み）
             TabView(selection: $selectedFilter) {
                 // 人気タブ
-                tabContent(for: .popular)
+                popularTabContent
                     .tag(SortOption.popular)
 
                 // 新着タブ
-                tabContent(for: .newest)
+                newestTabContent
                     .tag(SortOption.newest)
             }
             .tabViewStyle(.page(indexDisplayMode: .never))
-            .onChange(of: selectedFilter) { _, newValue in
-                Task {
-                    await loadPlaylists()
-                }
-            }
         }
     }
 
     @ViewBuilder
-    private func tabContent(for option: SortOption) -> some View {
-        if communityManager.isLoading && selectedFilter == option {
+    private var popularTabContent: some View {
+        if communityManager.isLoadingPopular && communityManager.popularPlaylists.isEmpty {
             loadingView
-        } else if communityManager.playlists.isEmpty && selectedFilter == option {
+        } else if communityManager.popularPlaylists.isEmpty {
             emptyView
-        } else if selectedFilter == option {
-            playlistList
         } else {
-            // 別タブの場合はプレースホルダー（すぐ切り替わるので見えない）
-            Color.clear
+            playlistListView(for: communityManager.popularPlaylists)
+        }
+    }
+
+    @ViewBuilder
+    private var newestTabContent: some View {
+        if communityManager.isLoadingNewest && communityManager.newestPlaylists.isEmpty {
+            loadingView
+        } else if communityManager.newestPlaylists.isEmpty {
+            emptyView
+        } else {
+            playlistListView(for: communityManager.newestPlaylists)
+        }
+    }
+
+    private func playlistListView(for playlists: [CommunityPlaylist]) -> some View {
+        ScrollView {
+            LazyVStack(spacing: 12) {
+                ForEach(playlists) { playlist in
+                    NavigationLink(destination: CommunityPlaylistDetailView(playlist: playlist)) {
+                        CommunityPlaylistCard(playlist: playlist)
+                    }
+                    .buttonStyle(.plain)
+                }
+            }
+            .padding()
         }
     }
 
@@ -229,6 +246,14 @@ struct CommunityView: View {
     }
 
     // MARK: - Actions
+
+    private func loadAllPlaylists() async {
+        do {
+            try await communityManager.fetchAllPlaylists(limit: 20)
+        } catch {
+            print("プレイリスト読み込みエラー: \(error)")
+        }
+    }
 
     private func loadPlaylists() async {
         do {

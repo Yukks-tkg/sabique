@@ -17,6 +17,7 @@ struct CommunityPlaylistDetailView: View {
     @Environment(\.modelContext) private var modelContext
     @EnvironmentObject private var communityManager: CommunityManager
     @EnvironmentObject private var authManager: AuthManager
+    @EnvironmentObject private var storeManager: StoreManager
     @State private var hasLiked = false
     @State private var currentLikeCount: Int
     @State private var currentDownloadCount: Int
@@ -27,6 +28,7 @@ struct CommunityPlaylistDetailView: View {
     @State private var showingDeleteConfirm = false
     @State private var isDeleting = false
     @State private var errorMessage = ""
+    @State private var successMessage = ""
     @State private var playingTrackId: String?
     @State private var isLoadingTrack = false
 
@@ -105,7 +107,7 @@ struct CommunityPlaylistDetailView: View {
         .alert("インポート完了", isPresented: $showingImportSuccess) {
             Button("OK", role: .cancel) {}
         } message: {
-            Text("プレイリストをマイプレイリストに追加しました")
+            Text(successMessage)
         }
         .alert("エラー", isPresented: $showingImportError) {
             Button("OK", role: .cancel) {}
@@ -316,11 +318,18 @@ struct CommunityPlaylistDetailView: View {
 
         Task {
             do {
-                try await communityManager.importPlaylist(
+                let result = try await communityManager.importPlaylist(
                     communityPlaylist: playlist,
-                    modelContext: modelContext
+                    modelContext: modelContext,
+                    isPremium: storeManager.isPremium
                 )
                 await MainActor.run {
+                    if result.skippedCount > 0 {
+                        // 無料会員で曲がスキップされた場合
+                        successMessage = "\(result.importedCount)曲をインポートしました。残り\(result.skippedCount)曲はプレミアムでインポート可能です。"
+                    } else {
+                        successMessage = "プレイリストをインポートしました"
+                    }
                     showingImportSuccess = true
                 }
             } catch {

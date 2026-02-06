@@ -22,6 +22,8 @@ struct PlaylistDetailView: View {
     @State private var showingPaywall = false
     @State private var shouldScrollToBottom = false
     @State private var previousTrackCount = 0
+    @State private var showingRenameAlert = false
+    @State private var newPlaylistName = ""
     
     // 1曲目のID（並べ替え検知用）
     private var firstTrackId: String? {
@@ -126,10 +128,21 @@ struct PlaylistDetailView: View {
                                 .listRowBackground(Color.clear)
                                 .id("addButton")
                             } header: {
-                                Text(playlist.name)
-                                    .font(.system(size: 19, weight: .bold))
-                                    .foregroundColor(.primary)
-                                    .padding(.top, 10)
+                                HStack(spacing: 6) {
+                                    Text(playlist.name)
+                                        .font(.system(size: 19, weight: .bold))
+                                        .foregroundColor(.primary)
+
+                                    Button(action: {
+                                        newPlaylistName = playlist.name
+                                        showingRenameAlert = true
+                                    }) {
+                                        Image(systemName: "pencil")
+                                            .font(.system(size: 14))
+                                            .foregroundColor(.secondary)
+                                    }
+                                }
+                                .padding(.top, 10)
                             }
                         }
                         .scrollContentBackground(.hidden)
@@ -266,6 +279,22 @@ struct PlaylistDetailView: View {
         }
         .sheet(isPresented: $showingPaywall) {
             PaywallView()
+        }
+        .alert("プレイリスト名を変更", isPresented: $showingRenameAlert) {
+            TextField("プレイリスト名", text: $newPlaylistName)
+                .onChange(of: newPlaylistName) { _, newValue in
+                    // 50文字制限
+                    if newValue.count > PlaylistValidator.maxNameLength {
+                        newPlaylistName = String(newValue.prefix(PlaylistValidator.maxNameLength))
+                    }
+                }
+            Button("キャンセル", role: .cancel) { }
+            Button("保存") {
+                let trimmedName = newPlaylistName.trimmingCharacters(in: .whitespaces)
+                if !trimmedName.isEmpty {
+                    playlist.name = trimmedName
+                }
+            }
         }
     }
     

@@ -366,11 +366,17 @@ struct CreatePlaylistSheet: View {
     @Binding var playlistName: String
     let onCreate: () -> Void
     let onCancel: () -> Void
-    
+
     var body: some View {
         NavigationStack {
             Form {
                 TextField(String(localized: "playlist_name"), text: $playlistName)
+                    .onChange(of: playlistName) { _, newValue in
+                        // 50文字制限
+                        if newValue.count > PlaylistValidator.maxNameLength {
+                            playlistName = String(newValue.prefix(PlaylistValidator.maxNameLength))
+                        }
+                    }
             }
             .navigationTitle(String(localized: "new_playlist"))
             .navigationBarTitleDisplayMode(.inline)

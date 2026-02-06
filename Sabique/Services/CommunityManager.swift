@@ -13,7 +13,11 @@ import SwiftData
 class CommunityManager: ObservableObject {
     private let db = Firestore.firestore()
     @Published var playlists: [CommunityPlaylist] = []
+    @Published var popularPlaylists: [CommunityPlaylist] = []
+    @Published var newestPlaylists: [CommunityPlaylist] = []
     @Published var isLoading = false
+    @Published var isLoadingPopular = false
+    @Published var isLoadingNewest = false
     @Published var errorMessage: String?
 
     // MARK: - 投稿機能
@@ -124,7 +128,58 @@ class CommunityManager: ObservableObject {
 
     // MARK: - 閲覧機能
 
-    /// プレイリスト一覧を取得
+    /// 人気・新着両方のプレイリストを同時に取得
+    func fetchAllPlaylists(limit: Int = 20) async throws {
+        await MainActor.run {
+            isLoading = true
+            isLoadingPopular = true
+            isLoadingNewest = true
+        }
+
+        async let popularTask = fetchPopularPlaylists(limit: limit)
+        async let newestTask = fetchNewestPlaylists(limit: limit)
+
+        do {
+            let (popular, newest) = try await (popularTask, newestTask)
+            await MainActor.run {
+                self.popularPlaylists = popular
+                self.newestPlaylists = newest
+                self.playlists = popular // デフォルトは人気
+                self.isLoading = false
+                self.isLoadingPopular = false
+                self.isLoadingNewest = false
+            }
+            print("✅ 両方のプレイリスト取得成功: 人気\(popular.count)件, 新着\(newest.count)件")
+        } catch {
+            await MainActor.run {
+                self.errorMessage = "プレイリストの取得に失敗しました"
+                self.isLoading = false
+                self.isLoadingPopular = false
+                self.isLoadingNewest = false
+            }
+            throw error
+        }
+    }
+
+    /// 人気プレイリストを取得
+    private func fetchPopularPlaylists(limit: Int) async throws -> [CommunityPlaylist] {
+        let query = db.collection("communityPlaylists")
+            .order(by: "likeCount", descending: true)
+            .limit(to: limit)
+        let snapshot = try await query.getDocuments()
+        return snapshot.documents.compactMap { try? $0.data(as: CommunityPlaylist.self) }
+    }
+
+    /// 新着プレイリストを取得
+    private func fetchNewestPlaylists(limit: Int) async throws -> [CommunityPlaylist] {
+        let query = db.collection("communityPlaylists")
+            .order(by: "createdAt", descending: true)
+            .limit(to: limit)
+        let snapshot = try await query.getDocuments()
+        return snapshot.documents.compactMap { try? $0.data(as: CommunityPlaylist.self) }
+    }
+
+    /// プレイリスト一覧を取得（既存互換用）
     func fetchPlaylists(sortBy: SortOption = .popular, limit: Int = 20) async throws {
         await MainActor.run { isLoading = true }
 
@@ -148,6 +203,13 @@ class CommunityManager: ObservableObject {
 
             await MainActor.run {
                 self.playlists = fetchedPlaylists
+                // 個別のリストも更新
+                switch sortBy {
+                case .popular:
+                    self.popularPlaylists = fetchedPlaylists
+                case .newest:
+                    self.newestPlaylists = fetchedPlaylists
+                }
                 self.isLoading = false
             }
 
@@ -213,16 +275,23 @@ class CommunityManager: ObservableObject {
     // MARK: - インポート機能
 
     /// コミュニティプレイリストをマイプレイリストにインポート
+    /// - Returns: (インポートした曲数, スキップされた曲数)
     func importPlaylist(
         communityPlaylist: CommunityPlaylist,
-        modelContext: ModelContext
-    ) async throws {
+        modelContext: ModelContext,
+        isPremium: Bool
+    ) async throws -> (importedCount: Int, skippedCount: Int) {
+        // 無料会員は最大3曲まで
+        let maxTracks = isPremium ? communityPlaylist.tracks.count : FreeTierLimits.maxTracksPerPlaylist
+        let tracksToImport = Array(communityPlaylist.tracks.prefix(maxTracks))
+        let skippedCount = max(0, communityPlaylist.tracks.count - maxTracks)
+
         // 新しいプレイリストを作成
         let newPlaylist = Playlist(name: communityPlaylist.name, orderIndex: 0)
         modelContext.insert(newPlaylist)
 
         // トラックを追加
-        for (index, communityTrack) in communityPlaylist.tracks.enumerated() {
+        for (index, communityTrack) in tracksToImport.enumerated() {
             let track = communityTrack.toTrackInPlaylist(orderIndex: index)
             track.playlist = newPlaylist
             modelContext.insert(track)
@@ -231,7 +300,9 @@ class CommunityManager: ObservableObject {
         // ダウンロード数をインクリメント
         await incrementDownloadCount(playlistId: communityPlaylist.id ?? "")
 
-        print("✅ インポート成功: \(communityPlaylist.name)")
+        print("✅ インポート成功: \(communityPlaylist.name) (\(tracksToImport.count)曲インポート, \(skippedCount)曲スキップ)")
+
+        return (tracksToImport.count, skippedCount)
     }
 
     // MARK: - 報告機能
