@@ -31,6 +31,7 @@ struct CommunityPlaylistDetailView: View {
     @State private var successMessage = ""
     @State private var playingTrackId: String?
     @State private var isLoadingTrack = false
+    @State private var showingAlreadyInMyList = false
 
     init(playlist: CommunityPlaylist) {
         self.playlist = playlist
@@ -121,6 +122,11 @@ struct CommunityPlaylistDetailView: View {
             }
         } message: {
             Text(String(localized: "delete_highlight_list_message"))
+        }
+        .alert(String(localized: "already_in_my_list"), isPresented: $showingAlreadyInMyList) {
+            Button(String(localized: "ok"), role: .cancel) {}
+        } message: {
+            Text(String(localized: "already_in_my_list_message"))
         }
         .onDisappear {
             // 画面を離れたら再生を停止
@@ -320,7 +326,17 @@ struct CommunityPlaylistDetailView: View {
 
     // MARK: - Actions
 
+    private var isOwnPlaylist: Bool {
+        playlist.authorId == authManager.currentUser?.uid
+    }
+
     private func importPlaylist() {
+        // 自分の投稿の場合は「すでにマイリストにあります」を表示
+        if isOwnPlaylist {
+            showingAlreadyInMyList = true
+            return
+        }
+
         // 即座にUI更新（楽観的更新）
         currentDownloadCount += 1
 
