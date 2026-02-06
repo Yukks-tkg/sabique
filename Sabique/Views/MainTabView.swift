@@ -16,21 +16,21 @@ struct MainTabView: View {
             // Tab 1: マイリスト
             PlaylistListView()
                 .tabItem {
-                    Label("マイリスト", systemImage: "music.note.list")
+                    Label(String(localized: "my_list"), systemImage: "music.note.list")
                 }
                 .tag(0)
 
             // Tab 2: コミュニティ
             CommunityView()
                 .tabItem {
-                    Label("コミュニティ", systemImage: "globe")
+                    Label(String(localized: "community"), systemImage: "globe")
                 }
                 .tag(1)
 
             // Tab 3: プロフィール
             ProfileView()
                 .tabItem {
-                    Label("プロフィール", systemImage: "person.circle")
+                    Label(String(localized: "profile"), systemImage: "person.circle")
                 }
                 .tag(2)
         }

@@ -198,9 +198,9 @@ struct CommunityView: View {
     }
 
     private var filterPicker: some View {
-        Picker("並び替え", selection: $selectedFilter) {
-            Text("🔥 人気").tag(SortOption.popular)
-            Text("✨ 新着").tag(SortOption.newest)
+        Picker(String(localized: "sort_by"), selection: $selectedFilter) {
+            Text(String(localized: "popular_tab")).tag(SortOption.popular)
+            Text(String(localized: "newest_tab")).tag(SortOption.newest)
         }
         .pickerStyle(.segmented)
         .padding()
@@ -211,7 +211,7 @@ struct CommunityView: View {
             Spacer()
             ProgressView()
                 .scaleEffect(1.5)
-            Text("読み込み中...")
+            Text(String(localized: "loading"))
                 .font(.subheadline)
                 .foregroundColor(.secondary)
                 .padding(.top)
@@ -223,9 +223,9 @@ struct CommunityView: View {
         VStack {
             Spacer()
             ContentUnavailableView(
-                "ハイライトリストがありません",
+                String(localized: "no_highlight_lists"),
                 systemImage: "music.note.list",
-                description: Text("最初の投稿者になりましょう！")
+                description: Text(String(localized: "be_first_to_post"))
             )
             Spacer()
         }
@@ -295,7 +295,7 @@ struct CommunityPlaylistCard: View {
                     .foregroundColor(.secondary)
 
                     // 曲数
-                    Text("\(playlist.tracks.count)曲")
+                    Text(String(localized: "track_count_\(playlist.tracks.count)"))
                         .font(.caption2)
                         .foregroundColor(.secondary)
                 }
@@ -324,7 +324,7 @@ struct CommunityPlaylistCard: View {
             // バッジ
             if playlist.likeCount >= 100 {
                 HStack {
-                    Text("🔥 人気")
+                    Text(String(localized: "popular_badge"))
                         .font(.caption2)
                         .padding(.horizontal, 8)
                         .padding(.vertical, 4)

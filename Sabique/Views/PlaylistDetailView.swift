@@ -102,22 +102,22 @@ struct PlaylistDetailView: View {
         .sheet(isPresented: $showingPaywall) {
             PaywallView()
         }
-        .alert("コミュニティに投稿しますか？", isPresented: $showingPublishConfirm) {
+        .alert(String(localized: "publish_to_community_confirm"), isPresented: $showingPublishConfirm) {
             publishConfirmAlertButtons
         } message: {
             publishConfirmAlertMessage
         }
-        .alert("投稿完了", isPresented: $showingPublishSuccess) {
-            Button("OK", role: .cancel) { }
+        .alert(String(localized: "publish_complete"), isPresented: $showingPublishSuccess) {
+            Button(String(localized: "ok"), role: .cancel) { }
         } message: {
-            Text("ハイライトリストをコミュニティに投稿しました！")
+            Text(String(localized: "highlight_list_published"))
         }
-        .alert("エラー", isPresented: $showingPublishError) {
-            Button("OK", role: .cancel) { }
+        .alert(String(localized: "error"), isPresented: $showingPublishError) {
+            Button(String(localized: "ok"), role: .cancel) { }
         } message: {
             Text(publishErrorMessage)
         }
-        .alert("リスト名を変更", isPresented: $showingRenameAlert) {
+        .alert(String(localized: "rename_list"), isPresented: $showingRenameAlert) {
             renameAlertContent
         }
     }
@@ -281,26 +281,26 @@ struct PlaylistDetailView: View {
 
     @ViewBuilder
     private var publishConfirmAlertButtons: some View {
-        Button("キャンセル", role: .cancel) { }
-        Button("投稿") {
+        Button(String(localized: "cancel"), role: .cancel) { }
+        Button(String(localized: "publish")) {
             publishPlaylist()
         }
     }
 
     private var publishConfirmAlertMessage: Text {
-        Text("「\(playlist.name)」をコミュニティに公開します。")
+        Text(String(localized: "publish_message_\(playlist.name)"))
     }
 
     @ViewBuilder
     private var renameAlertContent: some View {
-        TextField("リスト名", text: $newPlaylistName)
+        TextField(String(localized: "list_name"), text: $newPlaylistName)
             .onChange(of: newPlaylistName) { _, newValue in
                 if newValue.count > PlaylistValidator.maxNameLength {
                     newPlaylistName = String(newValue.prefix(PlaylistValidator.maxNameLength))
                 }
             }
-        Button("キャンセル", role: .cancel) { }
-        Button("保存") {
+        Button(String(localized: "cancel"), role: .cancel) { }
+        Button(String(localized: "save")) {
             let trimmedName = newPlaylistName.trimmingCharacters(in: .whitespaces)
             if !trimmedName.isEmpty {
                 playlist.name = trimmedName
@@ -637,10 +637,10 @@ struct SignInSheetView: View {
                     .font(.system(size: 60))
                     .foregroundColor(.secondary)
 
-                Text("サインインしてください")
+                Text(String(localized: "please_sign_in"))
                     .font(.headline)
 
-                Text("ハイライトリストを投稿するにはApple IDでサインインしてください")
+                Text(String(localized: "sign_in_to_publish"))
                     .font(.subheadline)
                     .foregroundColor(.secondary)
                     .multilineTextAlignment(.center)
@@ -673,7 +673,7 @@ struct SignInSheetView: View {
 
                 Spacer()
             }
-            .navigationTitle("サインイン")
+            .navigationTitle(String(localized: "sign_in"))
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {

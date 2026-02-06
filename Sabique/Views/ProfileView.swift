@@ -117,7 +117,7 @@ struct ProfileView: View {
                 if !myPublishedPlaylists.isEmpty {
                     myPlaylistsSection
                 } else {
-                    Text("投稿したハイライトリストがありません")
+                    Text(String(localized: "no_published_highlight_lists"))
                         .font(.caption)
                         .foregroundColor(.secondary)
                 }
@@ -131,7 +131,7 @@ struct ProfileView: View {
     private var profileHeaderSection: some View {
         VStack(spacing: 16) {
             // お気に入りの一曲ラベル
-            Text("お気に入りの一曲")
+            Text(String(localized: "favorite_song"))
                 .font(.caption)
                 .foregroundColor(.secondary)
 
@@ -248,7 +248,7 @@ struct ProfileView: View {
                     Image(systemName: "crown.fill")
                         .foregroundColor(.yellow)
                         .font(.title3)
-                    Text("Sabique Premiumメンバー")
+                    Text(String(localized: "sabique_premium_member"))
                         .fontWeight(.semibold)
                     Spacer()
                     Image(systemName: "checkmark.seal.fill")
@@ -271,11 +271,11 @@ struct ProfileView: View {
                         Image(systemName: "person.fill")
                             .foregroundColor(.secondary)
                             .font(.title3)
-                        Text("Sabiqueメンバー")
+                        Text(String(localized: "sabique_member"))
                             .fontWeight(.semibold)
                             .foregroundColor(.primary)
                         Spacer()
-                        Text("アップグレード")
+                        Text(String(localized: "upgrade"))
                             .font(.caption)
                             .foregroundColor(.blue)
                         Image(systemName: "chevron.right")
@@ -300,7 +300,7 @@ struct ProfileView: View {
                             Text("\(totalLikes)")
                                 .font(.system(size: 32, weight: .bold))
                         }
-                        Text("もらったいいね")
+                        Text(String(localized: "received_likes"))
                             .font(.caption)
                             .foregroundColor(.secondary)
                     }
@@ -318,7 +318,7 @@ struct ProfileView: View {
                             Text("\(totalDownloads)")
                                 .font(.system(size: 32, weight: .bold))
                         }
-                        Text("利用された数")
+                        Text(String(localized: "times_used"))
                             .font(.caption)
                             .foregroundColor(.secondary)
                     }
@@ -333,7 +333,7 @@ struct ProfileView: View {
                     VStack(spacing: 8) {
                         Text("\(userProfile?.publishedPlaylistCount ?? 0)")
                             .font(.system(size: 32, weight: .bold))
-                        Text("今月の投稿数")
+                        Text(String(localized: "posts_this_month"))
                             .font(.caption)
                             .foregroundColor(.secondary)
                     }
@@ -347,7 +347,7 @@ struct ProfileView: View {
                         let remaining = userProfile?.remainingPublishesThisMonth(isPremium: storeManager.isPremium) ?? 0
                         Text(storeManager.isPremium ? "∞" : "\(remaining)")
                             .font(.system(size: 32, weight: .bold))
-                        Text("残り投稿回数")
+                        Text(String(localized: "remaining_posts"))
                             .font(.caption)
                             .foregroundColor(.secondary)
                     }
@@ -362,7 +362,7 @@ struct ProfileView: View {
 
     private var myPlaylistsSection: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text("投稿したハイライトリスト")
+            Text(String(localized: "published_highlight_lists"))
                 .font(.headline)
                 .padding(.horizontal, 4)
 
@@ -492,10 +492,10 @@ extension ProfileView {
                 .font(.system(size: 60))
                 .foregroundColor(.secondary)
 
-            Text("サインインしてください")
+            Text(String(localized: "please_sign_in"))
                 .font(.headline)
 
-            Text("プロフィール機能を使用するにはApple IDでサインインしてください")
+            Text(String(localized: "sign_in_for_profile"))
                 .font(.subheadline)
                 .foregroundColor(.secondary)
                 .multilineTextAlignment(.center)
@@ -721,7 +721,7 @@ struct ProfileEditSheet: View {
                     if isSaving {
                         ProgressView()
                     } else {
-                        Button("保存") {
+                        Button(String(localized: "save")) {
                             saveProfile()
                         }
                         .fontWeight(.semibold)
@@ -788,7 +788,7 @@ struct ProfileEditSheet: View {
 
             // 変更ボタン
             Button(action: { showingArtworkPicker = true }) {
-                Text("アートワークを変更")
+                Text(String(localized: "change_artwork"))
                     .font(.subheadline)
                     .foregroundColor(.blue)
             }
@@ -801,13 +801,13 @@ struct ProfileEditSheet: View {
 
     private var nicknameSection: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text("ニックネーム")
+            Text(String(localized: "nickname"))
                 .font(.subheadline)
                 .foregroundColor(.secondary)
                 .padding(.horizontal, 4)
 
             HStack {
-                TextField("ニックネームを入力", text: $nickname)
+                TextField(String(localized: "enter_nickname"), text: $nickname)
                     .focused($isNicknameFocused)
                     .autocapitalization(.none)
                     .onChange(of: nickname) { _, newValue in
@@ -828,7 +828,7 @@ struct ProfileEditSheet: View {
 
     private var countrySection: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text("国/地域")
+            Text(String(localized: "country_region"))
                 .font(.subheadline)
                 .foregroundColor(.secondary)
                 .padding(.horizontal, 4)
@@ -836,7 +836,7 @@ struct ProfileEditSheet: View {
             Button(action: { showingCountryPicker = true }) {
                 HStack {
                     if selectedCountryCode.isEmpty {
-                        Text("未設定")
+                        Text(String(localized: "not_set"))
                             .foregroundColor(.secondary)
                     } else {
                         Text(flagEmoji(for: selectedCountryCode))
@@ -964,7 +964,7 @@ struct CountryPickerView: View {
                         dismiss()
                     }) {
                         HStack {
-                            Text("未設定")
+                            Text(String(localized: "not_set"))
                                 .foregroundColor(.primary)
                             Spacer()
                             if selectedCountryCode == nil || selectedCountryCode == "" {
@@ -997,11 +997,11 @@ struct CountryPickerView: View {
                     }
                 }
             }
-            .navigationTitle("国/地域を選択")
+            .navigationTitle(String(localized: "select_country_region"))
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
-                    Button("キャンセル") {
+                    Button(String(localized: "cancel")) {
                         dismiss()
                     }
                 }

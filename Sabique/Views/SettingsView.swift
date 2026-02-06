@@ -63,7 +63,7 @@ struct SettingsView: View {
                     if authManager.isSignedIn {
                         Section {
                             HStack {
-                                Label("Apple IDで連携中", systemImage: "applelogo")
+                                Label(String(localized: "linked_with_apple_id"), systemImage: "applelogo")
                                     .font(.subheadline)
                                 Spacer()
                                 Image(systemName: "checkmark.circle.fill")
@@ -73,7 +73,7 @@ struct SettingsView: View {
                             Button(action: { authManager.signOut() }) {
                                 HStack {
                                     Image(systemName: "rectangle.portrait.and.arrow.right")
-                                    Text("サインアウト")
+                                    Text(String(localized: "sign_out"))
                                         .fontWeight(.medium)
                                     Spacer()
                                 }
@@ -88,7 +88,7 @@ struct SettingsView: View {
                                     } else {
                                         Image(systemName: "trash")
                                     }
-                                    Text("アカウントを削除")
+                                    Text(String(localized: "delete_account"))
                                         .fontWeight(.medium)
                                     Spacer()
                                 }
@@ -96,9 +96,9 @@ struct SettingsView: View {
                             }
                             .disabled(isDeletingAccount)
                         } header: {
-                            Text("アカウント")
+                            Text(String(localized: "account"))
                         } footer: {
-                            Text("アカウントを削除すると、投稿したハイライトリストやいいね履歴など、すべてのデータが完全に削除されます。")
+                            Text(String(localized: "delete_account_warning"))
                                 .font(.caption)
                         }
                     } else {
@@ -127,9 +127,9 @@ struct SettingsView: View {
                             .listRowBackground(Color.clear)
                             .listRowInsets(EdgeInsets(top: 0, leading: 20, bottom: 0, trailing: 20))
                         } header: {
-                            Text("アカウント")
+                            Text(String(localized: "account"))
                         } footer: {
-                            Text("サインインすると、コミュニティにハイライトリストを投稿したり、他のユーザーのハイライトリストにいいねができます。")
+                            Text(String(localized: "sign_in_benefits"))
                                 .font(.caption)
                         }
                     }
@@ -213,30 +213,30 @@ struct SettingsView: View {
                         }
 
                         #if DEBUG
-                        Section("デバッグ設定") {
+                        Section(String(localized: "debug_settings")) {
                             Toggle(isOn: $storeManager.debugForceFreeMode) {
                                 VStack(alignment: .leading, spacing: 4) {
-                                    Text("無料版として動作")
-                                    Text("プレミアム購入済みでも無料版の制限をテストできます")
+                                    Text(String(localized: "run_as_free"))
+                                    Text(String(localized: "test_free_mode_description"))
                                         .font(.caption)
                                         .foregroundColor(.secondary)
                                 }
                             }
 
                             HStack {
-                                Text("現在の状態:")
+                                Text(String(localized: "current_status"))
                                 Spacer()
-                                Text(storeManager.isPremium ? "プレミアム" : "無料版")
+                                Text(storeManager.isPremium ? String(localized: "premium") : String(localized: "free"))
                                     .fontWeight(.semibold)
                                     .foregroundColor(storeManager.isPremium ? .green : .orange)
                             }
                         }
                         #endif
 
-                        Section("開発者向け") {
+                        Section(String(localized: "developer_section")) {
                             Button(action: { showingSignInTest = true }) {
                                 HStack {
-                                    Text("Apple Sign Inテスト")
+                                    Text(String(localized: "apple_sign_in_test"))
                                     Spacer()
                                     Image(systemName: "chevron.right")
                                         .foregroundColor(.secondary)
@@ -245,7 +245,7 @@ struct SettingsView: View {
 
                             Button(action: { showingPublishTest = true }) {
                                 HStack {
-                                    Text("プレイリスト投稿テスト")
+                                    Text(String(localized: "playlist_publish_test"))
                                     Spacer()
                                     Image(systemName: "chevron.right")
                                         .foregroundColor(.secondary)
@@ -390,18 +390,18 @@ struct SettingsView: View {
             .sheet(isPresented: $showingPublishTest) {
                 PublishPlaylistView()
             }
-            .alert("アカウントを削除しますか？", isPresented: $showingDeleteAccountAlert) {
-                Button("キャンセル", role: .cancel) { }
-                Button("削除する", role: .destructive) {
+            .alert(String(localized: "delete_account_confirm"), isPresented: $showingDeleteAccountAlert) {
+                Button(String(localized: "cancel"), role: .cancel) { }
+                Button(String(localized: "delete"), role: .destructive) {
                     deleteAccount()
                 }
             } message: {
-                Text("この操作は取り消せません。投稿したハイライトリスト、いいね履歴、プロフィール情報など、すべてのデータが完全に削除されます。")
+                Text(String(localized: "delete_account_confirm_message"))
             }
-            .alert("エラー", isPresented: $showingDeleteAccountError) {
-                Button("OK", role: .cancel) { }
+            .alert(String(localized: "error"), isPresented: $showingDeleteAccountError) {
+                Button(String(localized: "ok"), role: .cancel) { }
             } message: {
-                Text(deleteAccountError ?? "アカウントの削除に失敗しました")
+                Text(deleteAccountError ?? String(localized: "delete_account_failed"))
             }
         }
     }

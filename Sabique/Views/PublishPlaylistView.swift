@@ -53,22 +53,22 @@ struct PublishPlaylistView: View {
                 }
                 if authManager.isSignedIn && selectedPlaylist != nil {
                     ToolbarItem(placement: .confirmationAction) {
-                        Button("投稿") {
+                        Button(String(localized: "publish")) {
                             publishPlaylist()
                         }
                         .disabled(isPublishing)
                     }
                 }
             }
-            .alert("投稿完了", isPresented: $showingSuccess) {
-                Button("OK") {
+            .alert(String(localized: "publish_complete"), isPresented: $showingSuccess) {
+                Button(String(localized: "ok")) {
                     dismiss()
                 }
             } message: {
-                Text("ハイライトリストをコミュニティに投稿しました！")
+                Text(String(localized: "highlight_list_published"))
             }
-            .alert("エラー", isPresented: $showingError) {
-                Button("OK", role: .cancel) {}
+            .alert(String(localized: "error"), isPresented: $showingError) {
+                Button(String(localized: "ok"), role: .cancel) {}
             } message: {
                 Text(errorMessage)
             }
@@ -88,9 +88,9 @@ struct PublishPlaylistView: View {
             Section {
                 if playlists.isEmpty {
                     ContentUnavailableView(
-                        "ハイライトリストがありません",
+                        String(localized: "no_highlight_lists"),
                         systemImage: "music.note.list",
-                        description: Text("まずはハイライトリストを作成してください")
+                        description: Text(String(localized: "create_highlight_list_first"))
                     )
                 } else {
                     ForEach(playlists) { playlist in
@@ -105,14 +105,14 @@ struct PublishPlaylistView: View {
                     }
                 }
             } header: {
-                Text("投稿するハイライトリストを選択")
+                Text(String(localized: "select_highlight_list_to_publish"))
             } footer: {
                 if let selected = selectedPlaylist {
                     VStack(alignment: .leading, spacing: 8) {
-                        Text("選択中: \(selected.name)")
+                        Text(String(localized: "selected_\(selected.name)"))
                             .font(.subheadline)
                             .bold()
-                        Text("\(selected.trackCount)曲が含まれます")
+                        Text(String(localized: "contains_tracks_\(selected.trackCount)"))
                             .font(.caption)
                             .foregroundColor(.secondary)
                     }
@@ -139,10 +139,10 @@ struct PublishPlaylistView: View {
                 .font(.system(size: 60))
                 .foregroundColor(.secondary)
 
-            Text("サインインしてください")
+            Text(String(localized: "please_sign_in"))
                 .font(.headline)
 
-            Text("ハイライトリストを投稿するにはApple IDでサインインしてください")
+            Text(String(localized: "sign_in_to_publish"))
                 .font(.subheadline)
                 .foregroundColor(.secondary)
                 .multilineTextAlignment(.center)
@@ -273,7 +273,7 @@ struct PlaylistSelectionRow: View {
             VStack(alignment: .leading, spacing: 4) {
                 Text(playlist.name)
                     .font(.headline)
-                Text("\(playlist.trackCount)曲")
+                Text(String(localized: "track_count_\(playlist.trackCount)"))
                     .font(.caption)
                     .foregroundColor(.secondary)
             }

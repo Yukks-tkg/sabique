@@ -25,8 +25,8 @@ struct ReportPlaylistView: View {
     var body: some View {
         NavigationStack {
             Form {
-                Section("報告理由") {
-                    Picker("理由を選択", selection: $selectedReason) {
+                Section(String(localized: "report_reason")) {
+                    Picker(String(localized: "select_reason"), selection: $selectedReason) {
                         ForEach(ReportReason.allCases, id: \.self) { reason in
                             Text(reason.rawValue).tag(reason)
                         }
@@ -34,7 +34,7 @@ struct ReportPlaylistView: View {
                     .pickerStyle(.menu)
                 }
 
-                Section("詳細（任意）") {
+                Section(String(localized: "details_optional")) {
                     TextEditor(text: $comment)
                         .frame(height: 100)
                 }
@@ -48,32 +48,32 @@ struct ReportPlaylistView: View {
                                 Spacer()
                             }
                         } else {
-                            Text("報告する")
+                            Text(String(localized: "submit_report"))
                                 .frame(maxWidth: .infinity)
                         }
                     }
                     .disabled(isSubmitting)
                 }
             }
-            .navigationTitle("不適切な内容を報告")
+            .navigationTitle(String(localized: "report_inappropriate"))
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
-                    Button("キャンセル") {
+                    Button(String(localized: "cancel")) {
                         dismiss()
                     }
                     .disabled(isSubmitting)
                 }
             }
-            .alert("報告完了", isPresented: $showingSuccess) {
-                Button("OK") {
+            .alert(String(localized: "report_complete"), isPresented: $showingSuccess) {
+                Button(String(localized: "ok")) {
                     dismiss()
                 }
             } message: {
-                Text("報告を受け付けました。ご協力ありがとうございます。")
+                Text(String(localized: "report_received"))
             }
-            .alert("エラー", isPresented: $showingError) {
-                Button("OK", role: .cancel) {}
+            .alert(String(localized: "error"), isPresented: $showingError) {
+                Button(String(localized: "ok"), role: .cancel) {}
             } message: {
                 Text(errorMessage)
             }
@@ -82,7 +82,7 @@ struct ReportPlaylistView: View {
 
     private func submitReport() {
         guard let userId = authManager.currentUser?.uid else {
-            errorMessage = "報告するにはサインインが必要です"
+            errorMessage = String(localized: "sign_in_to_report")
             showingError = true
             return
         }

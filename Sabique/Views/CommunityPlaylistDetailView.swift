@@ -88,12 +88,12 @@ struct CommunityPlaylistDetailView: View {
                     if playlist.authorId == authManager.currentUser?.uid {
                         // 自分の投稿なら削除ボタンのみ表示
                         Button(role: .destructive, action: { showingDeleteConfirm = true }) {
-                            Label("削除する", systemImage: "trash")
+                            Label(String(localized: "delete"), systemImage: "trash")
                         }
                     } else {
                         // 他人の投稿なら通報ボタンを表示
                         Button(action: { showingReport = true }) {
-                            Label("不適切な内容を報告", systemImage: "exclamationmark.triangle")
+                            Label(String(localized: "report_inappropriate"), systemImage: "exclamationmark.triangle")
                         }
                     }
                 } label: {
@@ -104,23 +104,23 @@ struct CommunityPlaylistDetailView: View {
         .sheet(isPresented: $showingReport) {
             ReportPlaylistView(playlist: playlist)
         }
-        .alert("追加完了", isPresented: $showingImportSuccess) {
-            Button("OK", role: .cancel) {}
+        .alert(String(localized: "add_complete"), isPresented: $showingImportSuccess) {
+            Button(String(localized: "ok"), role: .cancel) {}
         } message: {
             Text(successMessage)
         }
-        .alert("エラー", isPresented: $showingImportError) {
-            Button("OK", role: .cancel) {}
+        .alert(String(localized: "error"), isPresented: $showingImportError) {
+            Button(String(localized: "ok"), role: .cancel) {}
         } message: {
             Text(errorMessage)
         }
-        .alert("ハイライトリストを削除しますか？", isPresented: $showingDeleteConfirm) {
-            Button("キャンセル", role: .cancel) { }
-            Button("削除する", role: .destructive) {
+        .alert(String(localized: "delete_highlight_list_confirm"), isPresented: $showingDeleteConfirm) {
+            Button(String(localized: "cancel"), role: .cancel) { }
+            Button(String(localized: "delete"), role: .destructive) {
                 deletePlaylist()
             }
         } message: {
-            Text("この操作は取り消せません。ハイライトリストはコミュニティから完全に削除されます。")
+            Text(String(localized: "delete_highlight_list_message"))
         }
         .onDisappear {
             // 画面を離れたら再生を停止
@@ -148,7 +148,7 @@ struct CommunityPlaylistDetailView: View {
                     Text("\(currentLikeCount)")
                         .font(.title2)
                         .bold()
-                    Text("いいね")
+                    Text(String(localized: "likes"))
                         .font(.caption)
                         .foregroundColor(.secondary)
                 }
@@ -157,7 +157,7 @@ struct CommunityPlaylistDetailView: View {
                     Text("\(currentDownloadCount)")
                         .font(.title2)
                         .bold()
-                    Text("利用数")
+                    Text(String(localized: "usage_count"))
                         .font(.caption)
                         .foregroundColor(.secondary)
                 }
@@ -166,7 +166,7 @@ struct CommunityPlaylistDetailView: View {
                     Text("\(playlist.tracks.count)")
                         .font(.title2)
                         .bold()
-                    Text("曲")
+                    Text(String(localized: "tracks"))
                         .font(.caption)
                         .foregroundColor(.secondary)
                 }
@@ -196,7 +196,7 @@ struct CommunityPlaylistDetailView: View {
         HStack(spacing: 12) {
             // マイリストに追加ボタン
             Button(action: { importPlaylist() }) {
-                Label("マイリストに追加", systemImage: "plus.circle")
+                Label(String(localized: "add_to_my_list"), systemImage: "plus.circle")
                     .font(.title3)
                     .fontWeight(.medium)
                     .foregroundColor(.white)
@@ -220,7 +220,7 @@ struct CommunityPlaylistDetailView: View {
 
     private var trackList: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text("ハイライトリスト")
+            Text(String(localized: "highlight_list"))
                 .font(.headline)
 
             VStack(spacing: 0) {

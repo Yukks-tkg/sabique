@@ -54,14 +54,14 @@ struct PlaylistListView: View {
                     }
                 }
                 ToolbarItem(placement: .principal) {
-                    Text("マイリスト")
+                    Text(String(localized: "my_list"))
                         .font(.headline)
                         .bold()
                 }
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Menu {
                         Button(action: { handleAddPlaylist() }) {
-                            Label("新規ハイライトリスト", systemImage: "plus")
+                            Label(String(localized: "new_highlight_list"), systemImage: "plus")
                         }
                         Button(action: { handleImportAppleMusic() }) {
                             Label(String(localized: "import_apple_music"), systemImage: "music.note")
@@ -262,7 +262,7 @@ struct PlaylistListView: View {
                             Image(systemName: "plus.circle")
                                 .font(.title2)
                                 .foregroundColor(.primary)
-                            Text("ハイライトリストを追加")
+                            Text(String(localized: "add_highlight_list"))
                                 .foregroundColor(.primary)
                         }
                         .padding(.vertical, 8)
@@ -370,7 +370,7 @@ struct CreatePlaylistSheet: View {
     var body: some View {
         NavigationStack {
             Form {
-                TextField("リスト名", text: $playlistName)
+                TextField(String(localized: "list_name"), text: $playlistName)
                     .onChange(of: playlistName) { _, newValue in
                         // 50文字制限
                         if newValue.count > PlaylistValidator.maxNameLength {
@@ -378,7 +378,7 @@ struct CreatePlaylistSheet: View {
                         }
                     }
             }
-            .navigationTitle("新規ハイライトリスト")
+            .navigationTitle(String(localized: "new_highlight_list"))
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
