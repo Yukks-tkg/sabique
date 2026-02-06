@@ -104,7 +104,7 @@ struct CommunityPlaylistDetailView: View {
         .sheet(isPresented: $showingReport) {
             ReportPlaylistView(playlist: playlist)
         }
-        .alert("インポート完了", isPresented: $showingImportSuccess) {
+        .alert("追加完了", isPresented: $showingImportSuccess) {
             Button("OK", role: .cancel) {}
         } message: {
             Text(successMessage)
@@ -194,9 +194,9 @@ struct CommunityPlaylistDetailView: View {
 
     private var actionButtons: some View {
         HStack(spacing: 12) {
-            // インポートボタン
+            // マイリストに追加ボタン
             Button(action: { importPlaylist() }) {
-                Label("インポート", systemImage: "square.and.arrow.down")
+                Label("マイリストに追加", systemImage: "plus.circle")
                     .font(.title3)
                     .fontWeight(.medium)
                     .foregroundColor(.white)
@@ -334,9 +334,9 @@ struct CommunityPlaylistDetailView: View {
                 await MainActor.run {
                     if result.skippedCount > 0 {
                         // 無料会員で曲がスキップされた場合
-                        successMessage = "\(result.importedCount)曲をインポートしました。残り\(result.skippedCount)曲はプレミアムでインポート可能です。"
+                        successMessage = "\(result.importedCount)曲を追加しました。残り\(result.skippedCount)曲はプレミアムで追加可能です。"
                     } else {
-                        successMessage = "ハイライトリストをインポートしました"
+                        successMessage = "マイリストに追加しました"
                     }
                     showingImportSuccess = true
                 }
