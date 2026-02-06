@@ -31,18 +31,18 @@ struct SignInTestView: View {
                 .font(.system(size: 80))
                 .foregroundColor(.green)
 
-            Text("サインイン成功！")
+            Text(String(localized: "sign_in_success"))
                 .font(.title)
                 .bold()
 
             if let email = authManager.currentUser?.email {
-                Text("メール: \(email)")
+                Text(String(localized: "email_\(email)"))
                     .font(.subheadline)
                     .foregroundColor(.secondary)
             }
 
             if let userId = authManager.currentUser?.uid {
-                Text("ユーザーID: \(userId)")
+                Text(String(localized: "user_id_\(userId)"))
                     .font(.caption)
                     .foregroundColor(.secondary)
             }
@@ -50,7 +50,7 @@ struct SignInTestView: View {
             Button(action: {
                 authManager.signOut()
             }) {
-                Text("サインアウト")
+                Text(String(localized: "sign_out"))
                     .font(.headline)
                     .foregroundColor(.white)
                     .frame(maxWidth: .infinity)
@@ -67,11 +67,11 @@ struct SignInTestView: View {
                 .font(.system(size: 80))
                 .foregroundColor(.blue)
 
-            Text("Apple Sign Inテスト")
+            Text(String(localized: "apple_sign_in_test"))
                 .font(.title)
                 .bold()
 
-            Text("Apple IDでサインインしてください")
+            Text(String(localized: "please_sign_in_with_apple_id"))
                 .font(.subheadline)
                 .foregroundColor(.secondary)
 
