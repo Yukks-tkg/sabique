@@ -8,10 +8,12 @@
 import SwiftUI
 import SwiftData
 import MusicKit
+import FirebaseAuth
 
 struct CommunityPlaylistDetailView: View {
     let playlist: CommunityPlaylist
 
+    @Environment(\.dismiss) private var dismiss
     @Environment(\.modelContext) private var modelContext
     @EnvironmentObject private var communityManager: CommunityManager
     @EnvironmentObject private var authManager: AuthManager
@@ -22,6 +24,8 @@ struct CommunityPlaylistDetailView: View {
     @State private var showingImportSuccess = false
     @State private var showingImportError = false
     @State private var showingReport = false
+    @State private var showingDeleteConfirm = false
+    @State private var isDeleting = false
     @State private var errorMessage = ""
     @State private var playingTrackId: String?
     @State private var isLoadingTrack = false
@@ -79,8 +83,16 @@ struct CommunityPlaylistDetailView: View {
         .toolbar {
             ToolbarItem(placement: .navigationBarTrailing) {
                 Menu {
-                    Button(action: { showingReport = true }) {
-                        Label("不適切な内容を報告", systemImage: "exclamationmark.triangle")
+                    if playlist.authorId == authManager.currentUser?.uid {
+                        // 自分の投稿なら削除ボタンのみ表示
+                        Button(role: .destructive, action: { showingDeleteConfirm = true }) {
+                            Label("削除する", systemImage: "trash")
+                        }
+                    } else {
+                        // 他人の投稿なら通報ボタンを表示
+                        Button(action: { showingReport = true }) {
+                            Label("不適切な内容を報告", systemImage: "exclamationmark.triangle")
+                        }
                     }
                 } label: {
                     Image(systemName: "ellipsis")
@@ -99,6 +111,14 @@ struct CommunityPlaylistDetailView: View {
             Button("OK", role: .cancel) {}
         } message: {
             Text(errorMessage)
+        }
+        .alert("プレイリストを削除しますか？", isPresented: $showingDeleteConfirm) {
+            Button("キャンセル", role: .cancel) { }
+            Button("削除する", role: .destructive) {
+                deletePlaylist()
+            }
+        } message: {
+            Text("この操作は取り消せません。プレイリストはコミュニティから完全に削除されます。")
         }
     }
 
@@ -168,10 +188,12 @@ struct CommunityPlaylistDetailView: View {
             // インポートボタン
             Button(action: { importPlaylist() }) {
                 Label("インポート", systemImage: "square.and.arrow.down")
-                    .frame(maxWidth: .infinity)
-                    .padding()
-                    .background(Color.blue)
+                    .font(.title3)
+                    .fontWeight(.medium)
                     .foregroundColor(.white)
+                    .frame(maxWidth: .infinity)
+                    .frame(height: 50)
+                    .background(Color.white.opacity(0.1))
                     .cornerRadius(12)
             }
 
@@ -353,6 +375,28 @@ struct CommunityPlaylistDetailView: View {
             }
         } catch {
             print("アートワーク取得エラー: \(error)")
+        }
+    }
+
+    private func deletePlaylist() {
+        guard let playlistId = playlist.id else { return }
+
+        isDeleting = true
+
+        Task {
+            do {
+                try await communityManager.deletePlaylist(id: playlistId)
+                await MainActor.run {
+                    isDeleting = false
+                    dismiss()
+                }
+            } catch {
+                await MainActor.run {
+                    isDeleting = false
+                    errorMessage = "削除に失敗しました: \(error.localizedDescription)"
+                    showingImportError = true
+                }
+            }
         }
     }
 

@@ -9,6 +9,7 @@ import SwiftUI
 import SwiftData
 import FirebaseAuth
 import AuthenticationServices
+import MusicKit
 
 struct PublishPlaylistView: View {
     @Environment(\.dismiss) private var dismiss
@@ -44,8 +45,10 @@ struct PublishPlaylistView: View {
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
-                    Button("キャンセル") {
-                        dismiss()
+                    Button(action: { dismiss() }) {
+                        Image(systemName: "xmark")
+                            .font(.body)
+                            .foregroundColor(.secondary)
                     }
                 }
                 if authManager.isSignedIn && selectedPlaylist != nil {
@@ -248,12 +251,24 @@ struct PlaylistSelectionRow: View {
     let playlist: Playlist
     let isSelected: Bool
 
+    @State private var artworkURL: URL?
+
     var body: some View {
         HStack(spacing: 12) {
-            // チェックマーク
-            Image(systemName: isSelected ? "checkmark.circle.fill" : "circle")
-                .foregroundColor(isSelected ? .blue : .gray)
-                .font(.title3)
+            // アートワーク
+            if let url = artworkURL {
+                AsyncImage(url: url) { image in
+                    image
+                        .resizable()
+                        .aspectRatio(contentMode: .fill)
+                } placeholder: {
+                    placeholderArtwork
+                }
+                .frame(width: 50, height: 50)
+                .cornerRadius(8)
+            } else {
+                placeholderArtwork
+            }
 
             VStack(alignment: .leading, spacing: 4) {
                 Text(playlist.name)
@@ -264,8 +279,64 @@ struct PlaylistSelectionRow: View {
             }
 
             Spacer()
+
+            // 選択時のみチェックマークを右側に表示
+            if isSelected {
+                Image(systemName: "checkmark")
+                    .foregroundColor(.blue)
+                    .font(.body.weight(.semibold))
+            }
         }
         .padding(.vertical, 4)
+        .task {
+            await loadArtwork()
+        }
+    }
+
+    private var placeholderArtwork: some View {
+        ZStack {
+            RoundedRectangle(cornerRadius: 8)
+                .fill(
+                    LinearGradient(
+                        colors: [.blue.opacity(0.3), .purple.opacity(0.3)],
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    )
+                )
+                .frame(width: 50, height: 50)
+
+            Image(systemName: "music.note.list")
+                .foregroundColor(.white.opacity(0.8))
+                .font(.title3)
+        }
+    }
+
+    private func loadArtwork() async {
+        // 最初のトラックのアートワークを取得
+        guard let firstTrack = playlist.sortedTracks.first else { return }
+
+        // キャッシュがあればそれを使用
+        if let cachedURL = firstTrack.artworkURL {
+            artworkURL = cachedURL
+            return
+        }
+
+        do {
+            let request = MusicCatalogResourceRequest<Song>(
+                matching: \.id,
+                equalTo: MusicItemID(firstTrack.appleMusicSongId)
+            )
+            let response = try await request.response()
+            if let song = response.items.first, let artwork = song.artwork {
+                let url = artwork.url(width: 100, height: 100)
+                await MainActor.run {
+                    artworkURL = url
+                    firstTrack.artworkURL = url // キャッシュに保存
+                }
+            }
+        } catch {
+            print("アートワーク取得エラー: \(error)")
+        }
     }
 }
 

@@ -22,6 +22,7 @@ struct ProfileView: View {
     @State private var showingSettings = false
     @State private var showingCountryPicker = false
     @State private var showingProfileEdit = false
+    @State private var showingPaywall = false
     @State private var isLoading = false
     @State private var totalLikes: Int = 0
     @State private var totalDownloads: Int = 0
@@ -90,6 +91,9 @@ struct ProfileView: View {
                         }
                     }
                 )
+            }
+            .sheet(isPresented: $showingPaywall) {
+                PaywallView()
             }
             .task {
                 await loadUserProfile()
@@ -237,13 +241,14 @@ struct ProfileView: View {
 
     private var statusSection: some View {
         VStack(spacing: 16) {
-            // プレミアムステータス
+            // ユーザーステータス
             if storeManager.isPremium {
+                // Sabique Premiumメンバー
                 HStack {
                     Image(systemName: "crown.fill")
                         .foregroundColor(.yellow)
                         .font(.title3)
-                    Text("プレミアムユーザー")
+                    Text("Sabique Premiumメンバー")
                         .fontWeight(.semibold)
                     Spacer()
                     Image(systemName: "checkmark.seal.fill")
@@ -259,6 +264,28 @@ struct ProfileView: View {
                     )
                 )
                 .cornerRadius(16)
+            } else {
+                // Sabiqueメンバー（タップでペイウォール）
+                Button(action: { showingPaywall = true }) {
+                    HStack {
+                        Image(systemName: "person.fill")
+                            .foregroundColor(.secondary)
+                            .font(.title3)
+                        Text("Sabiqueメンバー")
+                            .fontWeight(.semibold)
+                            .foregroundColor(.primary)
+                        Spacer()
+                        Text("アップグレード")
+                            .font(.caption)
+                            .foregroundColor(.blue)
+                        Image(systemName: "chevron.right")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                    }
+                    .padding()
+                    .background(Color.white.opacity(0.1))
+                    .cornerRadius(16)
+                }
             }
 
             // 統計カード

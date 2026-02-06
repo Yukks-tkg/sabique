@@ -82,18 +82,58 @@ struct CommunityView: View {
             // 検索バー
             searchBar
 
-            // フィルター切り替え（検索中は非表示）
-            if !isSearching {
-                filterPicker
-            }
-
-            if communityManager.isLoading {
-                loadingView
-            } else if communityManager.playlists.isEmpty {
-                emptyView
+            // 検索中はリスト表示、それ以外はスワイプ切り替え
+            if isSearching {
+                // 検索結果表示
+                if communityManager.isLoading {
+                    loadingView
+                } else if communityManager.playlists.isEmpty {
+                    emptyView
+                } else {
+                    playlistList
+                }
             } else {
-                playlistList
+                // タブ切り替え（スワイプ対応）
+                swipeableTabContent
             }
+        }
+    }
+
+    private var swipeableTabContent: some View {
+        VStack(spacing: 0) {
+            // タブヘッダー
+            filterPicker
+
+            // スワイプ可能なコンテンツ
+            TabView(selection: $selectedFilter) {
+                // 人気タブ
+                tabContent(for: .popular)
+                    .tag(SortOption.popular)
+
+                // 新着タブ
+                tabContent(for: .newest)
+                    .tag(SortOption.newest)
+            }
+            .tabViewStyle(.page(indexDisplayMode: .never))
+            .onChange(of: selectedFilter) { _, newValue in
+                Task {
+                    await loadPlaylists()
+                }
+            }
+        }
+    }
+
+    @ViewBuilder
+    private func tabContent(for option: SortOption) -> some View {
+        if communityManager.isLoading && selectedFilter == option {
+            loadingView
+        } else if communityManager.playlists.isEmpty && selectedFilter == option {
+            emptyView
+        } else if selectedFilter == option {
+            playlistList
+        } else {
+            // 別タブの場合はプレースホルダー（すぐ切り替わるので見えない）
+            Color.clear
         }
     }
 
@@ -147,11 +187,6 @@ struct CommunityView: View {
         }
         .pickerStyle(.segmented)
         .padding()
-        .onChange(of: selectedFilter) { _, _ in
-            Task {
-                await loadPlaylists()
-            }
-        }
     }
 
     private var loadingView: some View {
@@ -232,10 +267,11 @@ struct CommunityPlaylistCard: View {
                     }
 
                     // 投稿者
-                    HStack(spacing: 4) {
-                        Text("by \(playlist.authorName ?? "匿名")")
+                    Group {
                         if let countryCode = playlist.authorCountryCode, !countryCode.isEmpty {
-                            Text(flagEmoji(for: countryCode))
+                            Text("by \(playlist.authorName ?? "匿名") \(flagEmoji(for: countryCode))")
+                        } else {
+                            Text("by \(playlist.authorName ?? "匿名")")
                         }
                     }
                     .font(.caption)
