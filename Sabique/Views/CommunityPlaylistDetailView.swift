@@ -83,7 +83,7 @@ struct CommunityPlaylistDetailView: View {
                         Label("不適切な内容を報告", systemImage: "exclamationmark.triangle")
                     }
                 } label: {
-                    Image(systemName: "ellipsis.circle")
+                    Image(systemName: "ellipsis")
                 }
             }
         }
@@ -189,7 +189,7 @@ struct CommunityPlaylistDetailView: View {
 
     private var trackList: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text("収録曲")
+            Text("Highlight List")
                 .font(.headline)
 
             VStack(spacing: 0) {
