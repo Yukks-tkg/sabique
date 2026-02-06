@@ -300,7 +300,7 @@ struct ProfileView: View {
                             Text("\(totalLikes)")
                                 .font(.system(size: 32, weight: .bold))
                         }
-                        Text("合計いいね")
+                        Text("もらったいいね")
                             .font(.caption)
                             .foregroundColor(.secondary)
                     }
@@ -318,7 +318,7 @@ struct ProfileView: View {
                             Text("\(totalDownloads)")
                                 .font(.system(size: 32, weight: .bold))
                         }
-                        Text("インポート数")
+                        Text("利用された数")
                             .font(.caption)
                             .foregroundColor(.secondary)
                     }
@@ -328,12 +328,12 @@ struct ProfileView: View {
 
                 Divider()
 
-                // 下段：今月の投稿と残り投稿数
+                // 下段：今月の投稿数と残り投稿回数
                 HStack(spacing: 0) {
                     VStack(spacing: 8) {
                         Text("\(userProfile?.publishedPlaylistCount ?? 0)")
                             .font(.system(size: 32, weight: .bold))
-                        Text("今月の投稿")
+                        Text("今月の投稿数")
                             .font(.caption)
                             .foregroundColor(.secondary)
                     }
@@ -347,7 +347,7 @@ struct ProfileView: View {
                         let remaining = userProfile?.remainingPublishesThisMonth(isPremium: storeManager.isPremium) ?? 0
                         Text(storeManager.isPremium ? "∞" : "\(remaining)")
                             .font(.system(size: 32, weight: .bold))
-                        Text("残り投稿数")
+                        Text("残り投稿回数")
                             .font(.caption)
                             .foregroundColor(.secondary)
                     }

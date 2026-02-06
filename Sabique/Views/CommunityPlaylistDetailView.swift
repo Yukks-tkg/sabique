@@ -122,6 +122,13 @@ struct CommunityPlaylistDetailView: View {
         } message: {
             Text("この操作は取り消せません。ハイライトリストはコミュニティから完全に削除されます。")
         }
+        .onDisappear {
+            // 画面を離れたら再生を停止
+            if playingTrackId != nil {
+                ApplicationMusicPlayer.shared.stop()
+                playingTrackId = nil
+            }
+        }
     }
 
     // MARK: - Subviews
@@ -213,7 +220,7 @@ struct CommunityPlaylistDetailView: View {
 
     private var trackList: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text("Highlight List")
+            Text("ハイライトリスト")
                 .font(.headline)
 
             VStack(spacing: 0) {

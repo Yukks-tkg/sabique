@@ -8,6 +8,8 @@
 import SwiftUI
 import SwiftData
 import MusicKit
+import AuthenticationServices
+import FirebaseAuth
 
 struct PlaylistDetailView: View {
     @Environment(\.modelContext) private var modelContext
@@ -18,12 +20,22 @@ struct PlaylistDetailView: View {
     @State private var selectedTrack: TrackInPlaylist?
     @State private var showingChorusEdit = false
     @State private var backgroundArtworkURL: URL?
-    @State private var showingPublish = false
     @State private var showingPaywall = false
     @State private var shouldScrollToBottom = false
     @State private var previousTrackCount = 0
     @State private var showingRenameAlert = false
     @State private var newPlaylistName = ""
+
+    // 投稿関連
+    @State private var showingPublishConfirm = false
+    @State private var showingSignInSheet = false
+    @State private var showingPublishSuccess = false
+    @State private var showingPublishError = false
+    @State private var publishErrorMessage = ""
+    @State private var isPublishing = false
+
+    @EnvironmentObject private var authManager: AuthManager
+    @EnvironmentObject private var communityManager: CommunityManager
     
     // 1曲目のID（並べ替え検知用）
     private var firstTrackId: String? {
@@ -34,208 +46,18 @@ struct PlaylistDetailView: View {
     
     var body: some View {
         ZStack(alignment: .bottom) {
-            // ぼかし背景
-            GeometryReader { geometry in
-                if let url = backgroundArtworkURL {
-                    AsyncImage(url: url) { image in
-                        image
-                            .resizable()
-                            .aspectRatio(contentMode: .fill)
-                            .frame(width: geometry.size.width, height: geometry.size.height)
-                            .clipped()
-                            .blur(radius: 30)
-                            .opacity(0.6)
-                    } placeholder: {
-                        Color.black
-                    }
-                    .id(url) // URLが変わったらビューを再作成
-                    .transition(.opacity)
-                } else {
-                    Color(.systemBackground)
-                }
-            }
-            .ignoresSafeArea()
-            .animation(.easeInOut(duration: 0.5), value: backgroundArtworkURL)
-            
-            // オーバーレイ
-            Color.black.opacity(0.25)
-                .ignoresSafeArea()
+            backgroundView
+            overlayView
             
             // コンテンツ
-            Group {
-                if playlist.sortedTracks.isEmpty {
-                    VStack(spacing: 24) {
-                        ContentUnavailableView(
-                            String(localized: "no_songs"),
-                            systemImage: "music.note",
-                            description: Text(String(localized: "no_songs_description"))
-                        )
-                        
-                        // トラックを追加ボタン
-                        Button(action: { handleAddTrack() }) {
-                            HStack(spacing: 12) {
-                                Image(systemName: "plus.circle")
-                                    .font(.title2)
-                                    .foregroundColor(.primary)
-                                Text(String(localized: "add_track"))
-                                    .foregroundColor(.primary)
-                            }
-                            .padding(.vertical, 8)
-                        }
-                    }
-                } else {
-                    ScrollViewReader { proxy in
-                        List {
-                            // 曲リスト
-                            Section {
-                                ForEach(playlist.sortedTracks) { track in
-                                    let isCurrentlyPlaying = playerManager.isPlaying && playerManager.currentTrack?.id == track.id
-                                    TrackRow(track: track, isPlaying: isCurrentlyPlaying)
-                                        .padding(.horizontal, 8)
-                                        .padding(.vertical, 4)
-                                        .background(
-                                            RoundedRectangle(cornerRadius: 12)
-                                                .fill(isCurrentlyPlaying ? Color.white.opacity(0.2) : Color.clear)
-                                        )
-                                        .contentShape(Rectangle())
-                                        .onTapGesture {
-                                            // Set Highlight画面では別の再生が始まるため、Highlight Listの再生を停止
-                                            if playerManager.isPlaying {
-                                                playerManager.stop()
-                                            }
-                                            selectedTrack = track
-                                            showingChorusEdit = true
-                                        }
-                                        .listRowInsets(EdgeInsets(top: 4, leading: 8, bottom: 4, trailing: 8))
-                                        .listRowBackground(Color.clear)
-                                        .id(track.id)
-                                }
-                                .onDelete(perform: deleteTracks)
-                                .onMove(perform: moveTracks)
-                                
-                                // トラックを追加ボタン
-                                Button(action: { handleAddTrack() }) {
-                                    HStack(spacing: 12) {
-                                        Image(systemName: "plus.circle")
-                                            .font(.title2)
-                                            .foregroundColor(.primary)
-                                        Text(String(localized: "add_track"))
-                                            .foregroundColor(.primary)
-                                    }
-                                    .padding(.vertical, 8)
-                                }
-                                .listRowInsets(EdgeInsets(top: 8, leading: 16, bottom: 8, trailing: 16))
-                                .listRowBackground(Color.clear)
-                                .id("addButton")
-                            } header: {
-                                HStack(spacing: 6) {
-                                    Text(playlist.name)
-                                        .font(.system(size: 19, weight: .bold))
-                                        .foregroundColor(.primary)
-
-                                    Button(action: {
-                                        newPlaylistName = playlist.name
-                                        showingRenameAlert = true
-                                    }) {
-                                        Image(systemName: "pencil")
-                                            .font(.system(size: 14))
-                                            .foregroundColor(.secondary)
-                                    }
-                                }
-                                .padding(.top, 10)
-                            }
-                        }
-                        .scrollContentBackground(.hidden)
-                        .safeAreaInset(edge: .bottom) {
-                            Color.clear.frame(height: 80) // 下部にスペースを確保
-                        }
-                        .onChange(of: shouldScrollToBottom) { oldValue, newValue in
-                            if newValue {
-                                withAnimation {
-                                    proxy.scrollTo("addButton", anchor: .bottom)
-                                }
-                                shouldScrollToBottom = false
-                            }
-                        }
-                    }
+            contentView
+                .task(id: firstTrackId) {
+                    await loadFirstTrackArtwork()
                 }
-            }
-            .task(id: firstTrackId) {
-                await loadFirstTrackArtwork()
-            }
             
             // 再生コントロール（下部に固定）
             if !playlist.sortedTracks.isEmpty {
-                VStack(spacing: 0) {
-                    // グラデーションフェード
-                    LinearGradient(
-                        stops: [
-                            .init(color: Color.clear, location: 0.0),
-                            .init(color: Color.black.opacity(0.1), location: 0.3),
-                            .init(color: Color.black.opacity(0.4), location: 0.6),
-                            .init(color: Color.black.opacity(0.7), location: 0.85),
-                            .init(color: Color.black.opacity(0.8), location: 1.0)
-                        ],
-                        startPoint: .top,
-                        endPoint: .bottom
-                    )
-                    .frame(height: 60)
-                    
-                    HStack(spacing: 20) {
-                        // 前のトラックボタン
-                        Button(action: { playerManager.previous() }) {
-                            Image(systemName: "backward.fill")
-                                .font(.title2)
-                                .foregroundColor(.white)
-                                .frame(width: 50, height: 50)
-                                .background(Color.white.opacity(0.2))
-                                .cornerRadius(14)
-                        }
-                        .disabled(!playerManager.isPlaying)
-                        .opacity(playerManager.isPlaying ? 1.0 : 0.4)
-                        
-                        // 連続再生/停止ボタン
-                        Button(action: startPlayback) {
-                            HStack(spacing: 12) {
-                                Image(systemName: playerManager.isPlaying ? "stop.fill" : "play.fill")
-                                    .font(.title3)
-                                Text(playerManager.isPlaying ? String(localized: "stop") : String(localized: "play"))
-                                    .font(.headline)
-                                    .bold()
-                            }
-                            .foregroundColor(.white)
-                            .frame(width: 160)
-                            .padding(.vertical, 16)
-                            .background(
-                                LinearGradient(
-                                    colors: [Color(red: 1.0, green: 0.6, blue: 0.2), Color(red: 1.0, green: 0.4, blue: 0.4)],
-                                    startPoint: .leading,
-                                    endPoint: .trailing
-                                )
-                            )
-                            .cornerRadius(16)
-                            .shadow(color: Color(red: 1.0, green: 0.5, blue: 0.3).opacity(0.4), radius: 10, x: 0, y: 5)
-                        }
-                        .buttonStyle(.plain)
-                        
-                        // 次のトラックボタン
-                        Button(action: { playerManager.next() }) {
-                            Image(systemName: "forward.fill")
-                                .font(.title2)
-                                .foregroundColor(.white)
-                                .frame(width: 50, height: 50)
-                                .background(Color.white.opacity(0.2))
-                                .cornerRadius(14)
-                        }
-                        .disabled(!playerManager.isPlaying)
-                        .opacity(playerManager.isPlaying ? 1.0 : 0.4)
-                    }
-                    .frame(maxWidth: .infinity)
-                    .padding(.vertical, 12)
-                    .background(Color.black.opacity(0.8))
-                }
-                .frame(maxWidth: .infinity)
-                .animation(nil, value: playerManager.isPlaying)
+                playbackControlsView
             }
         }
         .navigationTitle(String(localized: "highlight_list"))
@@ -243,10 +65,10 @@ struct PlaylistDetailView: View {
         .toolbar {
             // コミュニティに投稿ボタン
             ToolbarItem(placement: .navigationBarTrailing) {
-                Button(action: { showingPublish = true }) {
+                Button(action: { handlePublish() }) {
                     Image(systemName: "square.and.arrow.up")
                 }
-                .disabled(playlist.sortedTracks.isEmpty)
+                .disabled(playlist.sortedTracks.isEmpty || isPublishing)
             }
 
             // 曲追加ボタン
@@ -274,26 +96,214 @@ struct PlaylistDetailView: View {
         .sheet(item: $selectedTrack) { track in
             ChorusEditView(track: track)
         }
-        .sheet(isPresented: $showingPublish) {
-            PublishPlaylistView(preselectedPlaylist: playlist)
+        .sheet(isPresented: $showingSignInSheet) {
+            SignInSheetView()
         }
         .sheet(isPresented: $showingPaywall) {
             PaywallView()
         }
+        .alert("コミュニティに投稿しますか？", isPresented: $showingPublishConfirm) {
+            publishConfirmAlertButtons
+        } message: {
+            publishConfirmAlertMessage
+        }
+        .alert("投稿完了", isPresented: $showingPublishSuccess) {
+            Button("OK", role: .cancel) { }
+        } message: {
+            Text("ハイライトリストをコミュニティに投稿しました！")
+        }
+        .alert("エラー", isPresented: $showingPublishError) {
+            Button("OK", role: .cancel) { }
+        } message: {
+            Text(publishErrorMessage)
+        }
         .alert("リスト名を変更", isPresented: $showingRenameAlert) {
-            TextField("リスト名", text: $newPlaylistName)
-                .onChange(of: newPlaylistName) { _, newValue in
-                    // 50文字制限
-                    if newValue.count > PlaylistValidator.maxNameLength {
-                        newPlaylistName = String(newValue.prefix(PlaylistValidator.maxNameLength))
+            renameAlertContent
+        }
+    }
+
+    // MARK: - Background Views
+
+    private var backgroundView: some View {
+        GeometryReader { geometry in
+            if let url = backgroundArtworkURL {
+                AsyncImage(url: url) { image in
+                    image
+                        .resizable()
+                        .aspectRatio(contentMode: .fill)
+                        .frame(width: geometry.size.width, height: geometry.size.height)
+                        .clipped()
+                        .blur(radius: 30)
+                        .opacity(0.6)
+                } placeholder: {
+                    Color.black
+                }
+                .id(url)
+                .transition(.opacity)
+            } else {
+                Color(.systemBackground)
+            }
+        }
+        .ignoresSafeArea()
+        .animation(.easeInOut(duration: 0.5), value: backgroundArtworkURL)
+    }
+
+    private var overlayView: some View {
+        Color.black.opacity(0.25)
+            .ignoresSafeArea()
+    }
+
+    // MARK: - Content Views
+
+    @ViewBuilder
+    private var contentView: some View {
+        if playlist.sortedTracks.isEmpty {
+            emptyContentView
+        } else {
+            trackListView
+        }
+    }
+
+    private var emptyContentView: some View {
+        VStack(spacing: 24) {
+            ContentUnavailableView(
+                String(localized: "no_songs"),
+                systemImage: "music.note",
+                description: Text(String(localized: "no_songs_description"))
+            )
+            addTrackButton
+        }
+    }
+
+    private var addTrackButton: some View {
+        Button(action: { handleAddTrack() }) {
+            HStack(spacing: 12) {
+                Image(systemName: "plus.circle")
+                    .font(.title2)
+                    .foregroundColor(.primary)
+                Text(String(localized: "add_track"))
+                    .foregroundColor(.primary)
+            }
+            .padding(.vertical, 8)
+        }
+    }
+
+    private var trackListView: some View {
+        ScrollViewReader { proxy in
+            List {
+                Section {
+                    trackListContent
+                    addTrackListButton
+                } header: {
+                    sectionHeader
+                }
+            }
+            .scrollContentBackground(.hidden)
+            .safeAreaInset(edge: .bottom) {
+                Color.clear.frame(height: 80)
+            }
+            .onChange(of: shouldScrollToBottom) { oldValue, newValue in
+                if newValue {
+                    withAnimation {
+                        proxy.scrollTo("addButton", anchor: .bottom)
                     }
+                    shouldScrollToBottom = false
                 }
-            Button("キャンセル", role: .cancel) { }
-            Button("保存") {
-                let trimmedName = newPlaylistName.trimmingCharacters(in: .whitespaces)
-                if !trimmedName.isEmpty {
-                    playlist.name = trimmedName
+            }
+        }
+    }
+
+    private var trackListContent: some View {
+        ForEach(playlist.sortedTracks) { track in
+            trackRowView(for: track)
+        }
+        .onDelete(perform: deleteTracks)
+        .onMove(perform: moveTracks)
+    }
+
+    private func trackRowView(for track: TrackInPlaylist) -> some View {
+        let isCurrentlyPlaying = playerManager.isPlaying && playerManager.currentTrack?.id == track.id
+        return TrackRow(track: track, isPlaying: isCurrentlyPlaying)
+            .padding(.horizontal, 8)
+            .padding(.vertical, 4)
+            .background(
+                RoundedRectangle(cornerRadius: 12)
+                    .fill(isCurrentlyPlaying ? Color.white.opacity(0.2) : Color.clear)
+            )
+            .contentShape(Rectangle())
+            .onTapGesture {
+                if playerManager.isPlaying {
+                    playerManager.stop()
                 }
+                selectedTrack = track
+                showingChorusEdit = true
+            }
+            .listRowInsets(EdgeInsets(top: 4, leading: 8, bottom: 4, trailing: 8))
+            .listRowBackground(Color.clear)
+            .id(track.id)
+    }
+
+    private var addTrackListButton: some View {
+        Button(action: { handleAddTrack() }) {
+            HStack(spacing: 12) {
+                Image(systemName: "plus.circle")
+                    .font(.title2)
+                    .foregroundColor(.primary)
+                Text(String(localized: "add_track"))
+                    .foregroundColor(.primary)
+            }
+            .padding(.vertical, 8)
+        }
+        .listRowInsets(EdgeInsets(top: 8, leading: 16, bottom: 8, trailing: 16))
+        .listRowBackground(Color.clear)
+        .id("addButton")
+    }
+
+    private var sectionHeader: some View {
+        HStack(spacing: 6) {
+            Text(playlist.name)
+                .font(.system(size: 19, weight: .bold))
+                .foregroundColor(.primary)
+
+            Button(action: {
+                newPlaylistName = playlist.name
+                showingRenameAlert = true
+            }) {
+                Image(systemName: "pencil")
+                    .font(.system(size: 14))
+                    .foregroundColor(.secondary)
+            }
+        }
+        .padding(.top, 10)
+    }
+
+    // MARK: - Alert Helpers
+
+    @ViewBuilder
+    private var publishConfirmAlertButtons: some View {
+        Button("キャンセル", role: .cancel) { }
+        Button("投稿") {
+            publishPlaylist()
+        }
+    }
+
+    private var publishConfirmAlertMessage: Text {
+        Text("「\(playlist.name)」をコミュニティに公開します。")
+    }
+
+    @ViewBuilder
+    private var renameAlertContent: some View {
+        TextField("リスト名", text: $newPlaylistName)
+            .onChange(of: newPlaylistName) { _, newValue in
+                if newValue.count > PlaylistValidator.maxNameLength {
+                    newPlaylistName = String(newValue.prefix(PlaylistValidator.maxNameLength))
+                }
+            }
+        Button("キャンセル", role: .cancel) { }
+        Button("保存") {
+            let trimmedName = newPlaylistName.trimmingCharacters(in: .whitespaces)
+            if !trimmedName.isEmpty {
+                playlist.name = trimmedName
             }
         }
     }
@@ -302,7 +312,99 @@ struct PlaylistDetailView: View {
     private var canAddTrack: Bool {
         storeManager.isPremium || playlist.trackCount < FreeTierLimits.maxTracksPerPlaylist
     }
-    
+
+    // MARK: - Playback Controls
+
+    private var playbackControlsView: some View {
+        VStack(spacing: 0) {
+            playbackGradient
+            playbackButtons
+        }
+        .frame(maxWidth: .infinity)
+        .animation(nil, value: playerManager.isPlaying)
+    }
+
+    private var playbackGradient: some View {
+        LinearGradient(
+            stops: [
+                .init(color: Color.clear, location: 0.0),
+                .init(color: Color.black.opacity(0.1), location: 0.3),
+                .init(color: Color.black.opacity(0.4), location: 0.6),
+                .init(color: Color.black.opacity(0.7), location: 0.85),
+                .init(color: Color.black.opacity(0.8), location: 1.0)
+            ],
+            startPoint: .top,
+            endPoint: .bottom
+        )
+        .frame(height: 60)
+    }
+
+    private var playbackButtons: some View {
+        HStack(spacing: 20) {
+            previousButton
+            playStopButton
+            nextButton
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, 12)
+        .background(Color.black.opacity(0.8))
+    }
+
+    private var previousButton: some View {
+        Button(action: { playerManager.previous() }) {
+            Image(systemName: "backward.fill")
+                .font(.title2)
+                .foregroundColor(.white)
+                .frame(width: 50, height: 50)
+                .background(Color.white.opacity(0.2))
+                .cornerRadius(14)
+        }
+        .disabled(!playerManager.isPlaying)
+        .opacity(playerManager.isPlaying ? 1.0 : 0.4)
+    }
+
+    private var playStopButton: some View {
+        Button(action: startPlayback) {
+            HStack(spacing: 12) {
+                Image(systemName: playerManager.isPlaying ? "stop.fill" : "play.fill")
+                    .font(.title3)
+                Text(playerManager.isPlaying ? String(localized: "stop") : String(localized: "play"))
+                    .font(.headline)
+                    .bold()
+            }
+            .foregroundColor(.white)
+            .frame(width: 160)
+            .padding(.vertical, 16)
+            .background(playButtonGradient)
+            .cornerRadius(16)
+            .shadow(color: Color(red: 1.0, green: 0.5, blue: 0.3).opacity(0.4), radius: 10, x: 0, y: 5)
+        }
+        .buttonStyle(.plain)
+    }
+
+    private var playButtonGradient: LinearGradient {
+        LinearGradient(
+            colors: [Color(red: 1.0, green: 0.6, blue: 0.2), Color(red: 1.0, green: 0.4, blue: 0.4)],
+            startPoint: .leading,
+            endPoint: .trailing
+        )
+    }
+
+    private var nextButton: some View {
+        Button(action: { playerManager.next() }) {
+            Image(systemName: "forward.fill")
+                .font(.title2)
+                .foregroundColor(.white)
+                .frame(width: 50, height: 50)
+                .background(Color.white.opacity(0.2))
+                .cornerRadius(14)
+        }
+        .disabled(!playerManager.isPlaying)
+        .opacity(playerManager.isPlaying ? 1.0 : 0.4)
+    }
+
+    // MARK: - Actions
+
     /// トラック追加ボタンの処理
     private func handleAddTrack() {
         if canAddTrack {
@@ -311,7 +413,72 @@ struct PlaylistDetailView: View {
             showingPaywall = true
         }
     }
-    
+
+    /// 投稿ボタンの処理
+    private func handlePublish() {
+        // サインインチェック
+        guard authManager.isSignedIn else {
+            showingSignInSheet = true
+            return
+        }
+
+        // バリデーション
+        if playlist.trackCount < FreeTierLimits.minTracksForPublish {
+            publishErrorMessage = "投稿には最低\(FreeTierLimits.minTracksForPublish)曲必要です"
+            showingPublishError = true
+            return
+        }
+
+        let maxTracks = storeManager.isPremium ? FreeTierLimits.maxTracksForPublishPremium : FreeTierLimits.maxTracksPerPlaylist
+        if playlist.trackCount > maxTracks {
+            if storeManager.isPremium {
+                publishErrorMessage = "投稿できるのは最大\(maxTracks)曲までです"
+            } else {
+                publishErrorMessage = "無料版では最大\(maxTracks)曲まで投稿できます。プレミアムにアップグレードすると\(FreeTierLimits.maxTracksForPublishPremium)曲まで投稿可能です"
+            }
+            showingPublishError = true
+            return
+        }
+
+        // 確認ダイアログを表示
+        showingPublishConfirm = true
+    }
+
+    /// プレイリストを投稿
+    private func publishPlaylist() {
+        guard let userId = authManager.currentUser?.uid else { return }
+
+        isPublishing = true
+
+        Task {
+            do {
+                // ユーザープロフィールを取得
+                let userProfile = try await communityManager.getUserProfile(userId: userId)
+
+                // 投稿
+                try await communityManager.publishPlaylist(
+                    playlist: playlist,
+                    authorId: userId,
+                    authorName: userProfile.displayName,
+                    authorIsPremium: storeManager.isPremium,
+                    authorCountryCode: userProfile.countryCode,
+                    authorArtworkURL: userProfile.profileArtworkURL
+                )
+
+                await MainActor.run {
+                    isPublishing = false
+                    showingPublishSuccess = true
+                }
+            } catch {
+                await MainActor.run {
+                    isPublishing = false
+                    publishErrorMessage = error.localizedDescription
+                    showingPublishError = true
+                }
+            }
+        }
+    }
+
     private func startPlayback() {
         if playerManager.isPlaying {
             playerManager.stop()
@@ -452,6 +619,71 @@ struct TrackRow: View {
         
         if let foundSong = song, let artwork = foundSong.artwork {
             artworkURL = artwork.url(width: 100, height: 100)
+        }
+    }
+}
+
+// MARK: - SignInSheetView
+struct SignInSheetView: View {
+    @Environment(\.dismiss) private var dismiss
+    @EnvironmentObject private var authManager: AuthManager
+
+    var body: some View {
+        NavigationStack {
+            VStack(spacing: 24) {
+                Spacer()
+
+                Image(systemName: "person.crop.circle.badge.plus")
+                    .font(.system(size: 60))
+                    .foregroundColor(.secondary)
+
+                Text("サインインしてください")
+                    .font(.headline)
+
+                Text("ハイライトリストを投稿するにはApple IDでサインインしてください")
+                    .font(.subheadline)
+                    .foregroundColor(.secondary)
+                    .multilineTextAlignment(.center)
+                    .padding(.horizontal)
+
+                SignInWithAppleButton(
+                    .signIn,
+                    onRequest: { request in
+                        let nonce = authManager.generateNonce()
+                        request.requestedScopes = []
+                        request.nonce = authManager.sha256(nonce)
+                    },
+                    onCompletion: { result in
+                        switch result {
+                        case .success(let authorization):
+                            Task {
+                                try? await authManager.signInWithApple(authorization: authorization)
+                                await MainActor.run {
+                                    dismiss()
+                                }
+                            }
+                        case .failure(let error):
+                            print("Sign in with Apple failed: \(error)")
+                        }
+                    }
+                )
+                .signInWithAppleButtonStyle(.white)
+                .frame(height: 50)
+                .padding(.horizontal, 40)
+
+                Spacer()
+            }
+            .navigationTitle("サインイン")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button(action: { dismiss() }) {
+                        Image(systemName: "xmark")
+                            .font(.body)
+                            .foregroundColor(.secondary)
+                    }
+                }
+            }
         }
     }
 }
