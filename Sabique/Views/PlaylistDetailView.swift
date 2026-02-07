@@ -317,7 +317,7 @@ struct PlaylistDetailView: View {
                     return
                 }
 
-                let player = ApplicationMusicPlayer.shared
+                let player = SystemMusicPlayer.shared
                 player.queue = [song]
                 try await player.play()
 
@@ -332,7 +332,7 @@ struct PlaylistDetailView: View {
                     // 終了位置が設定されている場合はタイマーで監視
                     if let chorusEnd = track.chorusEndSeconds {
                         previewTimer = Timer.scheduledTimer(withTimeInterval: 0.1, repeats: true) { _ in
-                            let currentTime = ApplicationMusicPlayer.shared.playbackTime
+                            let currentTime = SystemMusicPlayer.shared.playbackTime
                             if currentTime >= chorusEnd {
                                 stopPreview()
                             }
@@ -352,7 +352,7 @@ struct PlaylistDetailView: View {
     private func stopPreview() {
         previewTimer?.invalidate()
         previewTimer = nil
-        ApplicationMusicPlayer.shared.stop()
+        SystemMusicPlayer.shared.stop()
         previewingTrackId = nil
     }
 

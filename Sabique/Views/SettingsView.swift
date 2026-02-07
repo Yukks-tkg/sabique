@@ -149,37 +149,6 @@ struct SettingsView: View {
                         }
                     }
 
-                    // ブロック管理セクション
-                    Section {
-                        if BlockManager.shared.blockedCount() > 0 {
-                            HStack {
-                                Image(systemName: "hand.raised")
-                                Text(String(format: NSLocalizedString("blocked_users_count", comment: ""), BlockManager.shared.blockedCount()))
-                                Spacer()
-                            }
-                            .foregroundColor(.secondary)
-
-                            Button(action: { showingUnblockAllAlert = true }) {
-                                HStack {
-                                    Image(systemName: "arrow.uturn.backward")
-                                    Text(String(localized: "unblock_all"))
-                                        .fontWeight(.medium)
-                                    Spacer()
-                                }
-                                .foregroundColor(.primary)
-                            }
-                        } else {
-                            HStack {
-                                Image(systemName: "hand.raised")
-                                Text(String(localized: "no_blocked_users"))
-                                Spacer()
-                            }
-                            .foregroundColor(.secondary)
-                        }
-                    } header: {
-                        Text(String(localized: "blocked_users"))
-                    }
-
                     // プレミアムセクション
                     if storeManager.isPremium {
                         Section {
@@ -362,6 +331,37 @@ struct SettingsView: View {
                         }
                     }
                     
+                    // ブロック管理セクション
+                    Section {
+                        if BlockManager.shared.blockedCount() > 0 {
+                            HStack {
+                                Image(systemName: "hand.raised")
+                                Text(String(format: NSLocalizedString("blocked_users_count", comment: ""), BlockManager.shared.blockedCount()))
+                                Spacer()
+                            }
+                            .foregroundColor(.secondary)
+
+                            Button(action: { showingUnblockAllAlert = true }) {
+                                HStack {
+                                    Image(systemName: "arrow.uturn.backward")
+                                    Text(String(localized: "unblock_all"))
+                                        .fontWeight(.medium)
+                                    Spacer()
+                                }
+                                .foregroundColor(.primary)
+                            }
+                        } else {
+                            HStack {
+                                Image(systemName: "hand.raised")
+                                Text(String(localized: "no_blocked_users"))
+                                Spacer()
+                            }
+                            .foregroundColor(.secondary)
+                        }
+                    } header: {
+                        Text(String(localized: "blocked_users"))
+                    }
+
                     // データバックアップセクション
                     Section {
                         Button(action: performBackup) {

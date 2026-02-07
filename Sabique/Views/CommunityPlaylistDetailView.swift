@@ -154,7 +154,7 @@ struct CommunityPlaylistDetailView: View {
         .onDisappear {
             // 画面を離れたら再生を停止
             if playingTrackId != nil {
-                ApplicationMusicPlayer.shared.stop()
+                SystemMusicPlayer.shared.stop()
                 playingTrackId = nil
             }
         }
@@ -555,7 +555,7 @@ struct CommunityPlaylistDetailView: View {
     private func playTrack(_ track: CommunityTrack) {
         // 同じ曲をタップしたら停止
         if playingTrackId == track.id {
-            ApplicationMusicPlayer.shared.stop()
+            SystemMusicPlayer.shared.stop()
             playingTrackId = nil
             return
         }
@@ -581,7 +581,7 @@ struct CommunityPlaylistDetailView: View {
                 }
 
                 // 再生キューを設定して再生
-                let player = ApplicationMusicPlayer.shared
+                let player = SystemMusicPlayer.shared
                 player.queue = [song]
                 try await player.play()
 

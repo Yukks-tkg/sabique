@@ -17,7 +17,7 @@ class ChorusPlayerManager: ObservableObject {
     
     /// トラックリストを取得するクロージャ（常に最新の順序を返す）
     private var tracksProvider: (() -> [TrackInPlaylist])?
-    private let player = ApplicationMusicPlayer.shared
+    private let player = SystemMusicPlayer.shared
     private var timerCancellable: AnyCancellable?
     private var currentPlayTask: Task<Void, Never>?
     private var isTransitioning = false
