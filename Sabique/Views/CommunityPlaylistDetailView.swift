@@ -32,6 +32,8 @@ struct CommunityPlaylistDetailView: View {
     @State private var playingTrackId: String?
     @State private var isLoadingTrack = false
     @State private var showingAlreadyInMyList = false
+    @State private var showingSignInRequired = false
+    @State private var trackArtworks: [String: URL] = [:]  // appleMusicId -> artworkURL
 
     init(playlist: CommunityPlaylist) {
         self.playlist = playlist
@@ -127,6 +129,11 @@ struct CommunityPlaylistDetailView: View {
             Button(String(localized: "ok"), role: .cancel) {}
         } message: {
             Text(String(localized: "already_in_my_list_message"))
+        }
+        .alert(String(localized: "sign_in_required"), isPresented: $showingSignInRequired) {
+            Button(String(localized: "ok"), role: .cancel) {}
+        } message: {
+            Text(String(localized: "sign_in_required_message"))
         }
         .onDisappear {
             // 画面を離れたら再生を停止
@@ -241,32 +248,49 @@ struct CommunityPlaylistDetailView: View {
                     Button(action: {
                         playTrack(track)
                     }) {
-                        HStack {
-                            // 再生中インジケーター or 番号
-                            if playingTrackId == track.id {
-                                if isLoadingTrack {
-                                    ProgressView()
-                                        .frame(width: 20)
+                        HStack(spacing: 12) {
+                            // アートワーク or 再生中インジケーター
+                            ZStack {
+                                if let url = trackArtworks[track.appleMusicId] {
+                                    AsyncImage(url: url) { image in
+                                        image
+                                            .resizable()
+                                            .aspectRatio(contentMode: .fill)
+                                    } placeholder: {
+                                        trackPlaceholderArtwork
+                                    }
+                                    .frame(width: 44, height: 44)
+                                    .cornerRadius(6)
                                 } else {
-                                    Image(systemName: "speaker.wave.2.fill")
-                                        .font(.caption)
-                                        .foregroundColor(.blue)
-                                        .frame(width: 20)
+                                    trackPlaceholderArtwork
                                 }
-                            } else {
-                                Text("\(index + 1)")
-                                    .font(.caption)
-                                    .foregroundColor(.secondary)
-                                    .frame(width: 20)
+
+                                // 再生中オーバーレイ
+                                if playingTrackId == track.id {
+                                    RoundedRectangle(cornerRadius: 6)
+                                        .fill(Color.black.opacity(0.4))
+                                        .frame(width: 44, height: 44)
+
+                                    if isLoadingTrack {
+                                        ProgressView()
+                                            .tint(.white)
+                                    } else {
+                                        Image(systemName: "speaker.wave.2.fill")
+                                            .font(.caption)
+                                            .foregroundColor(.white)
+                                    }
+                                }
                             }
 
                             VStack(alignment: .leading, spacing: 4) {
                                 Text(track.title)
                                     .font(.subheadline)
                                     .foregroundColor(playingTrackId == track.id ? .blue : .primary)
+                                    .lineLimit(1)
                                 Text(track.artist)
                                     .font(.caption)
                                     .foregroundColor(.secondary)
+                                    .lineLimit(1)
                             }
 
                             Spacer()
@@ -278,8 +302,7 @@ struct CommunityPlaylistDetailView: View {
                                     .foregroundColor(.secondary)
                             }
                         }
-                        .padding(.top, 12)
-                        .padding(.bottom, index < playlist.tracks.count - 1 ? 12 : 0)
+                        .padding(.vertical, 8)
                         .contentShape(Rectangle())
                     }
                     .buttonStyle(.plain)
@@ -295,6 +318,20 @@ struct CommunityPlaylistDetailView: View {
         .padding()
         .background(Color.white.opacity(0.05))
         .cornerRadius(12)
+        .task {
+            await loadTrackArtworks()
+        }
+    }
+
+    private var trackPlaceholderArtwork: some View {
+        ZStack {
+            RoundedRectangle(cornerRadius: 6)
+                .fill(Color.gray.opacity(0.2))
+                .frame(width: 44, height: 44)
+            Image(systemName: "music.note")
+                .font(.caption)
+                .foregroundColor(.gray)
+        }
     }
 
     @ViewBuilder
@@ -344,6 +381,12 @@ struct CommunityPlaylistDetailView: View {
             return
         }
 
+        // サインインチェック
+        guard authManager.currentUser != nil else {
+            showingSignInRequired = true
+            return
+        }
+
         // 即座にUI更新（楽観的更新）
         currentDownloadCount += 1
 
@@ -375,6 +418,12 @@ struct CommunityPlaylistDetailView: View {
     }
 
     private func toggleLike() {
+        // サインインチェック
+        guard authManager.currentUser != nil else {
+            showingSignInRequired = true
+            return
+        }
+
         // まだいいねしていない場合のみ
         guard !hasLiked, let playlistId = playlist.id else { return }
 
@@ -395,6 +444,29 @@ struct CommunityPlaylistDetailView: View {
         let minutes = Int(totalSeconds) / 60
         let seconds = Int(totalSeconds) % 60
         return String(format: "%d:%02d", minutes, seconds)
+    }
+
+    private func loadTrackArtworks() async {
+        // 重複を除いたappleMusicIdリストを取得
+        let uniqueIds = Array(Set(playlist.tracks.map { $0.appleMusicId }))
+
+        for appleMusicId in uniqueIds {
+            do {
+                let request = MusicCatalogResourceRequest<Song>(
+                    matching: \.id,
+                    equalTo: MusicItemID(appleMusicId)
+                )
+                let response = try await request.response()
+                if let song = response.items.first, let artwork = song.artwork {
+                    let url = artwork.url(width: 88, height: 88)
+                    await MainActor.run {
+                        trackArtworks[appleMusicId] = url
+                    }
+                }
+            } catch {
+                print("トラックアートワーク取得エラー: \(error)")
+            }
+        }
     }
 
     private func loadArtwork() async {

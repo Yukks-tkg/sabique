@@ -59,6 +59,8 @@ struct SongSearchView: View {
     @State private var searchTask: Task<Void, Never>?
     @State private var showAddedToast = false
     @State private var addedSongTitle = ""
+    @State private var playingSongId: MusicItemID?
+    @State private var isLoadingPreview = false
     
     /// 表示する曲リスト（検索中は検索結果、それ以外は選択されたソースの曲）
     private var displayedSongs: [Song] {
@@ -156,8 +158,10 @@ struct SongSearchView: View {
                                 ForEach(displayedSongs, id: \.id) { song in
                                     SongRow(
                                         song: song,
-                                        onAdd: { addSongDirectly(song) },
-                                        onEdit: { addSongWithEdit(song) }
+                                        isPlaying: playingSongId == song.id,
+                                        isLoading: isLoadingPreview && playingSongId == song.id,
+                                        onTap: { previewSong(song) },
+                                        onAdd: { addSongWithEdit(song) }
                                     )
                                     .listRowInsets(EdgeInsets(top: 4, leading: 8, bottom: 4, trailing: 8))
                                     .listRowBackground(Color.clear)
@@ -182,6 +186,13 @@ struct SongSearchView: View {
                     if authorizationStatus == .authorized {
                         await loadSongsForSource(selectedSource)
                     }
+                }
+            }
+            .onDisappear {
+                // 画面を離れたら再生を停止
+                if playingSongId != nil {
+                    ApplicationMusicPlayer.shared.stop()
+                    playingSongId = nil
                 }
             }
             .sheet(item: $addedTrack, onDismiss: { dismiss() }) { track in
@@ -344,39 +355,48 @@ struct SongSearchView: View {
         }
     }
     
-    /// 曲を直接追加（ChorusEditViewなし）
-    private func addSongDirectly(_ song: Song) {
+    /// 曲をプレビュー再生（タップで再生/停止を切り替え）
+    private func previewSong(_ song: Song) {
+        // 同じ曲をタップしたら停止
+        if playingSongId == song.id {
+            ApplicationMusicPlayer.shared.stop()
+            playingSongId = nil
+            return
+        }
+
+        playingSongId = song.id
+        isLoadingPreview = true
+
         Task {
-            let catalogSongId = await getCatalogSongId(song: song)
-            
-            await MainActor.run {
-                let track = TrackInPlaylist(
-                    appleMusicSongId: catalogSongId,
-                    title: song.title,
-                    artist: song.artistName,
-                    orderIndex: playlist.tracks.count
-                )
-                track.playlist = playlist
-                modelContext.insert(track)
-                
-                // トースト通知を表示
-                addedSongTitle = song.title
-                showAddedToast = true
-                
-                // 1秒後にトーストを非表示
-                Task {
-                    try? await Task.sleep(nanoseconds: 1_000_000_000)
-                    showAddedToast = false
+            do {
+                let player = ApplicationMusicPlayer.shared
+                player.queue = [song]
+                try await player.play()
+
+                await MainActor.run {
+                    isLoadingPreview = false
+                }
+            } catch {
+                print("プレビュー再生エラー: \(error)")
+                await MainActor.run {
+                    isLoadingPreview = false
+                    playingSongId = nil
                 }
             }
         }
     }
-    
+
     /// 曲を追加してChorusEditViewを表示
     private func addSongWithEdit(_ song: Song) {
+        // プレビュー再生中なら停止
+        if playingSongId != nil {
+            ApplicationMusicPlayer.shared.stop()
+            playingSongId = nil
+        }
+
         Task {
             let catalogSongId = await getCatalogSongId(song: song)
-            
+
             await MainActor.run {
                 let track = TrackInPlaylist(
                     appleMusicSongId: catalogSongId,
@@ -386,7 +406,7 @@ struct SongSearchView: View {
                 )
                 track.playlist = playlist
                 modelContext.insert(track)
-                
+
                 addedTrack = track
             }
         }
@@ -417,44 +437,65 @@ struct SongSearchView: View {
 // MARK: - SongRow
 struct SongRow: View {
     let song: Song
+    var isPlaying: Bool = false
+    var isLoading: Bool = false
+    let onTap: () -> Void
     let onAdd: () -> Void
-    let onEdit: () -> Void
-    
+
     var body: some View {
         HStack {
-            // 曲情報エリア（タップでChorusEditView）
-            Button(action: onEdit) {
+            // 曲情報エリア（タップでプレビュー再生）
+            Button(action: onTap) {
                 HStack {
-                    if let artwork = song.artwork {
-                        ArtworkImage(artwork, width: 50)
-                            .cornerRadius(6)
-                    } else {
-                        RoundedRectangle(cornerRadius: 6)
-                            .fill(Color.gray.opacity(0.3))
-                            .frame(width: 50, height: 50)
-                            .overlay {
-                                Image(systemName: "music.note")
-                                    .foregroundColor(.gray)
+                    ZStack {
+                        if let artwork = song.artwork {
+                            ArtworkImage(artwork, width: 50)
+                                .cornerRadius(6)
+                        } else {
+                            RoundedRectangle(cornerRadius: 6)
+                                .fill(Color.gray.opacity(0.3))
+                                .frame(width: 50, height: 50)
+                                .overlay {
+                                    Image(systemName: "music.note")
+                                        .foregroundColor(.gray)
+                                }
+                        }
+
+                        // 再生中オーバーレイ
+                        if isPlaying || isLoading {
+                            RoundedRectangle(cornerRadius: 6)
+                                .fill(Color.black.opacity(0.4))
+                                .frame(width: 50, height: 50)
+
+                            if isLoading {
+                                ProgressView()
+                                    .tint(.white)
+                            } else {
+                                Image(systemName: "pause.fill")
+                                    .font(.title3)
+                                    .foregroundColor(.white)
                             }
+                        }
                     }
-                    
+
                     VStack(alignment: .leading, spacing: 4) {
                         Text(song.title)
                             .font(.headline)
                             .lineLimit(1)
+                            .foregroundColor(isPlaying ? Color(red: 1.0, green: 0.5, blue: 0.3) : .primary)
                         Text(song.artistName)
                             .font(.subheadline)
                             .foregroundColor(.secondary)
                             .lineLimit(1)
                     }
-                    
+
                     Spacer()
                 }
                 .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
-            
-            // +ボタン（タップで直接追加）
+
+            // +ボタン（タップで追加 + ハイライト設定）
             Button(action: onAdd) {
                 Image(systemName: "plus.circle")
                     .font(.title2)

@@ -13,10 +13,19 @@ struct ImportResult {
     let playlist: Playlist
     let importedTrackCount: Int
     let skippedTrackCount: Int
-    
+
     var hasSkippedTracks: Bool {
         skippedTrackCount > 0
     }
+}
+
+// MARK: - Bulk Import Result
+
+struct BulkImportResult {
+    let importedPlaylistCount: Int
+    let totalTrackCount: Int
+    let skippedTrackCount: Int
+    let skippedPlaylistCount: Int
 }
 
 // MARK: - Playlist Importer
@@ -140,6 +149,128 @@ class PlaylistImporter {
             print("Song verification error: \(error)")
             return false
         }
+    }
+
+    // MARK: - Bulk Restore from Backup
+
+    /// バックアップファイルから複数プレイリストを一括復元
+    /// - Parameters:
+    ///   - url: バックアップファイルのURL
+    ///   - modelContext: SwiftDataのモデルコンテキスト
+    ///   - isPremium: プレミアムユーザーかどうか
+    ///   - existingPlaylistCount: 現在のプレイリスト数（無料版制限チェック用）
+    /// - Returns: 一括インポート結果
+    static func importFromBackupFile(
+        url: URL,
+        modelContext: ModelContext,
+        isPremium: Bool,
+        existingPlaylistCount: Int
+    ) async throws -> BulkImportResult {
+        guard url.startAccessingSecurityScopedResource() else {
+            throw ImportError.accessDenied
+        }
+        defer { url.stopAccessingSecurityScopedResource() }
+
+        let data: Data
+        do {
+            data = try Data(contentsOf: url)
+        } catch {
+            throw ImportError.corruptedFile
+        }
+
+        let decoder = JSONDecoder()
+        decoder.dateDecodingStrategy = .iso8601
+
+        // バックアップは [ExportedPlaylist] 配列、単体は ExportedPlaylist
+        var exportedPlaylists: [ExportedPlaylist]
+        do {
+            exportedPlaylists = try decoder.decode([ExportedPlaylist].self, from: data)
+        } catch {
+            // 配列でなければ単体として試行
+            do {
+                let single = try decoder.decode(ExportedPlaylist.self, from: data)
+                exportedPlaylists = [single]
+            } catch {
+                throw ImportError.invalidFormat
+            }
+        }
+
+        // 無料版の場合はプレイリスト数を制限
+        let availableSlots = isPremium
+            ? exportedPlaylists.count
+            : max(0, FreeTierLimits.maxPlaylists - existingPlaylistCount)
+        let playlistsToImport = Array(exportedPlaylists.prefix(availableSlots))
+        let skippedPlaylistCount = exportedPlaylists.count - playlistsToImport.count
+
+        var totalImportedTracks = 0
+        var totalSkippedTracks = 0
+        var importedPlaylistCount = 0
+
+        for (playlistIndex, exportedPlaylist) in playlistsToImport.enumerated() {
+            let playlist = Playlist(
+                name: exportedPlaylist.name,
+                orderIndex: existingPlaylistCount + playlistIndex
+            )
+            modelContext.insert(playlist)
+
+            // 無料版の場合はトラック数を制限
+            let maxTracks = isPremium
+                ? exportedPlaylist.tracks.count
+                : FreeTierLimits.maxTracksPerPlaylist
+            let tracksToImport = Array(exportedPlaylist.tracks.prefix(maxTracks))
+            totalSkippedTracks += max(0, exportedPlaylist.tracks.count - maxTracks)
+
+            var trackImported = false
+
+            for (trackIndex, exportedTrack) in tracksToImport.enumerated() {
+                var songId: String? = nil
+
+                // ISRCで曲を検索
+                if let isrc = exportedTrack.isrc {
+                    if let foundId = await findSongByISRC(isrc: isrc) {
+                        songId = foundId
+                    }
+                }
+
+                // ISRCで見つからなければAppleMusicIdを使用
+                if songId == nil {
+                    if await verifySongExists(appleMusicId: exportedTrack.appleMusicId) {
+                        songId = exportedTrack.appleMusicId
+                    }
+                }
+
+                if let validSongId = songId {
+                    let track = TrackInPlaylist(
+                        appleMusicSongId: validSongId,
+                        title: exportedTrack.title,
+                        artist: exportedTrack.artist,
+                        orderIndex: trackIndex,
+                        chorusStartSeconds: exportedTrack.chorusStart,
+                        chorusEndSeconds: exportedTrack.chorusEnd
+                    )
+                    track.playlist = playlist
+                    modelContext.insert(track)
+                    totalImportedTracks += 1
+                    trackImported = true
+                } else {
+                    totalSkippedTracks += 1
+                }
+            }
+
+            if trackImported {
+                importedPlaylistCount += 1
+            } else {
+                // トラックが1つもインポートできなかった場合は空のプレイリストも削除
+                modelContext.delete(playlist)
+            }
+        }
+
+        return BulkImportResult(
+            importedPlaylistCount: importedPlaylistCount,
+            totalTrackCount: totalImportedTracks,
+            skippedTrackCount: totalSkippedTracks,
+            skippedPlaylistCount: skippedPlaylistCount
+        )
     }
 }
 

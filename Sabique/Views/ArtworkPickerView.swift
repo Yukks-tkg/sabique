@@ -161,7 +161,7 @@ struct ArtworkPickerView: View {
                     }
                 }
             }
-            .navigationTitle(String(localized: "select_background_artwork"))
+            .navigationTitle(String(localized: "select_favorite_artwork"))
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {

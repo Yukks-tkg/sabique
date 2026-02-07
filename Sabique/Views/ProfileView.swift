@@ -335,7 +335,7 @@ struct ProfileView: View {
                         HStack(spacing: 4) {
                             Image(systemName: "eye.fill")
                                 .font(.title3)
-                                .foregroundColor(.purple)
+                                .foregroundColor(.teal)
                             Text("\(totalViews)")
                                 .font(.system(size: 32, weight: .bold))
                         }
@@ -354,7 +354,7 @@ struct ProfileView: View {
                         HStack(spacing: 4) {
                             Image(systemName: "globe")
                                 .font(.title3)
-                                .foregroundColor(.green)
+                                .foregroundColor(.cyan)
                             Text("\(remaining)")
                                 .font(.system(size: 32, weight: .bold))
                         }
@@ -420,6 +420,10 @@ struct MyPublishedPlaylistCard: View {
                     Label("\(playlist.downloadCount)", systemImage: "arrow.down.circle.fill")
                         .font(.caption)
                         .foregroundColor(.blue)
+
+                    Label("\(playlist.viewCount)", systemImage: "eye.fill")
+                        .font(.caption)
+                        .foregroundColor(.teal)
                 }
             }
 
@@ -699,6 +703,8 @@ struct ProfileEditSheet: View {
     @State private var showingArtworkPicker = false
     @State private var showingCountryPicker = false
     @State private var isSaving = false
+    @State private var showingCooldownAlert = false
+    @State private var cooldownAlertMessage = ""
     @FocusState private var isNicknameFocused: Bool
 
     private let maxNicknameLength = 10
@@ -768,6 +774,11 @@ struct ProfileEditSheet: View {
                 nickname = userProfile?.nickname ?? ""
                 selectedCountryCode = userProfile?.countryCode ?? ""
             }
+            .alert(String(localized: "error"), isPresented: $showingCooldownAlert) {
+                Button("OK") { }
+            } message: {
+                Text(cooldownAlertMessage)
+            }
         }
     }
 
@@ -820,7 +831,10 @@ struct ProfileEditSheet: View {
     }
 
     private var nicknameSection: some View {
-        VStack(alignment: .leading, spacing: 12) {
+        let cooldownResult = userProfile?.canChangeNickname() ?? (allowed: true, remainingDays: 0)
+        let isNicknameLocked = !cooldownResult.allowed
+
+        return VStack(alignment: .leading, spacing: 12) {
             Text(String(localized: "nickname"))
                 .font(.subheadline)
                 .foregroundColor(.secondary)
@@ -830,6 +844,7 @@ struct ProfileEditSheet: View {
                 TextField(String(localized: "enter_nickname"), text: $nickname)
                     .focused($isNicknameFocused)
                     .autocapitalization(.none)
+                    .disabled(isNicknameLocked)
                     .onChange(of: nickname) { _, newValue in
                         if newValue.count > maxNicknameLength {
                             nickname = String(newValue.prefix(maxNicknameLength))
@@ -843,11 +858,22 @@ struct ProfileEditSheet: View {
             .padding()
             .background(Color(.secondarySystemGroupedBackground))
             .cornerRadius(12)
+            .opacity(isNicknameLocked ? 0.5 : 1.0)
+
+            if isNicknameLocked {
+                Text(String(format: NSLocalizedString("profile_change_cooldown", comment: ""), cooldownResult.remainingDays))
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+                    .padding(.horizontal, 4)
+            }
         }
     }
 
     private var countrySection: some View {
-        VStack(alignment: .leading, spacing: 12) {
+        let cooldownResult = userProfile?.canChangeCountry() ?? (allowed: true, remainingDays: 0)
+        let isCountryLocked = !cooldownResult.allowed
+
+        return VStack(alignment: .leading, spacing: 12) {
             Text(String(localized: "country_region"))
                 .font(.subheadline)
                 .foregroundColor(.secondary)
@@ -874,6 +900,15 @@ struct ProfileEditSheet: View {
                 .padding()
                 .background(Color(.secondarySystemGroupedBackground))
                 .cornerRadius(12)
+                .opacity(isCountryLocked ? 0.5 : 1.0)
+            }
+            .disabled(isCountryLocked)
+
+            if isCountryLocked {
+                Text(String(format: NSLocalizedString("profile_change_cooldown", comment: ""), cooldownResult.remainingDays))
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+                    .padding(.horizontal, 4)
             }
         }
     }
@@ -917,10 +952,18 @@ struct ProfileEditSheet: View {
                     onSave()
                     dismiss()
                 }
+            } catch let error as CommunityError {
+                await MainActor.run {
+                    isSaving = false
+                    cooldownAlertMessage = error.errorDescription ?? "エラーが発生しました"
+                    showingCooldownAlert = true
+                }
             } catch {
                 print("❌ プロフィール保存エラー: \(error)")
                 await MainActor.run {
                     isSaving = false
+                    cooldownAlertMessage = error.localizedDescription
+                    showingCooldownAlert = true
                 }
             }
         }

@@ -336,6 +336,10 @@ class CommunityManager: ObservableObject {
 
     /// いいね数をインクリメント
     func incrementLikeCount(playlistId: String) async {
+        guard !playlistId.isEmpty else {
+            print("⚠️ いいね数更新スキップ: playlistIdが空です")
+            return
+        }
         do {
             try await db.collection("communityPlaylists").document(playlistId).updateData([
                 "likeCount": FieldValue.increment(Int64(1))
@@ -348,6 +352,10 @@ class CommunityManager: ObservableObject {
 
     /// ダウンロード数をインクリメント
     func incrementDownloadCount(playlistId: String) async {
+        guard !playlistId.isEmpty else {
+            print("⚠️ ダウンロード数更新スキップ: playlistIdが空です")
+            return
+        }
         do {
             try await db.collection("communityPlaylists").document(playlistId).updateData([
                 "downloadCount": FieldValue.increment(Int64(1))
@@ -360,6 +368,10 @@ class CommunityManager: ObservableObject {
 
     /// 閲覧数をインクリメント
     func incrementViewCount(playlistId: String) async {
+        guard !playlistId.isEmpty else {
+            print("⚠️ 閲覧数更新スキップ: playlistIdが空です")
+            return
+        }
         do {
             try await db.collection("communityPlaylists").document(playlistId).updateData([
                 "viewCount": FieldValue.increment(Int64(1))
@@ -404,8 +416,17 @@ class CommunityManager: ObservableObject {
             print("⚠️ ニックネームに特殊文字が含まれています: \(trimmedNickname)")
         }
 
+        // クールダウンチェック
+        let userProfile = try await getUserProfile(userId: userId)
+        let (canChange, remainingDays) = userProfile.canChangeNickname()
+        guard canChange else {
+            throw CommunityError.cooldownActive(remainingDays: remainingDays)
+        }
+
         try await db.collection("users").document(userId).updateData([
-            "nickname": trimmedNickname
+            "nickname": trimmedNickname,
+            "nicknameChangeCount": FieldValue.increment(Int64(1)),
+            "lastNicknameChangeAt": Timestamp(date: Date())
         ])
         print("✅ ニックネーム更新成功")
     }
@@ -457,8 +478,17 @@ class CommunityManager: ObservableObject {
             }
         }
 
+        // クールダウンチェック
+        let userProfile = try await getUserProfile(userId: userId)
+        let (canChange, remainingDays) = userProfile.canChangeCountry()
+        guard canChange else {
+            throw CommunityError.cooldownActive(remainingDays: remainingDays)
+        }
+
         try await db.collection("users").document(userId).updateData([
-            "countryCode": trimmedCode
+            "countryCode": trimmedCode,
+            "countryChangeCount": FieldValue.increment(Int64(1)),
+            "lastCountryChangeAt": Timestamp(date: Date())
         ])
         print("✅ 国コード更新成功: \(trimmedCode)")
     }
@@ -589,6 +619,7 @@ enum CommunityError: LocalizedError {
     case publishLimitReached(isPremium: Bool)
     case userBanned
     case validationFailed(String)
+    case cooldownActive(remainingDays: Int)
 
     var errorDescription: String? {
         switch self {
@@ -606,6 +637,8 @@ enum CommunityError: LocalizedError {
             return "このアカウントは利用停止になっています"
         case .validationFailed(let message):
             return message
+        case .cooldownActive(let remainingDays):
+            return String(format: NSLocalizedString("profile_change_cooldown_error", comment: ""), remainingDays)
         }
     }
 }

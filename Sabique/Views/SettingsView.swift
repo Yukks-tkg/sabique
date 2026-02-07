@@ -5,6 +5,7 @@
 
 import SwiftUI
 import SwiftData
+import UniformTypeIdentifiers
 import FirebaseAuth
 import AuthenticationServices
 
@@ -30,6 +31,10 @@ struct SettingsView: View {
     @State private var isBackingUp = false
     @State private var backupFileURL: URL?
     @State private var showingBackupShare = false
+    @State private var showingFileImporter = false
+    @State private var isRestoringBackup = false
+    @State private var showingRestoreResult = false
+    @State private var restoreResultMessage = ""
     @AppStorage("customBackgroundArtworkURLString") private var customBackgroundArtworkURLString: String = ""
     @AppStorage("customBackgroundSongTitle") private var customBackgroundSongTitle: String = ""
     @AppStorage("customBackgroundArtistName") private var customBackgroundArtistName: String = ""
@@ -338,6 +343,20 @@ struct SettingsView: View {
                             }
                         }
                         .disabled(isBackingUp || playlists.isEmpty)
+
+                        Button(action: { showingFileImporter = true }) {
+                            HStack {
+                                if isRestoringBackup {
+                                    ProgressView()
+                                        .frame(width: 20)
+                                } else {
+                                    Image(systemName: "arrow.up.doc")
+                                }
+                                Text(String(localized: "restore_data"))
+                                Spacer()
+                            }
+                        }
+                        .disabled(isRestoringBackup)
                     } header: {
                         Text(String(localized: "backup_section"))
                     } footer: {
@@ -441,6 +460,24 @@ struct SettingsView: View {
                     ShareSheet(activityItems: [url])
                 }
             }
+            .fileImporter(
+                isPresented: $showingFileImporter,
+                allowedContentTypes: [.item],
+                onCompletion: { result in
+                    switch result {
+                    case .success(let url):
+                        performRestore(url: url)
+                    case .failure(let error):
+                        deleteAccountError = error.localizedDescription
+                        showingDeleteAccountError = true
+                    }
+                }
+            )
+            .alert(String(localized: "restore_success"), isPresented: $showingRestoreResult) {
+                Button(String(localized: "ok"), role: .cancel) { }
+            } message: {
+                Text(restoreResultMessage)
+            }
         }
     }
 
@@ -466,6 +503,48 @@ struct SettingsView: View {
                 await MainActor.run {
                     isBackingUp = false
                     deleteAccountError = String(localized: "backup_failed")
+                    showingDeleteAccountError = true
+                }
+            }
+        }
+    }
+
+    private func performRestore(url: URL) {
+        isRestoringBackup = true
+        Task {
+            do {
+                let result = try await PlaylistImporter.importFromBackupFile(
+                    url: url,
+                    modelContext: modelContext,
+                    isPremium: storeManager.isPremium,
+                    existingPlaylistCount: playlists.count
+                )
+                await MainActor.run {
+                    isRestoringBackup = false
+                    var message = String(
+                        format: NSLocalizedString("restore_result", comment: ""),
+                        result.importedPlaylistCount,
+                        result.totalTrackCount
+                    )
+                    if result.skippedTrackCount > 0 {
+                        message += "\n" + String(
+                            format: NSLocalizedString("restore_skipped", comment: ""),
+                            result.skippedTrackCount
+                        )
+                    }
+                    if result.skippedPlaylistCount > 0 {
+                        message += "\n" + String(
+                            format: NSLocalizedString("restore_limited", comment: ""),
+                            result.skippedPlaylistCount
+                        )
+                    }
+                    restoreResultMessage = message
+                    showingRestoreResult = true
+                }
+            } catch {
+                await MainActor.run {
+                    isRestoringBackup = false
+                    deleteAccountError = String(localized: "restore_failed")
                     showingDeleteAccountError = true
                 }
             }
