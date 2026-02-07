@@ -71,6 +71,67 @@ class PlaylistExporter {
         return try encoder.encode(exportedPlaylist)
     }
     
+    /// 全プレイリストを一括バックアップ用JSONに変換
+    static func exportAll(playlists: [Playlist]) async throws -> Data {
+        var exportedPlaylists: [ExportedPlaylist] = []
+
+        for playlist in playlists {
+            var exportedTracks: [ExportedTrack] = []
+
+            for track in playlist.sortedTracks {
+                var isrc: String? = nil
+                do {
+                    let request = MusicCatalogResourceRequest<Song>(
+                        matching: \.id,
+                        equalTo: MusicItemID(track.appleMusicSongId)
+                    )
+                    let response = try await request.response()
+                    if let song = response.items.first {
+                        isrc = song.isrc
+                    }
+                } catch {
+                    print("ISRC取得エラー: \(error)")
+                }
+
+                exportedTracks.append(ExportedTrack(
+                    isrc: isrc,
+                    appleMusicId: track.appleMusicSongId,
+                    title: track.title,
+                    artist: track.artist,
+                    chorusStart: track.chorusStartSeconds,
+                    chorusEnd: track.chorusEndSeconds
+                ))
+            }
+
+            exportedPlaylists.append(ExportedPlaylist(
+                name: playlist.name,
+                exportedAt: Date(),
+                tracks: exportedTracks
+            ))
+        }
+
+        let encoder = JSONEncoder()
+        encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
+        encoder.dateEncodingStrategy = .iso8601
+
+        return try encoder.encode(exportedPlaylists)
+    }
+
+    /// 全プレイリストをバックアップファイルに保存
+    static func exportAllToFile(playlists: [Playlist]) async throws -> URL {
+        let data = try await exportAll(playlists: playlists)
+
+        let dateFormatter = DateFormatter()
+        dateFormatter.dateFormat = "yyyyMMdd_HHmmss"
+        let dateString = dateFormatter.string(from: Date())
+
+        let fileName = "Sabique_Backup_\(dateString).sabique"
+        let tempURL = FileManager.default.temporaryDirectory.appendingPathComponent(fileName)
+
+        try data.write(to: tempURL)
+        return tempURL
+    }
+
     /// エクスポートデータをファイルに保存
     static func exportToFile(playlist: Playlist) async throws -> URL {
         let data = try await export(playlist: playlist)

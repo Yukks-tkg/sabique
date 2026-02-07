@@ -4,14 +4,17 @@
 //
 
 import SwiftUI
+import SwiftData
 import FirebaseAuth
 import AuthenticationServices
 
 struct SettingsView: View {
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.modelContext) private var modelContext
     @EnvironmentObject private var storeManager: StoreManager
     @EnvironmentObject private var authManager: AuthManager
     @EnvironmentObject private var communityManager: CommunityManager
+    @Query(sort: \Playlist.orderIndex) private var playlists: [Playlist]
     @AppStorage("autoPlayOnOpen") private var autoPlayOnOpen = true
     @State private var developerTapCount = 0
     @State private var isDeveloperMode = false
@@ -24,6 +27,9 @@ struct SettingsView: View {
     @State private var isDeletingAccount = false
     @State private var deleteAccountError: String?
     @State private var showingDeleteAccountError = false
+    @State private var isBackingUp = false
+    @State private var backupFileURL: URL?
+    @State private var showingBackupShare = false
     @AppStorage("customBackgroundArtworkURLString") private var customBackgroundArtworkURLString: String = ""
     @AppStorage("customBackgroundSongTitle") private var customBackgroundSongTitle: String = ""
     @AppStorage("customBackgroundArtistName") private var customBackgroundArtistName: String = ""
@@ -312,6 +318,33 @@ struct SettingsView: View {
                         }
                     }
                     
+                    // データバックアップセクション
+                    Section {
+                        Button(action: performBackup) {
+                            HStack {
+                                if isBackingUp {
+                                    ProgressView()
+                                        .frame(width: 20)
+                                } else {
+                                    Image(systemName: "arrow.down.doc")
+                                }
+                                Text(String(localized: "backup_data"))
+                                Spacer()
+                                if !isBackingUp {
+                                    Text("\(playlists.count) \(String(localized: "backup_playlist_count"))")
+                                        .font(.caption)
+                                        .foregroundColor(.secondary)
+                                }
+                            }
+                        }
+                        .disabled(isBackingUp || playlists.isEmpty)
+                    } header: {
+                        Text(String(localized: "backup_section"))
+                    } footer: {
+                        Text(String(localized: "backup_description"))
+                            .font(.caption)
+                    }
+
                     Section(String(localized: "about_this_app")) {
                         Text(String(localized: "app_description"))
                             .font(.subheadline)
@@ -403,6 +436,11 @@ struct SettingsView: View {
             } message: {
                 Text(deleteAccountError ?? String(localized: "delete_account_failed"))
             }
+            .sheet(isPresented: $showingBackupShare) {
+                if let url = backupFileURL {
+                    ShareSheet(activityItems: [url])
+                }
+            }
         }
     }
 
@@ -411,6 +449,26 @@ struct SettingsView: View {
         Task {
             await storeManager.restorePurchases()
             isRestoring = false
+        }
+    }
+
+    private func performBackup() {
+        isBackingUp = true
+        Task {
+            do {
+                let url = try await PlaylistExporter.exportAllToFile(playlists: playlists)
+                await MainActor.run {
+                    backupFileURL = url
+                    isBackingUp = false
+                    showingBackupShare = true
+                }
+            } catch {
+                await MainActor.run {
+                    isBackingUp = false
+                    deleteAccountError = String(localized: "backup_failed")
+                    showingDeleteAccountError = true
+                }
+            }
         }
     }
 
@@ -440,6 +498,18 @@ struct SettingsView: View {
             }
         }
     }
+}
+
+// MARK: - ShareSheet
+
+struct ShareSheet: UIViewControllerRepresentable {
+    let activityItems: [Any]
+
+    func makeUIViewController(context: Context) -> UIActivityViewController {
+        UIActivityViewController(activityItems: activityItems, applicationActivities: nil)
+    }
+
+    func updateUIViewController(_ uiViewController: UIActivityViewController, context: Context) {}
 }
 
 #Preview {

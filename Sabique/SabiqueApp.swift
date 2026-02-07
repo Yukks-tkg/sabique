@@ -16,8 +16,22 @@ struct SabiqueApp: App {
     @StateObject private var authManager = AuthManager()
     @StateObject private var communityManager = CommunityManager()
 
+    let modelContainer: ModelContainer
+
     init() {
         FirebaseApp.configure()
+
+        do {
+            let schema = Schema(SchemaV1.models)
+            let config = ModelConfiguration()
+            self.modelContainer = try ModelContainer(
+                for: schema,
+                migrationPlan: SabiqueMigrationPlan.self,
+                configurations: config
+            )
+        } catch {
+            fatalError("Failed to create ModelContainer: \(error)")
+        }
     }
 
     var body: some Scene {
@@ -28,6 +42,6 @@ struct SabiqueApp: App {
                 .environmentObject(authManager)
                 .environmentObject(communityManager)
         }
-        .modelContainer(for: [Playlist.self, TrackInPlaylist.self])
+        .modelContainer(modelContainer)
     }
 }

@@ -25,6 +25,8 @@ struct PlaylistListView: View {
     @State private var showingPaywall = false
     @State private var showingImportLimitAlert = false
     @State private var skippedTrackCount = 0
+    @State private var showingDeleteConfirm = false
+    @State private var playlistToDelete: Playlist?
     @AppStorage("customBackgroundArtworkURLString") private var customBackgroundArtworkURLString: String = ""
     
     var body: some View {
@@ -103,6 +105,16 @@ struct PlaylistListView: View {
             .sheet(isPresented: $showingPaywall) {
                 PaywallView()
             }
+            .alert(String(localized: "delete_playlist_confirm"), isPresented: $showingDeleteConfirm) {
+                Button(String(localized: "cancel"), role: .cancel) {
+                    playlistToDelete = nil
+                }
+                Button(String(localized: "delete"), role: .destructive) {
+                    confirmDeletePlaylist()
+                }
+            } message: {
+                Text(String(localized: "delete_playlist_message_\(playlistToDelete?.name ?? "")"))
+            }
         }
     }
     
@@ -146,9 +158,15 @@ struct PlaylistListView: View {
     }
     
     private func deletePlaylists(at offsets: IndexSet) {
-        for index in offsets {
-            modelContext.delete(playlists[index])
-        }
+        guard let index = offsets.first else { return }
+        playlistToDelete = playlists[index]
+        showingDeleteConfirm = true
+    }
+
+    private func confirmDeletePlaylist() {
+        guard let playlist = playlistToDelete else { return }
+        modelContext.delete(playlist)
+        playlistToDelete = nil
     }
     
     private func movePlaylists(from source: IndexSet, to destination: Int) {
