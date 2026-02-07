@@ -4949,43 +4949,135 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Kostenlose Version: Bis zu 2 Playlists mit je 3 Titeln.\nUpgraden Sie für unbegrenzte Playlists und Titel."
+            "value" : "Werde Premium-Mitglied und\nschalte alle Funktionen frei"
           }
         },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Free version: Up to 2 playlists with 3 tracks each.\nUpgrade to add unlimited playlists and tracks."
+            "value" : "Become a Premium member and\nunlock all features"
           }
         },
         "en-GB" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Free version: Up to 2 playlists with 3 tracks each.\nUpgrade to add unlimited playlists and tracks."
+            "value" : "Become a Premium member and\nunlock all features"
           }
         },
         "hi" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "मुफ्त संस्करण: प्रत्येक में 3 ट्रैक के साथ 2 प्लेलिस्ट तक।\nअसीमित प्लेलिस्ट और ट्रैक जोड़ने के लिए अपग्रेड करें।"
+            "value" : "प्रीमियम सदस्य बनें और\nसभी सुविधाएं अनलॉक करें"
           }
         },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "無料版ではプレイリスト2個、各3曲までに制限されています。\nプレミアム版で無制限に追加できます。"
+            "value" : "プレミアムメンバーになって\nすべての機能を解放"
           }
         },
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "무료 버전: 플레이리스트 2개, 각 2곡까지.\n무제한 플레이리스트와 트랙을 위해 업그레이드하세요."
+            "value" : "프리미엄 멤버가 되어\n모든 기능을 잠금 해제"
           }
         },
         "nl" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Ontgrendel alle functies met Premium"
+            "value" : "Word Premium-lid en\nontgrendel alle functies"
+          }
+        }
+      }
+    },
+    "paywall_feature_more_publishes" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mehr Community-Beiträge"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "More Community Posts"
+          }
+        },
+        "en-GB" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "More Community Posts"
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "अधिक कम्युनिटी पोस्ट"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "コミュニティ投稿回数アップ"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "더 많은 커뮤니티 게시"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Meer community-berichten"
+          }
+        }
+      }
+    },
+    "paywall_feature_more_publishes_desc" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Veröffentlichen Sie bis zu 10 Playlists pro Monat (kostenlos: 3)"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Publish up to 10 playlists per month (free: 3)"
+          }
+        },
+        "en-GB" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Publish up to 10 playlists per month (free: 3)"
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "प्रति माह 10 प्लेलिस्ट तक पोस्ट करें (मुफ्त: 3)"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "月10回まで投稿可能（無料版は月3回）"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "월 10개 플레이리스트 게시 가능 (무료: 3개)"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Publiceer tot 10 afspeellijsten per maand (gratis: 3)"
           }
         }
       }
@@ -5041,43 +5133,43 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Erstellen Sie so viele Playlists wie Sie möchten"
+            "value" : "Erstellen Sie so viele Playlists wie Sie möchten (kostenlos: 2)"
           }
         },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Create as many playlists as you want"
+            "value" : "Create as many playlists as you want (free: 2)"
           }
         },
         "en-GB" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Create as many playlists as you want"
+            "value" : "Create as many playlists as you want (free: 2)"
           }
         },
         "hi" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "जितनी चाहें उतनी प्लेलिस्ट बनाएं"
+            "value" : "जितनी चाहें उतनी प्लेलिस्ट बनाएं (मुफ्त: 2)"
           }
         },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "好きなだけプレイリストを作成できます"
+            "value" : "好きなだけプレイリストを作成できます（無料版は2個まで）"
           }
         },
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "원하는 만큼 플레이리스트를 만드세요"
+            "value" : "원하는 만큼 플레이리스트를 만드세요 (무료: 2개)"
           }
         },
         "nl" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Maak zoveel highlight-lijsten als je wilt"
+            "value" : "Maak zoveel afspeellijsten als je wilt (gratis: 2)"
           }
         }
       }
@@ -5133,43 +5225,43 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Fügen Sie so viele Titel zu jeder Playlist hinzu wie Sie möchten"
+            "value" : "Fügen Sie so viele Titel hinzu wie Sie möchten (kostenlos: 3)"
           }
         },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Add as many tracks as you want to each playlist"
+            "value" : "Add as many tracks as you want (free: 3)"
           }
         },
         "en-GB" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Add as many tracks as you want to each playlist"
+            "value" : "Add as many tracks as you want (free: 3)"
           }
         },
         "hi" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "प्रत्येक प्लेलिस्ट में जितने चाहें उतने ट्रैक जोड़ें"
+            "value" : "जितने चाहें उतने ट्रैक जोड़ें (मुफ्त: 3)"
           }
         },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "各プレイリストに好きなだけトラックを追加できます"
+            "value" : "各プレイリストに好きなだけトラックを追加できます（無料版は3曲まで）"
           }
         },
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "각 플레이리스트에 원하는 만큼 트랙을 추가하세요"
+            "value" : "원하는 만큼 트랙을 추가하세요 (무료: 3곡)"
           }
         },
         "nl" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Voeg onbeperkt nummers toe aan elke lijst"
+            "value" : "Voeg zoveel nummers toe als je wilt (gratis: 3)"
           }
         }
       }
@@ -5179,37 +5271,37 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Auf Premium upgraden"
+            "value" : "Sabique Premium"
           }
         },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Upgrade to Premium"
+            "value" : "Sabique Premium"
           }
         },
         "en-GB" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Upgrade to Premium"
+            "value" : "Sabique Premium"
           }
         },
         "hi" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "प्रीमियम में अपग्रेड करें"
+            "value" : "Sabique Premium"
           }
         },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "プレミアムにアップグレード"
+            "value" : "Sabique Premium"
           }
         },
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "프리미엄으로 업그레이드"
+            "value" : "Sabique Premium"
           }
         },
         "nl" : {

@@ -71,6 +71,12 @@ struct PaywallView: View {
                                 title: String(localized: "paywall_feature_unlimited_tracks"),
                                 description: String(localized: "paywall_feature_unlimited_tracks_desc")
                             )
+                            
+                            FeatureRow(
+                                icon: "square.and.arrow.up",
+                                title: String(localized: "paywall_feature_more_publishes"),
+                                description: String(localized: "paywall_feature_more_publishes_desc")
+                            )
                         }
                         .padding(.horizontal)
                         
