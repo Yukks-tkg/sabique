@@ -409,7 +409,7 @@ struct MyPublishedPlaylistCard: View {
                     .lineLimit(1)
 
                 HStack(spacing: 12) {
-                    Label("\(playlist.tracks.count)曲", systemImage: "music.note.list")
+                    Label(String(format: NSLocalizedString("track_count", comment: ""), playlist.tracks.count), systemImage: "music.note.list")
                         .font(.caption)
                         .foregroundColor(.secondary)
 
