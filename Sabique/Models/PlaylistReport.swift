@@ -27,10 +27,17 @@ struct PlaylistReport: Codable {
     }
 }
 
-/// 報告理由
+/// 報告カテゴリ
 enum ReportReason: String, CaseIterable {
-    case spam = "スパム"
-    case inappropriate = "不適切な内容"
-    case misleading = "誤解を招く内容"
-    case other = "その他"
+    case nickname = "nickname"
+    case playlistName = "playlist_name"
+    case other = "other"
+
+    var localizedName: String {
+        switch self {
+        case .nickname: return String(localized: "report_category_nickname")
+        case .playlistName: return String(localized: "report_category_playlist_name")
+        case .other: return String(localized: "report_category_other")
+        }
+    }
 }

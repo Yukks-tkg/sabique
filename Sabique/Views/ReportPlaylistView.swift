@@ -15,7 +15,7 @@ struct ReportPlaylistView: View {
     @EnvironmentObject private var communityManager: CommunityManager
     @EnvironmentObject private var authManager: AuthManager
 
-    @State private var selectedReason: ReportReason = .spam
+    @State private var selectedReason: ReportReason = .nickname
     @State private var comment = ""
     @State private var isSubmitting = false
     @State private var showingSuccess = false
@@ -25,16 +25,16 @@ struct ReportPlaylistView: View {
     var body: some View {
         NavigationStack {
             Form {
-                Section(String(localized: "report_reason")) {
-                    Picker(String(localized: "select_reason"), selection: $selectedReason) {
+                Section(String(localized: "report_category")) {
+                    Picker(String(localized: "select_category"), selection: $selectedReason) {
                         ForEach(ReportReason.allCases, id: \.self) { reason in
-                            Text(reason.rawValue).tag(reason)
+                            Text(reason.localizedName).tag(reason)
                         }
                     }
                     .pickerStyle(.menu)
                 }
 
-                Section(String(localized: "details_optional")) {
+                Section(String(localized: "report_reason_optional")) {
                     TextEditor(text: $comment)
                         .frame(height: 100)
                 }
