@@ -41,7 +41,7 @@ struct PublishPlaylistView: View {
                     signInPromptView
                 }
             }
-            .navigationTitle("ハイライトリストを投稿")
+            .navigationTitle(String(localized: "publish_highlight_list"))
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {

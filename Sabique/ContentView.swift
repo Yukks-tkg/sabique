@@ -8,7 +8,7 @@ struct MusicPlayerView: View {
     var body: some View {
         VStack {
             // 検索バー
-            TextField("曲名を検索（例: Official髭男dism）", text: $searchKeyword)
+            TextField(String(localized: "search_song_placeholder"), text: $searchKeyword)
                 .textFieldStyle(.roundedBorder)
                 .padding()
                 .onSubmit {

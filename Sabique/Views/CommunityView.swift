@@ -32,7 +32,7 @@ struct CommunityView: View {
                 // メインコンテンツ
                 mainContent
             }
-            .navigationTitle("コミュニティ")
+            .navigationTitle(String(localized: "community"))
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
@@ -159,7 +159,7 @@ struct CommunityView: View {
             Image(systemName: "magnifyingglass")
                 .foregroundColor(.secondary)
 
-            TextField("ハイライトリストを検索", text: $searchText)
+            TextField(String(localized: "search_highlight_lists"), text: $searchText)
                 .textFieldStyle(.plain)
                 .autocorrectionDisabled()
                 .onChange(of: searchText) { _, newValue in

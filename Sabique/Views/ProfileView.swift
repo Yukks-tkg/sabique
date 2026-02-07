@@ -733,7 +733,7 @@ struct ProfileEditSheet: View {
                     .padding(.horizontal)
                 }
             }
-            .navigationTitle("プロフィール編集")
+            .navigationTitle(String(localized: "edit_profile"))
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
