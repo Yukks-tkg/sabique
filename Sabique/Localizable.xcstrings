@@ -5433,18 +5433,6 @@
             "value" : "Can be changed in %lld days"
           }
         },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Se puede cambiar en %lld días"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Modifiable dans %lld jours"
-          }
-        },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
@@ -5461,24 +5449,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Kan over %lld dagen worden gewijzigd"
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Pode ser alterado em %lld dias"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%lld天后可以更改"
-          }
-        },
-        "zh-Hant" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%lld天後可以更改"
           }
         }
       }
@@ -5497,18 +5467,6 @@
             "value" : "Profile changes are limited to once every 30 days. Please wait %lld more days."
           }
         },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Los cambios de perfil están limitados a una vez cada 30 días. Espere %lld días más."
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Les modifications du profil sont limitées à une fois tous les 30 jours. Veuillez patienter encore %lld jours."
-          }
-        },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
@@ -5525,24 +5483,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Profielwijzigingen zijn beperkt tot eenmaal per 30 dagen. Wacht nog %lld dagen."
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Alterações de perfil são limitadas a uma vez a cada 30 dias. Aguarde mais %lld dias."
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "个人资料每30天只能更改一次。请再等待%lld天。"
-          }
-        },
-        "zh-Hant" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "個人資料每30天只能更改一次。請再等待%lld天。"
           }
         }
       }
