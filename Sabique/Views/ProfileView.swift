@@ -26,6 +26,7 @@ struct ProfileView: View {
     @State private var isLoading = false
     @State private var totalLikes: Int = 0
     @State private var totalDownloads: Int = 0
+    @State private var totalViews: Int = 0
     @State private var myPublishedPlaylists: [CommunityPlaylist] = []
     @AppStorage("customBackgroundArtworkURLString") private var customBackgroundArtworkURLString: String = ""
 
@@ -328,12 +329,17 @@ struct ProfileView: View {
 
                 Divider()
 
-                // 下段：今月の投稿数と残り投稿回数
+                // 下段：閲覧数と残り投稿回数
                 HStack(spacing: 0) {
                     VStack(spacing: 8) {
-                        Text("\(userProfile?.publishedPlaylistCount ?? 0)")
-                            .font(.system(size: 32, weight: .bold))
-                        Text(String(localized: "posts_this_month"))
+                        HStack(spacing: 4) {
+                            Image(systemName: "eye.fill")
+                                .font(.title3)
+                                .foregroundColor(.purple)
+                            Text("\(totalViews)")
+                                .font(.system(size: 32, weight: .bold))
+                        }
+                        Text(String(localized: "total_views"))
                             .font(.caption)
                             .foregroundColor(.secondary)
                     }
@@ -345,8 +351,13 @@ struct ProfileView: View {
 
                     VStack(spacing: 8) {
                         let remaining = userProfile?.remainingPublishesThisMonth(isPremium: storeManager.isPremium) ?? 0
-                        Text(storeManager.isPremium ? "∞" : "\(remaining)")
-                            .font(.system(size: 32, weight: .bold))
+                        HStack(spacing: 4) {
+                            Image(systemName: "globe")
+                                .font(.title3)
+                                .foregroundColor(.green)
+                            Text("\(remaining)")
+                                .font(.system(size: 32, weight: .bold))
+                        }
                         Text(String(localized: "remaining_posts"))
                             .font(.caption)
                             .foregroundColor(.secondary)
@@ -561,6 +572,7 @@ extension ProfileView {
         // 統計情報を並行取得（失敗しても続行）
         var likes = 0
         var downloads = 0
+        var views = 0
         var playlists: [CommunityPlaylist] = []
 
         do {
@@ -578,17 +590,25 @@ extension ProfileView {
         }
 
         do {
+            views = try await communityManager.getTotalViewsForUser(userId: userId)
+            print("✅ 閲覧数取得成功: \(views)")
+        } catch {
+            print("❌ 閲覧数取得エラー: \(error)")
+        }
+
+        do {
             playlists = try await communityManager.getUserPlaylists(userId: userId)
             print("✅ プレイリスト一覧取得成功: \(playlists.count)件")
         } catch {
             print("❌ プレイリスト一覧取得エラー: \(error)")
         }
 
-        print("✅ 統計情報取得完了: likes=\(likes), downloads=\(downloads), playlists=\(playlists.count)")
+        print("✅ 統計情報取得完了: likes=\(likes), downloads=\(downloads), views=\(views), playlists=\(playlists.count)")
 
         await MainActor.run {
             totalLikes = likes
             totalDownloads = downloads
+            totalViews = views
             myPublishedPlaylists = playlists
             isLoading = false
         }

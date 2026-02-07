@@ -49,20 +49,19 @@ extension UserProfile {
 
     /// 今月の投稿可能回数を取得
     func remainingPublishesThisMonth(isPremium: Bool) -> Int {
-        // プレミアムユーザーは無制限
-        if isPremium {
-            return Int.max
-        }
+        let maxPublishes = isPremium
+            ? FreeTierLimits.maxPremiumPublishesPerMonth
+            : FreeTierLimits.maxPublishesPerMonth
 
         let currentMonth = UserProfile.getCurrentYearMonth()
 
         // 月が変わっていればリセット
         if currentMonth != lastPublishedMonth {
-            return FreeTierLimits.maxPublishesPerMonth
+            return maxPublishes
         }
 
         // 残り回数を計算
-        return max(0, FreeTierLimits.maxPublishesPerMonth - publishedPlaylistCount)
+        return max(0, maxPublishes - publishedPlaylistCount)
     }
 
     /// 投稿可能かチェック
@@ -74,6 +73,8 @@ extension UserProfile {
 // MARK: - FreeTierLimits拡張
 
 extension FreeTierLimits {
-    /// 月あたりの最大投稿数
+    /// 月あたりの最大投稿数（無料）
     static let maxPublishesPerMonth = 3
+    /// 月あたりの最大投稿数（プレミアム）
+    static let maxPremiumPublishesPerMonth = 10
 }

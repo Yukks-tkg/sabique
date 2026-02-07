@@ -83,7 +83,7 @@ class CommunityManager: ObservableObject {
 
         // 投稿可能かチェック
         guard userProfile.canPublish(isPremium: authorIsPremium) else {
-            throw CommunityError.publishLimitReached
+            throw CommunityError.publishLimitReached(isPremium: authorIsPremium)
         }
 
         // BANされていないかチェック
@@ -358,6 +358,18 @@ class CommunityManager: ObservableObject {
         }
     }
 
+    /// 閲覧数をインクリメント
+    func incrementViewCount(playlistId: String) async {
+        do {
+            try await db.collection("communityPlaylists").document(playlistId).updateData([
+                "viewCount": FieldValue.increment(Int64(1))
+            ])
+            print("✅ 閲覧数更新")
+        } catch {
+            print("❌ 閲覧数更新失敗: \(error)")
+        }
+    }
+
     // MARK: - 削除機能（管理者用）
 
     /// プレイリストを削除
@@ -479,6 +491,20 @@ class CommunityManager: ObservableObject {
         return totalDownloads
     }
 
+    /// ユーザーが投稿したプレイリストの合計閲覧数を取得
+    func getTotalViewsForUser(userId: String) async throws -> Int {
+        let snapshot = try await db.collection("communityPlaylists")
+            .whereField("authorId", isEqualTo: userId)
+            .getDocuments()
+
+        let totalViews = snapshot.documents.reduce(0) { sum, document in
+            let viewCount = document.data()["viewCount"] as? Int ?? 0
+            return sum + viewCount
+        }
+
+        return totalViews
+    }
+
     /// ユーザーが投稿したプレイリスト一覧を取得
     func getUserPlaylists(userId: String) async throws -> [CommunityPlaylist] {
         print("🔍 getUserPlaylists開始: userId=\(userId)")
@@ -560,7 +586,7 @@ enum SortOption {
 enum CommunityError: LocalizedError {
     case playlistNotFound
     case importFailed
-    case publishLimitReached
+    case publishLimitReached(isPremium: Bool)
     case userBanned
     case validationFailed(String)
 
@@ -570,8 +596,12 @@ enum CommunityError: LocalizedError {
             return "プレイリストが見つかりません"
         case .importFailed:
             return "インポートに失敗しました"
-        case .publishLimitReached:
-            return "今月の投稿上限に達しました。プレミアム版にアップグレードすると無制限に投稿できます。"
+        case .publishLimitReached(let isPremium):
+            if isPremium {
+                return "今月の投稿上限（\(FreeTierLimits.maxPremiumPublishesPerMonth)回）に達しました。来月になるとリセットされます。"
+            } else {
+                return "今月の投稿上限（\(FreeTierLimits.maxPublishesPerMonth)回）に達しました。プレミアム版にアップグレードすると月\(FreeTierLimits.maxPremiumPublishesPerMonth)回まで投稿できます。"
+            }
         case .userBanned:
             return "このアカウントは利用停止になっています"
         case .validationFailed(let message):

@@ -135,6 +135,13 @@ struct CommunityPlaylistDetailView: View {
                 playingTrackId = nil
             }
         }
+        .task {
+            // 他人の投稿を開いたときのみ閲覧数をインクリメント
+            if let playlistId = playlist.id,
+               playlist.authorId != authManager.currentUser?.uid {
+                await communityManager.incrementViewCount(playlistId: playlistId)
+            }
+        }
     }
 
     // MARK: - Subviews
@@ -179,15 +186,15 @@ struct CommunityPlaylistDetailView: View {
             }
 
             // 投稿者
-            HStack {
+            HStack(spacing: 4) {
                 Text("by \(playlist.authorName ?? "匿名")")
                     .font(.subheadline)
                     .foregroundColor(.secondary)
 
-                if playlist.authorIsPremium {
-                    Image(systemName: "crown.fill")
-                        .foregroundColor(.yellow)
-                        .font(.caption)
+                if let countryCode = playlist.authorCountryCode,
+                   !countryCode.isEmpty {
+                    Text(countryFlag(from: countryCode))
+                        .font(.subheadline)
                 }
             }
 
@@ -431,6 +438,13 @@ struct CommunityPlaylistDetailView: View {
                 }
             }
         }
+    }
+
+    private func countryFlag(from countryCode: String) -> String {
+        let base: UInt32 = 127397
+        return countryCode.uppercased().unicodeScalars.compactMap {
+            UnicodeScalar(base + $0.value).map(String.init)
+        }.joined()
     }
 
     private func playTrack(_ track: CommunityTrack) {
