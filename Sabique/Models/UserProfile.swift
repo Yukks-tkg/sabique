@@ -112,10 +112,10 @@ extension UserProfile {
     /// ニックネーム変更可否をチェック
     /// - Returns: (allowed: 変更可能か, remainingDays: 残り日数)
     func canChangeNickname() -> (allowed: Bool, remainingDays: Int) {
-        // 1回目は常に許可
-        if nicknameChangeCount < 1 { return (true, 0) }
+        // 1〜2回目は常に許可（初回設定＋1回の修正機会）
+        if nicknameChangeCount < 2 { return (true, 0) }
 
-        // 2回目以降: 30日チェック
+        // 3回目以降: 30日チェック
         guard let lastChange = lastNicknameChangeAt else { return (true, 0) }
         let daysSinceChange = Calendar.current.dateComponents([.day], from: lastChange, to: Date()).day ?? 0
         if daysSinceChange >= 30 { return (true, 0) }
@@ -125,10 +125,10 @@ extension UserProfile {
     /// 国コード変更可否をチェック
     /// - Returns: (allowed: 変更可能か, remainingDays: 残り日数)
     func canChangeCountry() -> (allowed: Bool, remainingDays: Int) {
-        // 1回目は常に許可
-        if countryChangeCount < 1 { return (true, 0) }
+        // 1〜2回目は常に許可（初回設定＋1回の修正機会）
+        if countryChangeCount < 2 { return (true, 0) }
 
-        // 2回目以降: 30日チェック
+        // 3回目以降: 30日チェック
         guard let lastChange = lastCountryChangeAt else { return (true, 0) }
         let daysSinceChange = Calendar.current.dateComponents([.day], from: lastChange, to: Date()).day ?? 0
         if daysSinceChange >= 30 { return (true, 0) }

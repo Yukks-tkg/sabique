@@ -275,11 +275,14 @@ class CommunityManager: ObservableObject {
     // MARK: - インポート機能
 
     /// コミュニティプレイリストをマイプレイリストにインポート
+    /// - Parameters:
+    ///   - countDownload: 利用数にカウントするか（自分の投稿の場合はfalse）
     /// - Returns: (インポートした曲数, スキップされた曲数)
     func importPlaylist(
         communityPlaylist: CommunityPlaylist,
         modelContext: ModelContext,
-        isPremium: Bool
+        isPremium: Bool,
+        countDownload: Bool = true
     ) async throws -> (importedCount: Int, skippedCount: Int) {
         // 無料会員は最大3曲まで
         let maxTracks = isPremium ? communityPlaylist.tracks.count : FreeTierLimits.maxTracksPerPlaylist
@@ -297,10 +300,12 @@ class CommunityManager: ObservableObject {
             modelContext.insert(track)
         }
 
-        // ダウンロード数をインクリメント
-        await incrementDownloadCount(playlistId: communityPlaylist.id ?? "")
+        // 自分の投稿でない場合のみダウンロード数をインクリメント
+        if countDownload {
+            await incrementDownloadCount(playlistId: communityPlaylist.id ?? "")
+        }
 
-        print("✅ インポート成功: \(communityPlaylist.name) (\(tracksToImport.count)曲インポート, \(skippedCount)曲スキップ)")
+        print("✅ インポート成功: \(communityPlaylist.name) (\(tracksToImport.count)曲インポート, \(skippedCount)曲スキップ, カウント: \(countDownload))")
 
         return (tracksToImport.count, skippedCount)
     }

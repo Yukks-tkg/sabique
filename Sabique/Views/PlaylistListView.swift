@@ -334,21 +334,11 @@ struct PlaylistRow: View {
     }
     
     private var playlistPlaceholder: some View {
-        ZStack {
-            RoundedRectangle(cornerRadius: 8)
-                .fill(
-                    LinearGradient(
-                        colors: [.blue.opacity(0.3), .purple.opacity(0.3)],
-                        startPoint: .topLeading,
-                        endPoint: .bottomTrailing
-                    )
-                )
-                .frame(width: 50, height: 50)
-            
-            Image(systemName: "music.note.list")
-                .foregroundColor(.blue)
-                .font(.title3)
-        }
+        Image("AppIconImage")
+            .resizable()
+            .aspectRatio(contentMode: .fill)
+            .frame(width: 50, height: 50)
+            .cornerRadius(8)
     }
     
     private func loadFirstTrackArtwork() async {

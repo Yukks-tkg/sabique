@@ -9,6 +9,7 @@ import Foundation
 import FirebaseFirestore
 
 /// コミュニティプレイリスト（Firestore用）
+/// カスタムinit(from decoder:)は@DocumentIDの自動注入を妨げるため使用しない
 struct CommunityPlaylist: Identifiable, Codable {
     @DocumentID var id: String?
     var name: String
@@ -21,70 +22,12 @@ struct CommunityPlaylist: Identifiable, Codable {
     var songIds: [String]  // 検索用（曲IDのリスト）
     var likeCount: Int
     var downloadCount: Int
-    var viewCount: Int
+    var viewCount: Int?  // 古いドキュメントにはこのフィールドがない場合がある
     var createdAt: Date
 
-    enum CodingKeys: String, CodingKey {
-        case id
-        case name
-        case authorId
-        case authorName
-        case authorIsPremium
-        case authorCountryCode
-        case authorArtworkURL
-        case tracks
-        case songIds
-        case likeCount
-        case downloadCount
-        case viewCount
-        case createdAt
-    }
-
-    init(
-        id: String? = nil,
-        name: String,
-        authorId: String,
-        authorName: String? = nil,
-        authorIsPremium: Bool,
-        authorCountryCode: String? = nil,
-        authorArtworkURL: String? = nil,
-        tracks: [CommunityTrack],
-        songIds: [String],
-        likeCount: Int = 0,
-        downloadCount: Int = 0,
-        viewCount: Int = 0,
-        createdAt: Date
-    ) {
-        self.id = id
-        self.name = name
-        self.authorId = authorId
-        self.authorName = authorName
-        self.authorIsPremium = authorIsPremium
-        self.authorCountryCode = authorCountryCode
-        self.authorArtworkURL = authorArtworkURL
-        self.tracks = tracks
-        self.songIds = songIds
-        self.likeCount = likeCount
-        self.downloadCount = downloadCount
-        self.viewCount = viewCount
-        self.createdAt = createdAt
-    }
-
-    init(from decoder: Decoder) throws {
-        let container = try decoder.container(keyedBy: CodingKeys.self)
-        _id = try container.decodeIfPresent(DocumentID<String>.self, forKey: .id) ?? DocumentID(wrappedValue: nil)
-        name = try container.decode(String.self, forKey: .name)
-        authorId = try container.decode(String.self, forKey: .authorId)
-        authorName = try container.decodeIfPresent(String.self, forKey: .authorName)
-        authorIsPremium = try container.decode(Bool.self, forKey: .authorIsPremium)
-        authorCountryCode = try container.decodeIfPresent(String.self, forKey: .authorCountryCode)
-        authorArtworkURL = try container.decodeIfPresent(String.self, forKey: .authorArtworkURL)
-        tracks = try container.decode([CommunityTrack].self, forKey: .tracks)
-        songIds = try container.decode([String].self, forKey: .songIds)
-        likeCount = try container.decode(Int.self, forKey: .likeCount)
-        downloadCount = try container.decode(Int.self, forKey: .downloadCount)
-        viewCount = try container.decodeIfPresent(Int.self, forKey: .viewCount) ?? 0
-        createdAt = try container.decode(Date.self, forKey: .createdAt)
+    /// viewCountの安全なアクセス（nilの場合は0を返す）
+    var safeViewCount: Int {
+        viewCount ?? 0
     }
 }
 

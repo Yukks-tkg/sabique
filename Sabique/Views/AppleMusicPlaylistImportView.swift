@@ -12,13 +12,19 @@ import MusicKit
 struct AppleMusicPlaylistImportView: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(\.modelContext) private var modelContext
-    
+    @EnvironmentObject private var storeManager: StoreManager
+
     @State private var libraryPlaylists: [MusicKit.Playlist] = []
     @State private var isLoading = true
     @State private var errorMessage: String?
     @State private var selectedPlaylist: MusicKit.Playlist?
     @State private var isImporting = false
-    
+    @State private var importCancelled = false
+    @State private var importProgress: (current: Int, total: Int) = (0, 0)
+    @State private var showingImportResult = false
+    @State private var importResultMessage = ""
+    @State private var importedPlaylist: Playlist?
+
     let onImport: (Playlist) -> Void
     
     var body: some View {
@@ -96,10 +102,24 @@ struct AppleMusicPlaylistImportView: View {
                 if isImporting {
                     ZStack {
                         Color.black.opacity(0.3)
-                        VStack(spacing: 12) {
+                        VStack(spacing: 16) {
                             ProgressView()
                             Text(String(localized: "importing"))
                                 .font(.headline)
+                            if importProgress.total > 0 {
+                                Text("\(importProgress.current) / \(importProgress.total)")
+                                    .font(.subheadline)
+                                    .foregroundColor(.secondary)
+                            }
+                            Button(action: { importCancelled = true }) {
+                                Text(String(localized: "cancel"))
+                                    .font(.subheadline)
+                                    .foregroundColor(.red)
+                                    .padding(.horizontal, 24)
+                                    .padding(.vertical, 8)
+                                    .background(Color.white.opacity(0.1))
+                                    .cornerRadius(8)
+                            }
                         }
                         .padding(24)
                         .background(.regularMaterial)
@@ -108,9 +128,19 @@ struct AppleMusicPlaylistImportView: View {
                     .ignoresSafeArea()
                 }
             }
+            .alert(String(localized: "import_complete"), isPresented: $showingImportResult) {
+                Button(String(localized: "ok")) {
+                    if let playlist = importedPlaylist {
+                        onImport(playlist)
+                    }
+                    dismiss()
+                }
+            } message: {
+                Text(importResultMessage)
+            }
         }
     }
-    
+
     private func loadPlaylists() async {
         isLoading = true
         errorMessage = nil
@@ -145,27 +175,48 @@ struct AppleMusicPlaylistImportView: View {
     
     private func importPlaylist(_ musicPlaylist: MusicKit.Playlist) async {
         isImporting = true
-        
+        importCancelled = false
+        importProgress = (0, 0)
+
         do {
             // プレイリストの詳細（曲リスト）を取得
             let detailedPlaylist = try await musicPlaylist.with([.tracks])
-            
+
             guard let tracks = detailedPlaylist.tracks else {
                 isImporting = false
                 return
             }
-            
+
+            // 無料版は曲数制限
+            let maxTracks = storeManager.isPremium ? tracks.count : FreeTierLimits.maxTracksPerPlaylist
+            let tracksToImport = Array(tracks.prefix(maxTracks))
+            let skippedCount = max(0, tracks.count - maxTracks)
+
+            await MainActor.run {
+                importProgress = (0, tracksToImport.count)
+            }
+
             // 新しいプレイリストを作成
             let newPlaylist = Playlist(name: musicPlaylist.name, orderIndex: 0)
             modelContext.insert(newPlaylist)
-            
+
             // 曲をインポート
             var importIndex = 0
-            for track in tracks {
+            for track in tracksToImport {
+                // キャンセルチェック
+                if importCancelled {
+                    // インポート途中のプレイリストを削除
+                    modelContext.delete(newPlaylist)
+                    await MainActor.run {
+                        isImporting = false
+                    }
+                    return
+                }
+
                 // TrackタイトルでカタログからSongを検索して正しいIDを取得
                 var searchRequest = MusicCatalogSearchRequest(term: "\(track.title) \(track.artistName)", types: [Song.self])
                 searchRequest.limit = 1
-                
+
                 if let searchResponse = try? await searchRequest.response(),
                    let song = searchResponse.songs.first {
                     let trackInPlaylist = TrackInPlaylist(
@@ -178,12 +229,22 @@ struct AppleMusicPlaylistImportView: View {
                     modelContext.insert(trackInPlaylist)
                     importIndex += 1
                 }
+
+                await MainActor.run {
+                    importProgress = (importIndex, tracksToImport.count)
+                }
             }
-            
+
             await MainActor.run {
                 isImporting = false
-                onImport(newPlaylist)
-                dismiss()
+                importedPlaylist = newPlaylist
+                if skippedCount > 0 {
+                    importResultMessage = String(format: NSLocalizedString("import_limited_message", comment: ""), importIndex, skippedCount)
+                    showingImportResult = true
+                } else {
+                    onImport(newPlaylist)
+                    dismiss()
+                }
             }
         } catch {
             await MainActor.run {

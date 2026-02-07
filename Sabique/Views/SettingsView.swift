@@ -24,6 +24,7 @@ struct SettingsView: View {
     @State private var showingArtworkPicker = false
     @State private var showingSignInTest = false
     @State private var showingPublishTest = false
+    @State private var showingSignOutAlert = false
     @State private var showingDeleteAccountAlert = false
     @State private var isDeletingAccount = false
     @State private var deleteAccountError: String?
@@ -74,21 +75,23 @@ struct SettingsView: View {
                     if authManager.isSignedIn {
                         Section {
                             HStack {
-                                Label(String(localized: "linked_with_apple_id"), systemImage: "applelogo")
-                                    .font(.subheadline)
+                                Image(systemName: "applelogo")
+                                Text(String(localized: "linked_with_apple_id"))
+                                    .fontWeight(.medium)
                                 Spacer()
                                 Image(systemName: "checkmark.circle.fill")
                                     .foregroundColor(.green)
                             }
+                            .foregroundColor(.primary)
 
-                            Button(action: { authManager.signOut() }) {
+                            Button(action: { showingSignOutAlert = true }) {
                                 HStack {
                                     Image(systemName: "rectangle.portrait.and.arrow.right")
                                     Text(String(localized: "sign_out"))
                                         .fontWeight(.medium)
                                     Spacer()
                                 }
-                                .foregroundColor(.orange)
+                                .foregroundColor(.primary)
                             }
 
                             Button(action: { showingDeleteAccountAlert = true }) {
@@ -187,12 +190,13 @@ struct SettingsView: View {
                                             )
                                         )
                                     Text(String(localized: "upgrade_to_premium"))
+                                        .foregroundColor(.primary)
                                     Spacer()
                                     Image(systemName: "chevron.right")
                                         .foregroundColor(.secondary)
                                 }
                             }
-                            
+
                             Button(action: restorePurchases) {
                                 HStack {
                                     if isRestoring {
@@ -200,8 +204,10 @@ struct SettingsView: View {
                                             .frame(width: 20)
                                     } else {
                                         Image(systemName: "arrow.counterclockwise")
+                                            .foregroundColor(.primary)
                                     }
                                     Text(String(localized: "restore_purchases"))
+                                        .foregroundColor(.primary)
                                     Spacer()
                                 }
                             }
@@ -315,6 +321,7 @@ struct SettingsView: View {
                             Button(action: { showingArtworkPicker = true }) {
                                 HStack {
                                     Text(String(localized: "select_background_artwork"))
+                                        .foregroundColor(.primary)
                                     Spacer()
                                     Image(systemName: "chevron.right")
                                         .foregroundColor(.secondary)
@@ -332,8 +339,10 @@ struct SettingsView: View {
                                         .frame(width: 20)
                                 } else {
                                     Image(systemName: "arrow.down.doc")
+                                        .foregroundColor(.primary)
                                 }
                                 Text(String(localized: "backup_data"))
+                                    .foregroundColor(.primary)
                                 Spacer()
                                 if !isBackingUp {
                                     Text("\(playlists.count) \(String(localized: "backup_playlist_count"))")
@@ -351,8 +360,10 @@ struct SettingsView: View {
                                         .frame(width: 20)
                                 } else {
                                     Image(systemName: "arrow.up.doc")
+                                        .foregroundColor(.primary)
                                 }
                                 Text(String(localized: "restore_data"))
+                                    .foregroundColor(.primary)
                                 Spacer()
                             }
                         }
@@ -441,6 +452,14 @@ struct SettingsView: View {
             }
             .sheet(isPresented: $showingPublishTest) {
                 PublishPlaylistView()
+            }
+            .alert(String(localized: "sign_out_confirm"), isPresented: $showingSignOutAlert) {
+                Button(String(localized: "cancel"), role: .cancel) { }
+                Button(String(localized: "sign_out"), role: .destructive) {
+                    authManager.signOut()
+                }
+            } message: {
+                Text(String(localized: "sign_out_confirm_message"))
             }
             .alert(String(localized: "delete_account_confirm"), isPresented: $showingDeleteAccountAlert) {
                 Button(String(localized: "cancel"), role: .cancel) { }

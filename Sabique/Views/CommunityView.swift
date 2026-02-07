@@ -14,6 +14,7 @@ struct CommunityView: View {
     @State private var selectedFilter: SortOption = .popular
     @State private var showingPublish = false
     @AppStorage("customBackgroundArtworkURLString") private var customBackgroundArtworkURLString: String = ""
+    @State private var backgroundArtworkURL: URL?
     @State private var searchText = ""
     @State private var isSearching = false
 
@@ -24,7 +25,7 @@ struct CommunityView: View {
                 backgroundView
 
                 // オーバーレイ
-                if !customBackgroundArtworkURLString.isEmpty {
+                if backgroundArtworkURL != nil {
                     Color.black.opacity(0.25)
                         .ignoresSafeArea()
                 }
@@ -45,6 +46,12 @@ struct CommunityView: View {
             .task {
                 await loadAllPlaylists()
             }
+            .task(id: customBackgroundArtworkURLString) {
+                updateBackgroundURL()
+            }
+            .onAppear {
+                updateBackgroundURL()
+            }
             .refreshable {
                 await loadAllPlaylists()
             }
@@ -58,7 +65,7 @@ struct CommunityView: View {
 
     private var backgroundView: some View {
         GeometryReader { geometry in
-            if !customBackgroundArtworkURLString.isEmpty, let url = URL(string: customBackgroundArtworkURLString) {
+            if let url = backgroundArtworkURL {
                 AsyncImage(url: url) { image in
                     image
                         .resizable()
@@ -68,13 +75,24 @@ struct CommunityView: View {
                         .blur(radius: 30)
                         .opacity(0.6)
                 } placeholder: {
-                    Color(.systemGroupedBackground)
+                    Color.black
                 }
+                .id(url)
+                .transition(.opacity)
             } else {
-                Color(.systemGroupedBackground)
+                Color(.systemBackground)
             }
         }
         .ignoresSafeArea()
+        .animation(.easeInOut(duration: 0.5), value: backgroundArtworkURL)
+    }
+
+    private func updateBackgroundURL() {
+        if !customBackgroundArtworkURLString.isEmpty, let url = URL(string: customBackgroundArtworkURLString) {
+            backgroundArtworkURL = url
+        } else {
+            backgroundArtworkURL = nil
+        }
     }
 
     private var mainContent: some View {

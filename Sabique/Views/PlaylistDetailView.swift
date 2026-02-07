@@ -26,6 +26,11 @@ struct PlaylistDetailView: View {
     @State private var showingRenameAlert = false
     @State private var newPlaylistName = ""
 
+    // プレビュー再生
+    @State private var previewingTrackId: UUID?
+    @State private var isLoadingPreview = false
+    @State private var previewTimer: Timer?
+
     // 投稿関連
     @State private var showingPublishConfirm = false
     @State private var showingSignInSheet = false
@@ -93,7 +98,16 @@ struct PlaylistDetailView: View {
                     previousTrackCount = playlist.tracks.count
                 }
         }
-        .sheet(item: $selectedTrack) { track in
+        .onDisappear {
+            // 画面を離れたらプレビュー再生を停止
+            if previewingTrackId != nil {
+                stopPreview()
+            }
+        }
+        .sheet(item: $selectedTrack, onDismiss: {
+            // ハイライト設定画面から戻ったら再生を停止
+            SystemMusicPlayer.shared.stop()
+        }) { track in
             ChorusEditView(track: track)
         }
         .sheet(isPresented: $showingSignInSheet) {
@@ -223,15 +237,25 @@ struct PlaylistDetailView: View {
 
     private func trackRowView(for track: TrackInPlaylist) -> some View {
         let isCurrentlyPlaying = playerManager.isPlaying && playerManager.currentTrack?.id == track.id
-        return TrackRow(track: track, isPlaying: isCurrentlyPlaying)
+        let isPreviewing = previewingTrackId == track.id
+        let isHighlighted = isCurrentlyPlaying || isPreviewing
+        return TrackRow(
+            track: track,
+            isPlaying: isCurrentlyPlaying || isPreviewing,
+            onArtworkTap: { previewTrack(track) }
+        )
             .padding(.horizontal, 8)
             .padding(.vertical, 4)
             .background(
                 RoundedRectangle(cornerRadius: 12)
-                    .fill(isCurrentlyPlaying ? Color.white.opacity(0.2) : Color.clear)
+                    .fill(isHighlighted ? Color.white.opacity(0.2) : Color.clear)
             )
             .contentShape(Rectangle())
             .onTapGesture {
+                // プレビュー再生中なら停止
+                if previewingTrackId != nil {
+                    stopPreview()
+                }
                 if playerManager.isPlaying {
                     playerManager.stop()
                 }
@@ -257,6 +281,79 @@ struct PlaylistDetailView: View {
         .listRowInsets(EdgeInsets(top: 8, leading: 16, bottom: 8, trailing: 16))
         .listRowBackground(Color.clear)
         .id("addButton")
+    }
+
+    private func previewTrack(_ track: TrackInPlaylist) {
+        // 同じ曲をタップしたら停止
+        if previewingTrackId == track.id {
+            stopPreview()
+            return
+        }
+
+        // ChorusPlayerManagerが再生中なら停止
+        if playerManager.isPlaying {
+            playerManager.stop()
+        }
+
+        // 前回のプレビューを停止
+        stopPreview()
+
+        previewingTrackId = track.id
+        isLoadingPreview = true
+
+        Task {
+            do {
+                let request = MusicCatalogResourceRequest<Song>(
+                    matching: \.id,
+                    equalTo: MusicItemID(track.appleMusicSongId)
+                )
+                let response = try await request.response()
+
+                guard let song = response.items.first else {
+                    await MainActor.run {
+                        isLoadingPreview = false
+                        previewingTrackId = nil
+                    }
+                    return
+                }
+
+                let player = ApplicationMusicPlayer.shared
+                player.queue = [song]
+                try await player.play()
+
+                // ハイライト区間があればシーク
+                if let chorusStart = track.chorusStartSeconds {
+                    player.playbackTime = chorusStart
+                }
+
+                await MainActor.run {
+                    isLoadingPreview = false
+
+                    // 終了位置が設定されている場合はタイマーで監視
+                    if let chorusEnd = track.chorusEndSeconds {
+                        previewTimer = Timer.scheduledTimer(withTimeInterval: 0.1, repeats: true) { _ in
+                            let currentTime = ApplicationMusicPlayer.shared.playbackTime
+                            if currentTime >= chorusEnd {
+                                stopPreview()
+                            }
+                        }
+                    }
+                }
+            } catch {
+                print("プレビュー再生エラー: \(error)")
+                await MainActor.run {
+                    isLoadingPreview = false
+                    previewingTrackId = nil
+                }
+            }
+        }
+    }
+
+    private func stopPreview() {
+        previewTimer?.invalidate()
+        previewTimer = nil
+        ApplicationMusicPlayer.shared.stop()
+        previewingTrackId = nil
     }
 
     private var sectionHeader: some View {
@@ -350,8 +447,13 @@ struct PlaylistDetailView: View {
         .background(Color.black.opacity(0.8))
     }
 
+    /// ハイライト再生またはプレビュー再生のいずれかが再生中か
+    private var isAnyPlaying: Bool {
+        playerManager.isPlaying || previewingTrackId != nil
+    }
+
     private var previousButton: some View {
-        Button(action: { playerManager.previous() }) {
+        Button(action: { handlePrevious() }) {
             Image(systemName: "backward.fill")
                 .font(.title2)
                 .foregroundColor(.white)
@@ -359,16 +461,16 @@ struct PlaylistDetailView: View {
                 .background(Color.white.opacity(0.2))
                 .cornerRadius(14)
         }
-        .disabled(!playerManager.isPlaying)
-        .opacity(playerManager.isPlaying ? 1.0 : 0.4)
+        .disabled(!isAnyPlaying)
+        .opacity(isAnyPlaying ? 1.0 : 0.4)
     }
 
     private var playStopButton: some View {
-        Button(action: startPlayback) {
+        Button(action: handlePlayStop) {
             HStack(spacing: 12) {
-                Image(systemName: playerManager.isPlaying ? "stop.fill" : "play.fill")
+                Image(systemName: isAnyPlaying ? "stop.fill" : "play.fill")
                     .font(.title3)
-                Text(playerManager.isPlaying ? String(localized: "stop") : String(localized: "play"))
+                Text(isAnyPlaying ? String(localized: "stop") : String(localized: "play"))
                     .font(.headline)
                     .bold()
             }
@@ -391,7 +493,7 @@ struct PlaylistDetailView: View {
     }
 
     private var nextButton: some View {
-        Button(action: { playerManager.next() }) {
+        Button(action: { handleNext() }) {
             Image(systemName: "forward.fill")
                 .font(.title2)
                 .foregroundColor(.white)
@@ -399,8 +501,8 @@ struct PlaylistDetailView: View {
                 .background(Color.white.opacity(0.2))
                 .cornerRadius(14)
         }
-        .disabled(!playerManager.isPlaying)
-        .opacity(playerManager.isPlaying ? 1.0 : 0.4)
+        .disabled(!isAnyPlaying)
+        .opacity(isAnyPlaying ? 1.0 : 0.4)
     }
 
     // MARK: - Actions
@@ -479,7 +581,13 @@ struct PlaylistDetailView: View {
         }
     }
 
-    private func startPlayback() {
+    private func handlePlayStop() {
+        // プレビュー再生中なら停止
+        if previewingTrackId != nil {
+            stopPreview()
+            return
+        }
+
         if playerManager.isPlaying {
             playerManager.stop()
         } else {
@@ -487,6 +595,32 @@ struct PlaylistDetailView: View {
             playerManager.play { [playlist] in
                 playlist.sortedTracks
             }
+        }
+    }
+
+    private func handlePrevious() {
+        if previewingTrackId != nil {
+            // プレビュー再生中: 前のトラックに移動
+            let sortedTracks = playlist.sortedTracks
+            guard let currentIndex = sortedTracks.firstIndex(where: { $0.id == previewingTrackId }) else { return }
+            let previousIndex = currentIndex - 1
+            guard previousIndex >= 0 else { return }
+            previewTrack(sortedTracks[previousIndex])
+        } else {
+            playerManager.previous()
+        }
+    }
+
+    private func handleNext() {
+        if previewingTrackId != nil {
+            // プレビュー再生中: 次のトラックに移動
+            let sortedTracks = playlist.sortedTracks
+            guard let currentIndex = sortedTracks.firstIndex(where: { $0.id == previewingTrackId }) else { return }
+            let nextIndex = currentIndex + 1
+            guard nextIndex < sortedTracks.count else { return }
+            previewTrack(sortedTracks[nextIndex])
+        } else {
+            playerManager.next()
         }
     }
     
@@ -533,52 +667,58 @@ struct PlaylistDetailView: View {
 struct TrackRow: View {
     let track: TrackInPlaylist
     var isPlaying: Bool = false
+    var onArtworkTap: (() -> Void)?
     @State private var artworkURL: URL?
-    
+
     var body: some View {
         HStack(spacing: 12) {
-            // アートワーク
-            if let url = artworkURL {
-                AsyncImage(url: url) { image in
-                    image
-                        .resizable()
-                        .aspectRatio(contentMode: .fill)
-                } placeholder: {
+            // アートワーク（タップでプレビュー再生）
+            Group {
+                if let url = artworkURL {
+                    AsyncImage(url: url) { image in
+                        image
+                            .resizable()
+                            .aspectRatio(contentMode: .fill)
+                    } placeholder: {
+                        RoundedRectangle(cornerRadius: 6)
+                            .fill(Color.gray.opacity(0.3))
+                    }
+                    .frame(width: 50, height: 50)
+                    .cornerRadius(6)
+                } else {
                     RoundedRectangle(cornerRadius: 6)
                         .fill(Color.gray.opacity(0.3))
+                        .frame(width: 50, height: 50)
+                        .overlay(
+                            Image(systemName: "music.note")
+                                .foregroundColor(.gray)
+                        )
                 }
-                .frame(width: 50, height: 50)
-                .cornerRadius(6)
-            } else {
-                RoundedRectangle(cornerRadius: 6)
-                    .fill(Color.gray.opacity(0.3))
-                    .frame(width: 50, height: 50)
-                    .overlay(
-                        Image(systemName: "music.note")
-                            .foregroundColor(.gray)
-                    )
             }
-            
+            .onTapGesture {
+                onArtworkTap?()
+            }
+
             VStack(alignment: .leading, spacing: 4) {
                 Text(track.title)
                     .font(.headline)
                     .lineLimit(1)
-                
+
                 Text(track.artist)
                     .font(.subheadline)
                     .foregroundColor(.secondary)
                     .lineLimit(1)
             }
-            
+
             Spacer()
-            
+
             if track.hasChorusSettings {
                 Text("\(track.chorusStartFormatted) - \(track.chorusEndFormatted)")
                     .font(.caption)
                     .monospacedDigit()
                     .foregroundColor(.secondary)
             }
-            
+
             Image(systemName: "chevron.right")
                 .font(.caption)
                 .foregroundColor(.secondary)

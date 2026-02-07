@@ -31,7 +31,6 @@ struct CommunityPlaylistDetailView: View {
     @State private var successMessage = ""
     @State private var playingTrackId: String?
     @State private var isLoadingTrack = false
-    @State private var showingAlreadyInMyList = false
     @State private var showingSignInRequired = false
     @State private var trackArtworks: [String: URL] = [:]  // appleMusicId -> artworkURL
 
@@ -124,11 +123,6 @@ struct CommunityPlaylistDetailView: View {
             }
         } message: {
             Text(String(localized: "delete_highlight_list_message"))
-        }
-        .alert(String(localized: "already_in_my_list"), isPresented: $showingAlreadyInMyList) {
-            Button(String(localized: "ok"), role: .cancel) {}
-        } message: {
-            Text(String(localized: "already_in_my_list_message"))
         }
         .alert(String(localized: "sign_in_required"), isPresented: $showingSignInRequired) {
             Button(String(localized: "ok"), role: .cancel) {}
@@ -232,9 +226,11 @@ struct CommunityPlaylistDetailView: View {
                     .font(.title2)
                     .foregroundColor(hasLiked ? .pink : .white)
                     .frame(width: 50, height: 50)
+                    .contentShape(Rectangle())
                     .background(Color.white.opacity(0.1))
                     .cornerRadius(12)
             }
+            .buttonStyle(.borderless)
         }
     }
 
@@ -375,27 +371,27 @@ struct CommunityPlaylistDetailView: View {
     }
 
     private func importPlaylist() {
-        // 自分の投稿の場合は「すでにマイリストにあります」を表示
-        if isOwnPlaylist {
-            showingAlreadyInMyList = true
-            return
-        }
-
         // サインインチェック
-        guard authManager.currentUser != nil else {
+        guard authManager.isSignedIn else {
             showingSignInRequired = true
             return
         }
 
-        // 即座にUI更新（楽観的更新）
-        currentDownloadCount += 1
+        // 自分の投稿は利用数にカウントしない
+        let shouldCountDownload = !isOwnPlaylist
+
+        // 他人の投稿の場合のみ即座にUI更新（楽観的更新）
+        if shouldCountDownload {
+            currentDownloadCount += 1
+        }
 
         Task {
             do {
                 let result = try await communityManager.importPlaylist(
                     communityPlaylist: playlist,
                     modelContext: modelContext,
-                    isPremium: storeManager.isPremium
+                    isPremium: storeManager.isPremium,
+                    countDownload: shouldCountDownload
                 )
                 await MainActor.run {
                     if result.skippedCount > 0 {
@@ -409,7 +405,9 @@ struct CommunityPlaylistDetailView: View {
             } catch {
                 // エラーが発生したら利用数を戻す
                 await MainActor.run {
-                    currentDownloadCount -= 1
+                    if shouldCountDownload {
+                        currentDownloadCount -= 1
+                    }
                     errorMessage = error.localizedDescription
                     showingImportError = true
                 }
@@ -418,14 +416,27 @@ struct CommunityPlaylistDetailView: View {
     }
 
     private func toggleLike() {
+        print("🩷 toggleLike呼び出し: isSignedIn=\(authManager.isSignedIn), hasLiked=\(hasLiked), playlistId=\(playlist.id ?? "nil")")
+
         // サインインチェック
-        guard authManager.currentUser != nil else {
+        guard authManager.isSignedIn else {
+            print("🩷 サインインしていないためモーダル表示")
             showingSignInRequired = true
             return
         }
 
         // まだいいねしていない場合のみ
-        guard !hasLiked, let playlistId = playlist.id else { return }
+        guard !hasLiked else {
+            print("🩷 すでにいいね済み")
+            return
+        }
+
+        guard let playlistId = playlist.id else {
+            print("🩷 playlistIdがnilのためスキップ")
+            return
+        }
+
+        print("🩷 いいね実行: playlistId=\(playlistId)")
 
         // 即座にUI更新（楽観的更新）
         hasLiked = true

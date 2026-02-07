@@ -29,6 +29,7 @@ struct ProfileView: View {
     @State private var totalViews: Int = 0
     @State private var myPublishedPlaylists: [CommunityPlaylist] = []
     @AppStorage("customBackgroundArtworkURLString") private var customBackgroundArtworkURLString: String = ""
+    @State private var backgroundArtworkURL: URL?
 
     private let maxNicknameLength = 10
 
@@ -39,7 +40,7 @@ struct ProfileView: View {
                 backgroundView
 
                 // オーバーレイ
-                if !customBackgroundArtworkURLString.isEmpty {
+                if backgroundArtworkURL != nil {
                     Color.black.opacity(0.25)
                         .ignoresSafeArea()
                 }
@@ -51,6 +52,12 @@ struct ProfileView: View {
                 }
             }
             .navigationBarTitleDisplayMode(.inline)
+            .task(id: customBackgroundArtworkURLString) {
+                updateBackgroundURL()
+            }
+            .onAppear {
+                updateBackgroundURL()
+            }
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
                     Button(action: { showingSettings = true }) {
@@ -220,7 +227,7 @@ struct ProfileView: View {
 
     private var backgroundView: some View {
         GeometryReader { geometry in
-            if !customBackgroundArtworkURLString.isEmpty, let url = URL(string: customBackgroundArtworkURLString) {
+            if let url = backgroundArtworkURL {
                 AsyncImage(url: url) { image in
                     image
                         .resizable()
@@ -230,13 +237,16 @@ struct ProfileView: View {
                         .blur(radius: 30)
                         .opacity(0.6)
                 } placeholder: {
-                    Color(.systemGroupedBackground)
+                    Color.black
                 }
+                .id(url)
+                .transition(.opacity)
             } else {
-                Color(.systemGroupedBackground)
+                Color(.systemBackground)
             }
         }
         .ignoresSafeArea()
+        .animation(.easeInOut(duration: 0.5), value: backgroundArtworkURL)
     }
 
 
@@ -421,7 +431,7 @@ struct MyPublishedPlaylistCard: View {
                         .font(.caption)
                         .foregroundColor(.blue)
 
-                    Label("\(playlist.viewCount)", systemImage: "eye.fill")
+                    Label("\(playlist.safeViewCount)", systemImage: "eye.fill")
                         .font(.caption)
                         .foregroundColor(.teal)
                 }
@@ -686,6 +696,14 @@ extension ProfileView {
         }
         return emoji
     }
+
+    func updateBackgroundURL() {
+        if !customBackgroundArtworkURLString.isEmpty, let url = URL(string: customBackgroundArtworkURLString) {
+            backgroundArtworkURL = url
+        } else {
+            backgroundArtworkURL = nil
+        }
+    }
 }
 
 // MARK: - ProfileEditSheet
@@ -833,6 +851,7 @@ struct ProfileEditSheet: View {
     private var nicknameSection: some View {
         let cooldownResult = userProfile?.canChangeNickname() ?? (allowed: true, remainingDays: 0)
         let isNicknameLocked = !cooldownResult.allowed
+        let changeCount = userProfile?.nicknameChangeCount ?? 0
 
         return VStack(alignment: .leading, spacing: 12) {
             Text(String(localized: "nickname"))
@@ -865,6 +884,11 @@ struct ProfileEditSheet: View {
                     .font(.caption)
                     .foregroundColor(.secondary)
                     .padding(.horizontal, 4)
+            } else {
+                Text(changeHintText(changeCount: changeCount))
+                    .font(.caption2)
+                    .foregroundColor(.secondary)
+                    .padding(.horizontal, 4)
             }
         }
     }
@@ -872,6 +896,7 @@ struct ProfileEditSheet: View {
     private var countrySection: some View {
         let cooldownResult = userProfile?.canChangeCountry() ?? (allowed: true, remainingDays: 0)
         let isCountryLocked = !cooldownResult.allowed
+        let changeCount = userProfile?.countryChangeCount ?? 0
 
         return VStack(alignment: .leading, spacing: 12) {
             Text(String(localized: "country_region"))
@@ -907,6 +932,11 @@ struct ProfileEditSheet: View {
             if isCountryLocked {
                 Text(String(format: NSLocalizedString("profile_change_cooldown", comment: ""), cooldownResult.remainingDays))
                     .font(.caption)
+                    .foregroundColor(.secondary)
+                    .padding(.horizontal, 4)
+            } else {
+                Text(changeHintText(changeCount: changeCount))
+                    .font(.caption2)
                     .foregroundColor(.secondary)
                     .padding(.horizontal, 4)
             }
@@ -1001,6 +1031,15 @@ struct ProfileEditSheet: View {
             }
         }
         return emoji
+    }
+
+    private func changeHintText(changeCount: Int) -> String {
+        let freeRemaining = max(0, 2 - changeCount)
+        if freeRemaining > 0 {
+            return String(format: NSLocalizedString("profile_change_hint_free", comment: ""), freeRemaining)
+        } else {
+            return NSLocalizedString("profile_change_hint_cooldown", comment: "")
+        }
     }
 }
 
