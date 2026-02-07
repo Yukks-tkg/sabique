@@ -32,19 +32,12 @@ struct PaywallView: View {
                     VStack(spacing: 24) {
                         // ヘッダー
                         VStack(spacing: 16) {
-                            Image(systemName: "star.circle.fill")
-                                .font(.system(size: 80))
-                                .foregroundStyle(
-                                    LinearGradient(
-                                        colors: [
-                                            Color(red: 1.0, green: 0.85, blue: 0.3),
-                                            Color(red: 1.0, green: 0.55, blue: 0.3),
-                                            Color(red: 0.95, green: 0.35, blue: 0.35)
-                                        ],
-                                        startPoint: .topLeading,
-                                        endPoint: .bottomTrailing
-                                    )
-                                )
+                            Image("AppIconImage")
+                                .resizable()
+                                .aspectRatio(contentMode: .fit)
+                                .frame(width: 100, height: 100)
+                                .clipShape(RoundedRectangle(cornerRadius: 22))
+                                .shadow(color: .black.opacity(0.3), radius: 10, x: 0, y: 5)
                             
                             Text(String(localized: "paywall_title"))
                                 .font(.largeTitle)
@@ -80,7 +73,7 @@ struct PaywallView: View {
                         }
                         .padding(.horizontal)
                         
-                        Spacer(minLength: 12)
+                        Spacer(minLength: 2)
                         
                         // 購入ボタン
                         VStack(spacing: 12) {
