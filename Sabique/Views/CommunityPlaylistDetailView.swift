@@ -32,6 +32,8 @@ struct CommunityPlaylistDetailView: View {
     @State private var playingTrackId: String?
     @State private var isLoadingTrack = false
     @State private var showingSignInRequired = false
+    @State private var showingBlockConfirm = false
+    @State private var showingBlockComplete = false
     @State private var trackArtworks: [String: URL] = [:]  // appleMusicId -> artworkURL
 
     init(playlist: CommunityPlaylist) {
@@ -93,9 +95,13 @@ struct CommunityPlaylistDetailView: View {
                             Label(String(localized: "delete"), systemImage: "trash")
                         }
                     } else {
-                        // 他人の投稿なら通報ボタンを表示
+                        // 他人の投稿なら通報・ブロックボタンを表示
                         Button(action: { showingReport = true }) {
                             Label(String(localized: "report_inappropriate"), systemImage: "exclamationmark.triangle")
+                        }
+
+                        Button(role: .destructive, action: { showingBlockConfirm = true }) {
+                            Label(String(localized: "block_user"), systemImage: "hand.raised")
                         }
                     }
                 } label: {
@@ -128,6 +134,22 @@ struct CommunityPlaylistDetailView: View {
             Button(String(localized: "ok"), role: .cancel) {}
         } message: {
             Text(String(localized: "sign_in_required_message"))
+        }
+        .alert(String(localized: "block_user_confirm"), isPresented: $showingBlockConfirm) {
+            Button(String(localized: "cancel"), role: .cancel) { }
+            Button(String(localized: "block"), role: .destructive) {
+                BlockManager.shared.blockUser(userId: playlist.authorId)
+                showingBlockComplete = true
+            }
+        } message: {
+            Text(String(localized: "block_user_confirm_message"))
+        }
+        .alert(String(localized: "user_blocked"), isPresented: $showingBlockComplete) {
+            Button(String(localized: "ok"), role: .cancel) {
+                dismiss()
+            }
+        } message: {
+            Text(String(localized: "user_blocked_message"))
         }
         .onDisappear {
             // 画面を離れたら再生を停止

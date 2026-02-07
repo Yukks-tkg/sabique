@@ -25,6 +25,7 @@ struct SettingsView: View {
     @State private var showingSignInTest = false
     @State private var showingPublishTest = false
     @State private var showingSignOutAlert = false
+    @State private var showingUnblockAllAlert = false
     @State private var showingDeleteAccountAlert = false
     @State private var isDeletingAccount = false
     @State private var deleteAccountError: String?
@@ -146,6 +147,37 @@ struct SettingsView: View {
                             Text(String(localized: "sign_in_benefits"))
                                 .font(.caption)
                         }
+                    }
+
+                    // ブロック管理セクション
+                    Section {
+                        if BlockManager.shared.blockedCount() > 0 {
+                            HStack {
+                                Image(systemName: "hand.raised")
+                                Text(String(format: NSLocalizedString("blocked_users_count", comment: ""), BlockManager.shared.blockedCount()))
+                                Spacer()
+                            }
+                            .foregroundColor(.secondary)
+
+                            Button(action: { showingUnblockAllAlert = true }) {
+                                HStack {
+                                    Image(systemName: "arrow.uturn.backward")
+                                    Text(String(localized: "unblock_all"))
+                                        .fontWeight(.medium)
+                                    Spacer()
+                                }
+                                .foregroundColor(.primary)
+                            }
+                        } else {
+                            HStack {
+                                Image(systemName: "hand.raised")
+                                Text(String(localized: "no_blocked_users"))
+                                Spacer()
+                            }
+                            .foregroundColor(.secondary)
+                        }
+                    } header: {
+                        Text(String(localized: "blocked_users"))
                     }
 
                     // プレミアムセクション
@@ -381,6 +413,20 @@ struct SettingsView: View {
                             .foregroundColor(.secondary)
                     }
                     
+                    Section(String(localized: "support")) {
+                        Link(destination: URL(string: "mailto:y.takagi.jp@outlook.jp")!) {
+                            HStack {
+                                Image(systemName: "envelope")
+                                Text(String(localized: "contact_us"))
+                                    .foregroundColor(.primary)
+                                Spacer()
+                                Image(systemName: "arrow.up.right")
+                                    .font(.caption)
+                                    .foregroundColor(.secondary)
+                            }
+                        }
+                    }
+
                     Section(String(localized: "legal_info")) {
                         Link(destination: URL(string: "https://immense-engineer-7f8.notion.site/Privacy-Policy-Sabique-2ed0dee3bb098077b979d500914ffbba")!) {
                             HStack {
@@ -452,6 +498,14 @@ struct SettingsView: View {
             }
             .sheet(isPresented: $showingPublishTest) {
                 PublishPlaylistView()
+            }
+            .alert(String(localized: "unblock_all_confirm"), isPresented: $showingUnblockAllAlert) {
+                Button(String(localized: "cancel"), role: .cancel) { }
+                Button(String(localized: "unblock_all"), role: .destructive) {
+                    BlockManager.shared.clearAllBlocks()
+                }
+            } message: {
+                Text(String(localized: "unblock_all_confirm_message"))
             }
             .alert(String(localized: "sign_out_confirm"), isPresented: $showingSignOutAlert) {
                 Button(String(localized: "cancel"), role: .cancel) { }

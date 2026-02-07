@@ -6,14 +6,15 @@
 //
 
 import Foundation
+import FirebaseFirestore
 
 struct PlaylistValidator {
     // 文字数制限
     static let minNameLength = 3
     static let maxNameLength = 50
 
-    // NGワード
-    static let ngWords = [
+    // フォールバック用NGワード（Firestoreから取得できない場合に使用）
+    static let fallbackNGWords = [
         "スパム",
         "宣伝",
         "広告",
@@ -26,6 +27,30 @@ struct PlaylistValidator {
         "Twitter",
         "Discord"
     ]
+
+    // リモートから取得したNGワードのキャッシュ
+    private static var cachedNGWords: [String]?
+
+    // 有効なNGワードリスト（キャッシュ優先、なければフォールバック）
+    static var effectiveNGWords: [String] {
+        cachedNGWords ?? fallbackNGWords
+    }
+
+    /// FirestoreからNGワードリストを取得してキャッシュ
+    static func fetchNGWords() async {
+        do {
+            let db = Firestore.firestore()
+            let document = try await db.collection("config").document("ngWords").getDocument()
+            if let words = document.data()?["words"] as? [String], !words.isEmpty {
+                cachedNGWords = words
+                print("✅ NGワードリスト取得成功: \(words.count)件")
+            } else {
+                print("⚠️ NGワードドキュメントが空またはフォーマット不正。フォールバックを使用")
+            }
+        } catch {
+            print("❌ NGワード取得失敗（フォールバック使用）: \(error)")
+        }
+    }
 
     /// プレイリスト名をバリデーション
     static func validate(playlistName: String) -> ValidationResult {
@@ -43,13 +68,27 @@ struct PlaylistValidator {
 
         // NGワードチェック
         let lowercasedName = trimmedName.lowercased()
-        for word in ngWords {
+        for word in effectiveNGWords {
             if lowercasedName.contains(word.lowercased()) {
                 return .failure("使用できない単語が含まれています: \(word)")
             }
         }
 
         return .success(trimmedName)
+    }
+
+    /// ニックネームのNGワードチェック
+    static func validateNickname(_ text: String) -> ValidationResult {
+        let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
+
+        let lowercased = trimmed.lowercased()
+        for word in effectiveNGWords {
+            if lowercased.contains(word.lowercased()) {
+                return .failure("使用できない単語が含まれています")
+            }
+        }
+
+        return .success(trimmed)
     }
 }
 

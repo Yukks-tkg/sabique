@@ -410,6 +410,12 @@ class CommunityManager: ObservableObject {
             throw CommunityError.validationFailed("ニックネームは10文字以内にしてください")
         }
 
+        // NGワードチェック
+        let ngResult = PlaylistValidator.validateNickname(trimmedNickname)
+        guard ngResult.isValid else {
+            throw CommunityError.validationFailed(ngResult.errorMessage ?? "不正な入力です")
+        }
+
         // 不正な文字のチェック（制御文字やゼロ幅文字など）
         let allowedCharacterSet = CharacterSet.alphanumerics
             .union(.punctuationCharacters)

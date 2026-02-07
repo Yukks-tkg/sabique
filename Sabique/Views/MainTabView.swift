@@ -35,6 +35,9 @@ struct MainTabView: View {
                 .tag(2)
         }
         .preferredColorScheme(.dark)
+        .task {
+            await PlaylistValidator.fetchNGWords()
+        }
     }
 }
 

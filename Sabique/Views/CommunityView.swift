@@ -159,9 +159,10 @@ struct CommunityView: View {
     }
 
     private func playlistListView(for playlists: [CommunityPlaylist]) -> some View {
-        ScrollView {
+        let filtered = playlists.filter { !BlockManager.shared.isBlocked(userId: $0.authorId) }
+        return ScrollView {
             LazyVStack(spacing: 12) {
-                ForEach(playlists) { playlist in
+                ForEach(filtered) { playlist in
                     NavigationLink(destination: CommunityPlaylistDetailView(playlist: playlist)) {
                         CommunityPlaylistCard(playlist: playlist)
                     }
@@ -250,9 +251,10 @@ struct CommunityView: View {
     }
 
     private var playlistList: some View {
-        ScrollView {
+        let filtered = communityManager.playlists.filter { !BlockManager.shared.isBlocked(userId: $0.authorId) }
+        return ScrollView {
             LazyVStack(spacing: 12) {
-                ForEach(communityManager.playlists) { playlist in
+                ForEach(filtered) { playlist in
                     NavigationLink(destination: CommunityPlaylistDetailView(playlist: playlist)) {
                         CommunityPlaylistCard(playlist: playlist)
                     }
