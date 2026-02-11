@@ -557,11 +557,17 @@ struct PlaylistDetailView: View {
                 // ユーザープロフィールを取得
                 let userProfile = try await communityManager.getUserProfile(userId: userId)
 
-                // 投稿
+                // デバッグログ
+                print("🔍 PlaylistDetailView投稿時のプロフィール情報:")
+                print("  - userId: \(userId)")
+                print("  - nickname: \(userProfile.nickname ?? "nil")")
+                print("  - displayName: \(userProfile.displayName ?? "nil")")
+
+                // 投稿（nicknameを使用）
                 try await communityManager.publishPlaylist(
                     playlist: playlist,
                     authorId: userId,
-                    authorName: userProfile.displayName,
+                    authorName: userProfile.nickname,
                     authorIsPremium: storeManager.isPremium,
                     authorCountryCode: userProfile.countryCode,
                     authorArtworkURL: userProfile.profileArtworkURL

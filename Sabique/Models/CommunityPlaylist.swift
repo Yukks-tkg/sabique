@@ -25,6 +25,22 @@ struct CommunityPlaylist: Identifiable, Codable {
     var viewCount: Int?  // 古いドキュメントにはこのフィールドがない場合がある
     var createdAt: Date
 
+    enum CodingKeys: String, CodingKey {
+        case id
+        case name
+        case authorId
+        case authorName
+        case authorIsPremium
+        case authorCountryCode
+        case authorArtworkURL
+        case tracks
+        case songIds
+        case likeCount
+        case downloadCount
+        case viewCount
+        case createdAt
+    }
+
     /// viewCountの安全なアクセス（nilの場合は0を返す）
     var safeViewCount: Int {
         viewCount ?? 0

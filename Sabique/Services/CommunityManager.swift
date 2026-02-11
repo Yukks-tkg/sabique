@@ -27,6 +27,10 @@ class CommunityManager: ObservableObject {
         let userDoc = try await db.collection("users").document(userId).getDocument()
 
         if let profile = try? userDoc.data(as: UserProfile.self) {
+            print("🔍 プロフィール取得成功:")
+            print("  - userId: \(userId)")
+            print("  - nickname: \(profile.nickname ?? "nil")")
+            print("  - displayName: \(profile.displayName ?? "nil")")
             return profile
         } else {
             // プロフィールが存在しない場合は作成
@@ -100,9 +104,19 @@ class CommunityManager: ObservableObject {
             authorArtworkURL: authorArtworkURL
         )
 
+        // デバッグログ：Firestore保存直前のデータ
+        print("🔍 Firestore保存直前のCommunityPlaylist:")
+        print("  - name: \(communityPlaylist.name)")
+        print("  - authorId: \(communityPlaylist.authorId)")
+        print("  - authorName: \(communityPlaylist.authorName ?? "nil")")
+        print("  - authorIsPremium: \(communityPlaylist.authorIsPremium)")
+        print("  - authorCountryCode: \(communityPlaylist.authorCountryCode ?? "nil")")
+        print("  - tracks count: \(communityPlaylist.tracks.count)")
+
         do {
             // プレイリストを投稿
-            _ = try db.collection("communityPlaylists").addDocument(from: communityPlaylist)
+            let docRef = try db.collection("communityPlaylists").addDocument(from: communityPlaylist)
+            print("✅ Firestore保存成功: documentID=\(docRef.documentID)")
 
             // 投稿カウントを更新
             let currentMonth = UserProfile.getCurrentYearMonth()
@@ -434,12 +448,16 @@ class CommunityManager: ObservableObject {
             throw CommunityError.cooldownActive(remainingDays: remainingDays)
         }
 
+        print("🔍 ニックネーム更新開始:")
+        print("  - userId: \(userId)")
+        print("  - nickname: \(trimmedNickname)")
+
         try await db.collection("users").document(userId).updateData([
             "nickname": trimmedNickname,
             "nicknameChangeCount": FieldValue.increment(Int64(1)),
             "lastNicknameChangeAt": Timestamp(date: Date())
         ])
-        print("✅ ニックネーム更新成功")
+        print("✅ ニックネーム更新成功: \(trimmedNickname)")
     }
 
     /// プロフィールアートワークを更新

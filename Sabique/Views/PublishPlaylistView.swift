@@ -218,6 +218,13 @@ struct PublishPlaylistView: View {
                 let userProfile = try await communityManager.getUserProfile(userId: userId)
                 let authorName = userProfile.nickname ?? authManager.currentUser?.displayName
 
+                // デバッグログ
+                print("🔍 投稿時のプロフィール情報:")
+                print("  - userId: \(userId)")
+                print("  - nickname: \(userProfile.nickname ?? "nil")")
+                print("  - displayName: \(authManager.currentUser?.displayName ?? "nil")")
+                print("  - authorName（投稿に使用）: \(authorName ?? "nil")")
+
                 try await communityManager.publishPlaylist(
                     playlist: playlist,
                     authorId: userId,
