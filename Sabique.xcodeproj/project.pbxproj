@@ -35,9 +35,22 @@
 		0225A3E32F176C47006BEBA7 /* SabiqueUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = SabiqueUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
+/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		022EBA012F3F891A00CC9630 /* Exceptions for "Sabique" folder in "Sabique" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = 0225A3CB2F176C46006BEBA7 /* Sabique */;
+		};
+/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
+
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		0225A3CE2F176C46006BEBA7 /* Sabique */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				022EBA012F3F891A00CC9630 /* Exceptions for "Sabique" folder in "Sabique" target */,
+			);
 			path = Sabique;
 			sourceTree = "<group>";
 		};
@@ -420,6 +433,7 @@
 				DEVELOPMENT_TEAM = 2HNQAJKUD5;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = Sabique/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = Sabique;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.music";
 				INFOPLIST_KEY_NSAppleMusicUsageDescription = "アプリ内で音楽を再生するためにライブラリにアクセスします。";
@@ -463,6 +477,7 @@
 				DEVELOPMENT_TEAM = 2HNQAJKUD5;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = Sabique/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = Sabique;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.music";
 				INFOPLIST_KEY_NSAppleMusicUsageDescription = "アプリ内で音楽を再生するためにライブラリにアクセスします。";
