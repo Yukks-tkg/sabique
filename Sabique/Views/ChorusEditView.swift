@@ -343,6 +343,7 @@ struct ChorusEditView: View {
                             withAnimation(.spring(response: 0.4, dampingFraction: 0.5)) { shakeTrigger += 1 }
                             return
                         }
+                        UIImpactFeedbackGenerator(style: .medium).impactOccurred()
                         chorusStart = playbackTime
                         track.chorusStartSeconds = playbackTime
                     }) {
@@ -387,6 +388,7 @@ struct ChorusEditView: View {
                             withAnimation(.spring(response: 0.4, dampingFraction: 0.5)) { shakeTrigger += 1 }
                             return
                         }
+                        UIImpactFeedbackGenerator(style: .medium).impactOccurred()
                         chorusEnd = playbackTime
                         track.chorusEndSeconds = playbackTime
                     }) {

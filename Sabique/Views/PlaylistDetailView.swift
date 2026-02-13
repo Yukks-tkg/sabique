@@ -236,7 +236,14 @@ struct PlaylistDetailView: View {
         return TrackRow(
             track: track,
             isPlaying: isCurrentlyPlaying,
-            onArtworkTap: { previewTrack(track) }
+            onPlay: { previewTrack(track) },
+            onEdit: {
+                if playerManager.isPlaying {
+                    playerManager.stop()
+                }
+                selectedTrack = track
+                showingChorusEdit = true
+            }
         )
             .padding(.horizontal, 8)
             .padding(.vertical, 4)
@@ -244,14 +251,6 @@ struct PlaylistDetailView: View {
                 RoundedRectangle(cornerRadius: 12)
                     .fill(isCurrentlyPlaying ? Color.white.opacity(0.2) : Color.clear)
             )
-            .contentShape(Rectangle())
-            .onTapGesture {
-                if playerManager.isPlaying {
-                    playerManager.stop()
-                }
-                selectedTrack = track
-                showingChorusEdit = true
-            }
             .listRowInsets(EdgeInsets(top: 4, leading: 8, bottom: 4, trailing: 8))
             .listRowBackground(Color.clear)
             .id(track.id)
@@ -581,65 +580,199 @@ struct PlaylistDetailView: View {
     
 }
 
+// MARK: - MarqueeText
+/// 再生中の曲名を横スクロールするテキストコンポーネント
+struct MarqueeText: View {
+    let text: String
+    let font: Font
+    let isAnimating: Bool
+
+    @State private var textWidth: CGFloat = 0
+    @State private var containerWidth: CGFloat = 0
+    @State private var offset: CGFloat = 0
+    @State private var animationTask: Task<Void, Never>?
+
+    /// テキストがコンテナからはみ出すか
+    private var needsScroll: Bool {
+        textWidth > containerWidth && isAnimating
+    }
+
+    var body: some View {
+        GeometryReader { geometry in
+            let _ = updateContainerWidth(geometry.size.width)
+            Text(text)
+                .font(font)
+                .lineLimit(1)
+                .fixedSize(horizontal: true, vertical: false)
+                .background(
+                    GeometryReader { textGeometry in
+                        Color.clear
+                            .onAppear {
+                                textWidth = textGeometry.size.width
+                            }
+                    }
+                )
+                .offset(x: offset)
+        }
+        .clipped()
+        .frame(height: UIFont.preferredFont(forTextStyle: .headline).lineHeight)
+        .onChange(of: isAnimating) { _, newValue in
+            if newValue {
+                startAnimation()
+            } else {
+                stopAnimation()
+            }
+        }
+        .onChange(of: text) { _, _ in
+            // テキストが変わったらリセット
+            textWidth = 0
+            offset = 0
+            if isAnimating {
+                startAnimation()
+            }
+        }
+        .onAppear {
+            if isAnimating {
+                startAnimation()
+            }
+        }
+        .onDisappear {
+            stopAnimation()
+        }
+    }
+
+    private func updateContainerWidth(_ width: CGFloat) {
+        if containerWidth != width {
+            DispatchQueue.main.async {
+                containerWidth = width
+            }
+        }
+    }
+
+    private func startAnimation() {
+        stopAnimation()
+
+        animationTask = Task { @MainActor in
+            // テキスト幅の計測を待つ
+            try? await Task.sleep(nanoseconds: 500_000_000)
+            guard !Task.isCancelled else { return }
+
+            guard textWidth > containerWidth else { return }
+
+            while !Task.isCancelled {
+                // 開始位置で少し待機
+                offset = 0
+                try? await Task.sleep(nanoseconds: 1_500_000_000)
+                guard !Task.isCancelled else { return }
+
+                // 左にスクロール
+                let scrollDistance = textWidth - containerWidth + 20
+                let duration = Double(scrollDistance) / 30.0 // 30pt/秒
+
+                withAnimation(.linear(duration: duration)) {
+                    offset = -scrollDistance
+                }
+
+                // スクロール完了を待機
+                try? await Task.sleep(nanoseconds: UInt64(duration * 1_000_000_000))
+                guard !Task.isCancelled else { return }
+
+                // 端で少し待機
+                try? await Task.sleep(nanoseconds: 1_500_000_000)
+                guard !Task.isCancelled else { return }
+
+                // 元に戻す（アニメーションなし）
+                withAnimation(nil) {
+                    offset = 0
+                }
+                try? await Task.sleep(nanoseconds: 300_000_000)
+            }
+        }
+    }
+
+    private func stopAnimation() {
+        animationTask?.cancel()
+        animationTask = nil
+        withAnimation(nil) {
+            offset = 0
+        }
+    }
+}
+
 // MARK: - TrackRow
 struct TrackRow: View {
     let track: TrackInPlaylist
     var isPlaying: Bool = false
-    var onArtworkTap: (() -> Void)?
+    var onPlay: (() -> Void)?
+    var onEdit: (() -> Void)?
     @State private var artworkURL: URL?
 
     var body: some View {
         HStack(spacing: 12) {
-            // アートワーク（タップでプレビュー再生）
-            Group {
-                if let url = artworkURL {
-                    AsyncImage(url: url) { image in
-                        image
-                            .resizable()
-                            .aspectRatio(contentMode: .fill)
-                    } placeholder: {
-                        RoundedRectangle(cornerRadius: 6)
-                            .fill(Color.gray.opacity(0.3))
+            // 再生エリア（アートワーク + 曲名）タップで再生
+            Button(action: { onPlay?() }) {
+                HStack(spacing: 12) {
+                    // アートワーク
+                    Group {
+                        if let url = artworkURL {
+                            AsyncImage(url: url) { image in
+                                image
+                                    .resizable()
+                                    .aspectRatio(contentMode: .fill)
+                            } placeholder: {
+                                RoundedRectangle(cornerRadius: 6)
+                                    .fill(Color.gray.opacity(0.3))
+                            }
+                            .frame(width: 50, height: 50)
+                            .cornerRadius(6)
+                        } else {
+                            RoundedRectangle(cornerRadius: 6)
+                                .fill(Color.gray.opacity(0.3))
+                                .frame(width: 50, height: 50)
+                                .overlay(
+                                    Image(systemName: "music.note")
+                                        .foregroundColor(.gray)
+                                )
+                        }
                     }
-                    .frame(width: 50, height: 50)
-                    .cornerRadius(6)
-                } else {
-                    RoundedRectangle(cornerRadius: 6)
-                        .fill(Color.gray.opacity(0.3))
-                        .frame(width: 50, height: 50)
-                        .overlay(
-                            Image(systemName: "music.note")
-                                .foregroundColor(.gray)
+
+                    VStack(alignment: .leading, spacing: 4) {
+                        MarqueeText(
+                            text: track.title,
+                            font: .headline,
+                            isAnimating: isPlaying
                         )
+
+                        Text(track.artist)
+                            .font(.subheadline)
+                            .foregroundColor(.secondary)
+                            .lineLimit(1)
+                    }
                 }
+                .contentShape(Rectangle())
             }
-            .onTapGesture {
-                onArtworkTap?()
-            }
-
-            VStack(alignment: .leading, spacing: 4) {
-                Text(track.title)
-                    .font(.headline)
-                    .lineLimit(1)
-
-                Text(track.artist)
-                    .font(.subheadline)
-                    .foregroundColor(.secondary)
-                    .lineLimit(1)
-            }
+            .buttonStyle(.plain)
 
             Spacer()
 
-            if track.hasChorusSettings {
-                Text("\(track.chorusStartFormatted) - \(track.chorusEndFormatted)")
-                    .font(.caption)
-                    .monospacedDigit()
-                    .foregroundColor(.secondary)
-            }
+            // 編集エリア（時間 + chevron）タップでハイライト設定画面
+            Button(action: { onEdit?() }) {
+                HStack(spacing: 6) {
+                    if track.hasChorusSettings {
+                        Text("\(track.chorusStartFormatted) - \(track.chorusEndFormatted)")
+                            .font(.caption)
+                            .monospacedDigit()
+                            .foregroundColor(.secondary)
+                    }
 
-            Image(systemName: "chevron.right")
-                .font(.caption)
-                .foregroundColor(.secondary)
+                    Image(systemName: "chevron.right")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                }
+                .contentShape(Rectangle())
+                .padding(.vertical, 8)
+            }
+            .buttonStyle(.plain)
         }
         .padding(.vertical, 4)
         .task {
