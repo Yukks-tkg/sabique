@@ -407,12 +407,6 @@ struct SettingsView: View {
                             .font(.caption)
                     }
 
-                    Section(String(localized: "about_this_app")) {
-                        Text(String(localized: "app_description"))
-                            .font(.subheadline)
-                            .foregroundColor(.secondary)
-                    }
-                    
                     Section(String(localized: "support")) {
                         Link(destination: URL(string: "mailto:y.takagi.jp@outlook.jp")!) {
                             HStack {

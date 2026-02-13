@@ -865,8 +865,12 @@ struct ProfileEditSheet: View {
                     .autocapitalization(.none)
                     .disabled(isNicknameLocked)
                     .onChange(of: nickname) { _, newValue in
-                        if newValue.count > maxNicknameLength {
-                            nickname = String(newValue.prefix(maxNicknameLength))
+                        // 絵文字を除去
+                        let filtered = newValue.filter { !$0.isEmoji }
+                        if filtered.count > maxNicknameLength {
+                            nickname = String(filtered.prefix(maxNicknameLength))
+                        } else if filtered != newValue {
+                            nickname = filtered
                         }
                     }
 
@@ -1124,6 +1128,24 @@ struct CountryPickerView: View {
             }
         }
         return emoji
+    }
+}
+
+// MARK: - Emoji Detection
+
+private extension Character {
+    /// 絵文字かどうかを判定
+    var isEmoji: Bool {
+        guard let scalar = unicodeScalars.first else { return false }
+        // 基本的な絵文字範囲をチェック
+        if scalar.properties.isEmoji && scalar.properties.isEmojiPresentation {
+            return true
+        }
+        // Variation Selector付きの絵文字（例: ❤️）
+        if scalar.properties.isEmoji && unicodeScalars.count > 1 {
+            return true
+        }
+        return false
     }
 }
 

@@ -357,11 +357,18 @@ struct SongSearchView: View {
     
     /// 曲をプレビュー再生（タップで再生/停止を切り替え）
     private func previewSong(_ song: Song) {
+        let player = ApplicationMusicPlayer.shared
+
         // 同じ曲をタップしたら停止
         if playingSongId == song.id {
-            ApplicationMusicPlayer.shared.stop()
+            player.stop()
             playingSongId = nil
             return
+        }
+
+        // 別の曲が再生中なら先に停止
+        if playingSongId != nil {
+            player.stop()
         }
 
         playingSongId = song.id
@@ -369,8 +376,8 @@ struct SongSearchView: View {
 
         Task {
             do {
-                let player = ApplicationMusicPlayer.shared
                 player.queue = [song]
+                try await player.prepareToPlay()
                 try await player.play()
 
                 await MainActor.run {
