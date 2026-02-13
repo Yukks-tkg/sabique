@@ -26,10 +26,6 @@ struct PlaylistDetailView: View {
     @State private var showingRenameAlert = false
     @State private var newPlaylistName = ""
 
-    // プレビュー再生
-    @State private var previewingTrackId: UUID?
-    @State private var isLoadingPreview = false
-    @State private var previewTimer: Timer?
 
     // 投稿関連
     @State private var showingPublishConfirm = false
@@ -99,9 +95,9 @@ struct PlaylistDetailView: View {
                 }
         }
         .onDisappear {
-            // 画面を離れたらプレビュー再生を停止
-            if previewingTrackId != nil {
-                stopPreview()
+            // 画面を離れたら再生を停止
+            if playerManager.isPlaying {
+                playerManager.stop()
             }
         }
         .sheet(item: $selectedTrack, onDismiss: {
@@ -237,25 +233,19 @@ struct PlaylistDetailView: View {
 
     private func trackRowView(for track: TrackInPlaylist) -> some View {
         let isCurrentlyPlaying = playerManager.isPlaying && playerManager.currentTrack?.id == track.id
-        let isPreviewing = previewingTrackId == track.id
-        let isHighlighted = isCurrentlyPlaying || isPreviewing
         return TrackRow(
             track: track,
-            isPlaying: isCurrentlyPlaying || isPreviewing,
+            isPlaying: isCurrentlyPlaying,
             onArtworkTap: { previewTrack(track) }
         )
             .padding(.horizontal, 8)
             .padding(.vertical, 4)
             .background(
                 RoundedRectangle(cornerRadius: 12)
-                    .fill(isHighlighted ? Color.white.opacity(0.2) : Color.clear)
+                    .fill(isCurrentlyPlaying ? Color.white.opacity(0.2) : Color.clear)
             )
             .contentShape(Rectangle())
             .onTapGesture {
-                // プレビュー再生中なら停止
-                if previewingTrackId != nil {
-                    stopPreview()
-                }
                 if playerManager.isPlaying {
                     playerManager.stop()
                 }
@@ -283,77 +273,23 @@ struct PlaylistDetailView: View {
         .id("addButton")
     }
 
+    /// トラックタップでハイライト連続再生を開始（タップした曲から）
     private func previewTrack(_ track: TrackInPlaylist) {
         // 同じ曲をタップしたら停止
-        if previewingTrackId == track.id {
-            stopPreview()
+        if playerManager.isPlaying && playerManager.currentTrack?.id == track.id {
+            playerManager.stop()
             return
         }
 
-        // ChorusPlayerManagerが再生中なら停止
+        // 再生中なら停止してから開始
         if playerManager.isPlaying {
             playerManager.stop()
         }
 
-        // 前回のプレビューを停止
-        stopPreview()
-
-        previewingTrackId = track.id
-        isLoadingPreview = true
-
-        Task {
-            do {
-                let request = MusicCatalogResourceRequest<Song>(
-                    matching: \.id,
-                    equalTo: MusicItemID(track.appleMusicSongId)
-                )
-                let response = try await request.response()
-
-                guard let song = response.items.first else {
-                    await MainActor.run {
-                        isLoadingPreview = false
-                        previewingTrackId = nil
-                    }
-                    return
-                }
-
-                let player = SystemMusicPlayer.shared
-                player.queue = [song]
-                try await player.play()
-
-                // ハイライト区間があればシーク
-                if let chorusStart = track.chorusStartSeconds {
-                    player.playbackTime = chorusStart
-                }
-
-                await MainActor.run {
-                    isLoadingPreview = false
-
-                    // 終了位置が設定されている場合はタイマーで監視
-                    if let chorusEnd = track.chorusEndSeconds {
-                        previewTimer = Timer.scheduledTimer(withTimeInterval: 0.1, repeats: true) { _ in
-                            let currentTime = SystemMusicPlayer.shared.playbackTime
-                            if currentTime >= chorusEnd {
-                                stopPreview()
-                            }
-                        }
-                    }
-                }
-            } catch {
-                print("プレビュー再生エラー: \(error)")
-                await MainActor.run {
-                    isLoadingPreview = false
-                    previewingTrackId = nil
-                }
-            }
+        // タップした曲からハイライト連続再生を開始
+        playerManager.playFrom(track: track) { [playlist] in
+            playlist.sortedTracks
         }
-    }
-
-    private func stopPreview() {
-        previewTimer?.invalidate()
-        previewTimer = nil
-        SystemMusicPlayer.shared.stop()
-        previewingTrackId = nil
     }
 
     private var sectionHeader: some View {
@@ -447,9 +383,9 @@ struct PlaylistDetailView: View {
         .background(Color.black.opacity(0.8))
     }
 
-    /// ハイライト再生またはプレビュー再生のいずれかが再生中か
+    /// 再生中かどうか
     private var isAnyPlaying: Bool {
-        playerManager.isPlaying || previewingTrackId != nil
+        playerManager.isPlaying
     }
 
     private var previousButton: some View {
@@ -588,12 +524,6 @@ struct PlaylistDetailView: View {
     }
 
     private func handlePlayStop() {
-        // プレビュー再生中なら停止
-        if previewingTrackId != nil {
-            stopPreview()
-            return
-        }
-
         if playerManager.isPlaying {
             playerManager.stop()
         } else {
@@ -605,29 +535,11 @@ struct PlaylistDetailView: View {
     }
 
     private func handlePrevious() {
-        if previewingTrackId != nil {
-            // プレビュー再生中: 前のトラックに移動
-            let sortedTracks = playlist.sortedTracks
-            guard let currentIndex = sortedTracks.firstIndex(where: { $0.id == previewingTrackId }) else { return }
-            let previousIndex = currentIndex - 1
-            guard previousIndex >= 0 else { return }
-            previewTrack(sortedTracks[previousIndex])
-        } else {
-            playerManager.previous()
-        }
+        playerManager.previous()
     }
 
     private func handleNext() {
-        if previewingTrackId != nil {
-            // プレビュー再生中: 次のトラックに移動
-            let sortedTracks = playlist.sortedTracks
-            guard let currentIndex = sortedTracks.firstIndex(where: { $0.id == previewingTrackId }) else { return }
-            let nextIndex = currentIndex + 1
-            guard nextIndex < sortedTracks.count else { return }
-            previewTrack(sortedTracks[nextIndex])
-        } else {
-            playerManager.next()
-        }
+        playerManager.next()
     }
     
     private func deleteTracks(at offsets: IndexSet) {

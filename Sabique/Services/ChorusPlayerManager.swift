@@ -31,8 +31,20 @@ class ChorusPlayerManager: ObservableObject {
         // タイマーで制御するため、playbackObserverは使用しない
     }
 
-    /// ハイライト連続再生を開始
+    /// ハイライト連続再生を開始（先頭から）
     func play(tracks: @escaping () -> [TrackInPlaylist]) {
+        playFrom(index: 0, tracks: tracks)
+    }
+
+    /// ハイライト連続再生を指定トラックから開始
+    func playFrom(track: TrackInPlaylist, tracks: @escaping () -> [TrackInPlaylist]) {
+        let currentTracks = tracks()
+        let index = currentTracks.firstIndex(where: { $0.id == track.id }) ?? 0
+        playFrom(index: index, tracks: tracks)
+    }
+
+    /// ハイライト連続再生を指定インデックスから開始
+    private func playFrom(index: Int, tracks: @escaping () -> [TrackInPlaylist]) {
         self.tracksProvider = tracks
 
         guard !self.tracks.isEmpty else {
@@ -40,7 +52,7 @@ class ChorusPlayerManager: ObservableObject {
             return
         }
 
-        currentTrackIndex = 0
+        currentTrackIndex = min(index, self.tracks.count - 1)
         isPlaying = true
         isTransitioning = false
 
