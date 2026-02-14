@@ -340,6 +340,7 @@ struct ChorusEditView: View {
                     // 開始ポイント設定カード
                     Button(action: {
                         if track.isLocked {
+                            playLockedHaptics()
                             withAnimation(.spring(response: 0.4, dampingFraction: 0.5)) { shakeTrigger += 1 }
                             return
                         }
@@ -385,6 +386,7 @@ struct ChorusEditView: View {
                     // 終了ポイント設定カード
                     Button(action: {
                         if track.isLocked {
+                            playLockedHaptics()
                             withAnimation(.spring(response: 0.4, dampingFraction: 0.5)) { shakeTrigger += 1 }
                             return
                         }
@@ -735,6 +737,15 @@ struct ChorusEditView: View {
         }
     }
     
+    /// ロック中のHaptics（短く2回振動）
+    private func playLockedHaptics() {
+        let generator = UIImpactFeedbackGenerator(style: .rigid)
+        generator.impactOccurred()
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+            generator.impactOccurred()
+        }
+    }
+
     private func formatTime(_ seconds: Double) -> String {
         let mins = Int(seconds) / 60
         let secs = Int(seconds) % 60

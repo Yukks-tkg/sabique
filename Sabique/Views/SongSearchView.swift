@@ -191,7 +191,7 @@ struct SongSearchView: View {
             .onDisappear {
                 // 画面を離れたら再生を停止
                 if playingSongId != nil {
-                    ApplicationMusicPlayer.shared.stop()
+                    SystemMusicPlayer.shared.stop()
                     playingSongId = nil
                 }
             }
@@ -357,7 +357,7 @@ struct SongSearchView: View {
     
     /// 曲をプレビュー再生（タップで再生/停止を切り替え）
     private func previewSong(_ song: Song) {
-        let player = ApplicationMusicPlayer.shared
+        let player = SystemMusicPlayer.shared
 
         // 同じ曲をタップしたら停止
         if playingSongId == song.id {
@@ -397,7 +397,7 @@ struct SongSearchView: View {
     private func addSongWithEdit(_ song: Song) {
         // プレビュー再生中なら停止
         if playingSongId != nil {
-            ApplicationMusicPlayer.shared.stop()
+            SystemMusicPlayer.shared.stop()
             playingSongId = nil
         }
 
@@ -519,4 +519,6 @@ struct SongRow: View {
 #Preview {
     SongSearchView(playlist: Playlist(name: "テスト"))
         .modelContainer(for: [Playlist.self, TrackInPlaylist.self], inMemory: true)
+}
+emory: true)
 }
