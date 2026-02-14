@@ -219,7 +219,8 @@ struct SettingsView: View {
                     }
                     
                     if isDeveloperMode {
-                        Section(String(localized: "playback_settings")) {
+                        Section(String(localized: "developer_options")) {
+                            // 再生設定
                             Toggle(isOn: $autoPlayOnOpen) {
                                 VStack(alignment: .leading, spacing: 4) {
                                     Text(String(localized: "auto_play"))
@@ -228,10 +229,9 @@ struct SettingsView: View {
                                         .foregroundColor(.secondary)
                                 }
                             }
-                        }
 
-                        #if DEBUG
-                        Section(String(localized: "debug_settings")) {
+                            #if DEBUG
+                            // デバッグ設定
                             Toggle(isOn: $storeManager.debugForceFreeMode) {
                                 VStack(alignment: .leading, spacing: 4) {
                                     Text(String(localized: "run_as_free"))
@@ -248,10 +248,9 @@ struct SettingsView: View {
                                     .fontWeight(.semibold)
                                     .foregroundColor(storeManager.isPremium ? .green : .orange)
                             }
-                        }
-                        #endif
+                            #endif
 
-                        Section(String(localized: "developer_section")) {
+                            // テスト画面
                             Button(action: { showingSignInTest = true }) {
                                 HStack {
                                     Text(String(localized: "apple_sign_in_test"))
@@ -331,8 +330,9 @@ struct SettingsView: View {
                         }
                     }
                     
-                    // ブロック管理セクション
+                    // データ管理セクション（ブロック + バックアップ）
                     Section {
+                        // ブロック管理
                         if BlockManager.shared.blockedCount() > 0 {
                             HStack {
                                 Image(systemName: "hand.raised")
@@ -358,12 +358,8 @@ struct SettingsView: View {
                             }
                             .foregroundColor(.secondary)
                         }
-                    } header: {
-                        Text(String(localized: "blocked_users"))
-                    }
 
-                    // データバックアップセクション
-                    Section {
+                        // バックアップ・復元
                         Button(action: performBackup) {
                             HStack {
                                 if isBackingUp {
@@ -401,13 +397,13 @@ struct SettingsView: View {
                         }
                         .disabled(isRestoringBackup)
                     } header: {
-                        Text(String(localized: "backup_section"))
+                        Text(String(localized: "data_management_section"))
                     } footer: {
                         Text(String(localized: "backup_description"))
                             .font(.caption)
                     }
 
-                    Section(String(localized: "support")) {
+                    Section(String(localized: "support_and_legal")) {
                         Link(destination: URL(string: "mailto:y.takagi.jp@outlook.jp")!) {
                             HStack {
                                 Image(systemName: "envelope")
@@ -419,9 +415,7 @@ struct SettingsView: View {
                                     .foregroundColor(.secondary)
                             }
                         }
-                    }
 
-                    Section(String(localized: "legal_info")) {
                         Link(destination: URL(string: "https://immense-engineer-7f8.notion.site/Privacy-Policy-Sabique-2ed0dee3bb098077b979d500914ffbba")!) {
                             HStack {
                                 Text(String(localized: "privacy_policy"))
@@ -432,7 +426,7 @@ struct SettingsView: View {
                                     .foregroundColor(.secondary)
                             }
                         }
-                        
+
                         Link(destination: URL(string: "https://immense-engineer-7f8.notion.site/Terms-of-Use-Sabique-2ed0dee3bb098038983feb7ecea57f7a")!) {
                             HStack {
                                 Text(String(localized: "terms_of_use"))

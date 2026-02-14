@@ -520,5 +520,3 @@ struct SongRow: View {
     SongSearchView(playlist: Playlist(name: "テスト"))
         .modelContainer(for: [Playlist.self, TrackInPlaylist.self], inMemory: true)
 }
-emory: true)
-}
