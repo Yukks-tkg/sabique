@@ -90,6 +90,10 @@ struct PlaylistDetailView: View {
         }) {
             SongSearchView(playlist: playlist)
                 .onAppear {
+                    // ハイライト再生中なら停止（SystemMusicPlayerとの競合防止）
+                    if playerManager.isPlaying {
+                        playerManager.stop()
+                    }
                     // シート表示時のトラック数を記録
                     previousTrackCount = playlist.tracks.count
                 }
@@ -105,6 +109,12 @@ struct PlaylistDetailView: View {
             SystemMusicPlayer.shared.stop()
         }) { track in
             ChorusEditView(track: track)
+                .onAppear {
+                    // ハイライト再生中なら停止（SystemMusicPlayerとの競合防止）
+                    if playerManager.isPlaying {
+                        playerManager.stop()
+                    }
+                }
         }
         .sheet(isPresented: $showingSignInSheet) {
             SignInSheetView()

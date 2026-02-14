@@ -8,6 +8,7 @@
 import Foundation
 import MusicKit
 import Combine
+import AVFoundation
 
 @MainActor
 class ChorusPlayerManager: ObservableObject {
@@ -17,7 +18,7 @@ class ChorusPlayerManager: ObservableObject {
 
     /// トラックリストを取得するクロージャ（常に最新の順序を返す）
     private var tracksProvider: (() -> [TrackInPlaylist])?
-    private let player = SystemMusicPlayer.shared
+    private let player = ApplicationMusicPlayer.shared
     private var backgroundTimer: DispatchSourceTimer?
     private var currentPlayTask: Task<Void, Never>?
     private var isTransitioning = false
@@ -29,6 +30,18 @@ class ChorusPlayerManager: ObservableObject {
 
     init() {
         // タイマーで制御するため、playbackObserverは使用しない
+    }
+
+    /// AVAudioSessionを設定（バックグラウンド再生に必要）
+    private func configureAudioSession() {
+        do {
+            let session = AVAudioSession.sharedInstance()
+            try session.setCategory(.playback, mode: .default)
+            try session.setActive(true)
+            print("🔊 AVAudioSession設定完了")
+        } catch {
+            print("⚠️ AVAudioSession設定エラー: \(error)")
+        }
     }
 
     /// ハイライト連続再生を開始（先頭から）
@@ -51,6 +64,12 @@ class ChorusPlayerManager: ObservableObject {
             print("曲がありません")
             return
         }
+
+        // ApplicationMusicPlayer用にAudioSessionを設定
+        configureAudioSession()
+
+        // SystemMusicPlayerが再生中の場合は停止する
+        SystemMusicPlayer.shared.stop()
 
         currentTrackIndex = min(index, self.tracks.count - 1)
         isPlaying = true
