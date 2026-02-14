@@ -92,7 +92,7 @@ struct SettingsView: View {
                                         .fontWeight(.medium)
                                     Spacer()
                                 }
-                                .foregroundColor(.primary)
+                                .foregroundColor(.gray)
                             }
 
                             Button(action: { showingDeleteAccountAlert = true }) {
