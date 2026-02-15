@@ -415,26 +415,17 @@ struct PlaylistDetailView: View {
 
     @ViewBuilder
     private var currentTrackArtwork: some View {
-        Group {
-            if let currentTrack = playerManager.currentTrack,
-               let artworkURL = currentTrack.artworkURL {
-                AsyncImage(url: artworkURL) { image in
-                    image
-                        .resizable()
-                        .aspectRatio(contentMode: .fill)
-                } placeholder: {
-                    placeholderArtwork
-                }
-            } else {
-                placeholderArtwork
+        RotatingArtwork(
+            artworkURL: playerManager.currentTrack?.artworkURL,
+            isRotating: playerManager.isPlaying,
+            onHoldPause: { isHolding in
+                handleArtworkHold(isHolding: isHolding)
             }
-        }
-        .frame(width: 50, height: 50)
-        .cornerRadius(8)
+        )
     }
 
     private var placeholderArtwork: some View {
-        RoundedRectangle(cornerRadius: 8)
+        Circle()
             .fill(Color.gray.opacity(0.3))
             .overlay(
                 Image(systemName: "music.note")
@@ -607,6 +598,21 @@ struct PlaylistDetailView: View {
 
     private func handleNext() {
         playerManager.next()
+    }
+
+    /// アートワークのタップ&ホールド処理
+    private func handleArtworkHold(isHolding: Bool) {
+        if isHolding {
+            // ホールド開始：再生中なら一時停止
+            if playerManager.isPlaying {
+                playerManager.pause()
+            }
+        } else {
+            // ホールド解除：一時停止中なら再生再開
+            if playerManager.isPaused {
+                playerManager.resume()
+            }
+        }
     }
     
     private func deleteTracks(at offsets: IndexSet) {
@@ -943,6 +949,123 @@ struct SignInSheetView: View {
                     }
                 }
             }
+        }
+    }
+}
+
+// MARK: - RotatingArtwork
+/// レコード風に回転するアートワーク
+struct RotatingArtwork: View {
+    let artworkURL: URL?
+    let isRotating: Bool
+    let onHoldPause: ((Bool) -> Void)?
+
+    @State private var rotation: Double = 0
+    @State private var animationID: UUID = UUID()
+    @State private var isPressed: Bool = false
+
+    var body: some View {
+        ZStack {
+            // 外側のレコード風の枠
+            Circle()
+                .fill(Color.black.opacity(0.8))
+                .frame(width: 54, height: 54)
+
+            // アートワーク
+            Group {
+                if let url = artworkURL {
+                    AsyncImage(url: url) { image in
+                        image
+                            .resizable()
+                            .aspectRatio(contentMode: .fill)
+                    } placeholder: {
+                        placeholderContent
+                    }
+                } else {
+                    placeholderContent
+                }
+            }
+            .frame(width: 50, height: 50)
+            .clipShape(Circle())
+            .overlay(
+                Circle()
+                    .stroke(Color.white.opacity(0.2), lineWidth: 1)
+            )
+            .rotationEffect(.degrees(rotation))
+            .onChange(of: isRotating) { _, newValue in
+                if newValue {
+                    // 再生開始時：回転を開始
+                    startRotation()
+                } else {
+                    // 停止時：回転をリセット（スムーズに元に戻る）
+                    stopRotation()
+                }
+            }
+            .onChange(of: artworkURL) { _, _ in
+                // 曲が切り替わったとき：アニメーションをリセット
+                if isRotating {
+                    resetRotation()
+                }
+            }
+            .id(animationID) // アニメーションを完全にリセットするためのID
+
+            // 中央の穴（レコードっぽく）
+            Circle()
+                .fill(Color.black.opacity(0.3))
+                .frame(width: 8, height: 8)
+        }
+        .scaleEffect(isPressed ? 0.95 : 1.0)
+        .animation(.spring(response: 0.3, dampingFraction: 0.6), value: isPressed)
+        .gesture(
+            DragGesture(minimumDistance: 0)
+                .onChanged { _ in
+                    if !isPressed {
+                        isPressed = true
+                        onHoldPause?(true)
+                    }
+                }
+                .onEnded { _ in
+                    isPressed = false
+                    onHoldPause?(false)
+                }
+        )
+    }
+
+    private var placeholderContent: some View {
+        ZStack {
+            // 背景
+            Circle()
+                .fill(Color.gray.opacity(0.3))
+
+            // Sabiqueロゴ
+            Image("AppIconImage")
+                .resizable()
+                .aspectRatio(contentMode: .fill)
+                .frame(width: 40, height: 40)
+                .clipShape(Circle())
+                .opacity(0.8)
+        }
+    }
+
+    private func startRotation() {
+        withAnimation(.linear(duration: 8).repeatForever(autoreverses: false)) {
+            rotation = 360
+        }
+    }
+
+    private func stopRotation() {
+        withAnimation(.easeOut(duration: 0.5)) {
+            rotation = 0
+        }
+    }
+
+    private func resetRotation() {
+        // アニメーションIDを更新してビューを再構築
+        animationID = UUID()
+        rotation = 0
+        // 少し遅延させてからアニメーション再開
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+            startRotation()
         }
     }
 }

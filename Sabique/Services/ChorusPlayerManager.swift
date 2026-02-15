@@ -13,6 +13,7 @@ import AVFoundation
 @MainActor
 class ChorusPlayerManager: ObservableObject {
     @Published var isPlaying = false
+    @Published var isPaused = false
     @Published var currentTrackIndex = 0
     @Published var currentTrack: TrackInPlaylist?
 
@@ -81,6 +82,7 @@ class ChorusPlayerManager: ObservableObject {
     /// 再生を停止
     func stop() {
         isPlaying = false
+        isPaused = false
         isTransitioning = false
         cancelBackgroundTimer()
         currentPlayTask?.cancel()
@@ -89,6 +91,37 @@ class ChorusPlayerManager: ObservableObject {
         currentTrack = nil
         tracksProvider = nil
         print("🛑 再生停止")
+    }
+
+    /// 一時停止（ホールド時）
+    func pause() {
+        guard isPlaying && !isPaused else { return }
+        isPaused = true
+        player.pause()
+        cancelBackgroundTimer()
+        print("⏸️ 一時停止")
+    }
+
+    /// 再生再開（ホールド解除時）
+    func resume() {
+        guard isPaused else { return }
+        isPaused = false
+
+        Task {
+            do {
+                try await player.play()
+
+                // タイマーを再開（現在の曲の残り時間で）
+                if let track = currentTrack {
+                    let endTime = track.chorusEndSeconds ?? 0
+                    scheduleNextTrack(endTime: endTime)
+                }
+
+                print("▶️ 再生再開")
+            } catch {
+                print("再生再開エラー: \(error)")
+            }
+        }
     }
 
     /// 次の曲へ
