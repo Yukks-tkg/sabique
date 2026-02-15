@@ -38,7 +38,10 @@ struct PlaylistDetailView: View {
     @EnvironmentObject private var authManager: AuthManager
     @EnvironmentObject private var communityManager: CommunityManager
     @AppStorage("isLeftHandedMode") private var isLeftHandedMode: Bool = false
-    
+
+    /// アートワークのスライド方向（次へ: .trailing、前へ: .leading）
+    @State private var slideDirection: Edge = .trailing
+
     // 1曲目のID（並べ替え検知用）
     private var firstTrackId: String? {
         playlist.sortedTracks.first?.appleMusicSongId
@@ -415,13 +418,23 @@ struct PlaylistDetailView: View {
 
     @ViewBuilder
     private var currentTrackArtwork: some View {
-        RotatingArtwork(
-            artworkURL: playerManager.currentTrack?.artworkURL,
-            isRotating: playerManager.isPlaying && !playerManager.isPaused,
-            onHoldPause: { isHolding in
-                handleArtworkHold(isHolding: isHolding)
-            }
-        )
+        ZStack {
+            RotatingArtwork(
+                artworkURL: playerManager.currentTrack?.artworkURL,
+                isRotating: playerManager.isPlaying && !playerManager.isPaused,
+                onHoldPause: { isHolding in
+                    handleArtworkHold(isHolding: isHolding)
+                }
+            )
+            .id(playerManager.currentTrack?.id)
+            .transition(.asymmetric(
+                insertion: .move(edge: slideDirection).combined(with: .opacity),
+                removal: .move(edge: slideDirection == .trailing ? .leading : .trailing).combined(with: .opacity)
+            ))
+        }
+        .frame(width: 54, height: 54)
+        .clipped()
+        .animation(.easeInOut(duration: 0.3), value: playerManager.currentTrack?.id)
     }
 
     private var placeholderArtwork: some View {
@@ -593,10 +606,12 @@ struct PlaylistDetailView: View {
     }
 
     private func handlePrevious() {
+        slideDirection = .leading
         playerManager.previous()
     }
 
     private func handleNext() {
+        slideDirection = .trailing
         playerManager.next()
     }
 
@@ -961,7 +976,6 @@ struct RotatingArtwork: View {
     let onHoldPause: ((Bool) -> Void)?
 
     @State private var rotation: Double = 0
-    @State private var animationID: UUID = UUID()
     @State private var isPressed: Bool = false
 
     var body: some View {
@@ -992,22 +1006,19 @@ struct RotatingArtwork: View {
                     .stroke(Color.white.opacity(0.2), lineWidth: 1)
             )
             .rotationEffect(.degrees(rotation))
+            .onAppear {
+                // Viewが生成されたとき、回転中なら開始
+                if isRotating {
+                    startRotation()
+                }
+            }
             .onChange(of: isRotating) { _, newValue in
                 if newValue {
-                    // 再生開始時：回転を開始
                     startRotation()
                 } else {
-                    // 停止時：回転をリセット（スムーズに元に戻る）
                     stopRotation()
                 }
             }
-            .onChange(of: artworkURL) { _, _ in
-                // 曲が切り替わったとき：アニメーションをリセット
-                if isRotating {
-                    resetRotation()
-                }
-            }
-            .id(animationID) // アニメーションを完全にリセットするためのID
         }
         .scaleEffect(isPressed ? 0.95 : 1.0)
         .animation(.spring(response: 0.3, dampingFraction: 0.6), value: isPressed)
@@ -1051,16 +1062,6 @@ struct RotatingArtwork: View {
     private func stopRotation() {
         withAnimation(.easeOut(duration: 0.5)) {
             rotation = 0
-        }
-    }
-
-    private func resetRotation() {
-        // アニメーションIDを更新してビューを再構築
-        animationID = UUID()
-        rotation = 0
-        // 少し遅延させてからアニメーション再開
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-            startRotation()
         }
     }
 }
