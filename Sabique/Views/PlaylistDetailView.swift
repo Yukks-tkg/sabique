@@ -189,27 +189,11 @@ struct PlaylistDetailView: View {
     }
 
     private var emptyContentView: some View {
-        VStack(spacing: 24) {
-            ContentUnavailableView(
-                String(localized: "no_songs"),
-                systemImage: "music.note",
-                description: Text(String(localized: "no_songs_description"))
-            )
-            addTrackButton
-        }
-    }
-
-    private var addTrackButton: some View {
-        Button(action: { handleAddTrack() }) {
-            HStack(spacing: 12) {
-                Image(systemName: "plus.circle")
-                    .font(.title2)
-                    .foregroundColor(.primary)
-                Text(String(localized: "add_track"))
-                    .foregroundColor(.primary)
-            }
-            .padding(.vertical, 8)
-        }
+        ContentUnavailableView(
+            String(localized: "no_songs"),
+            systemImage: "music.note",
+            description: Text(String(localized: "no_songs_description"))
+        )
     }
 
     private var trackListView: some View {

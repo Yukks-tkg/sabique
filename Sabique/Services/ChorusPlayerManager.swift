@@ -24,6 +24,9 @@ class ChorusPlayerManager: ObservableObject {
     private var currentPlayTask: Task<Void, Never>?
     private var isTransitioning = false
 
+    /// MusicKit Songオブジェクトのキャッシュ（Apple Music ID → Song）
+    private var songCache: [String: Song] = [:]
+
     /// 現在のトラックリスト（常に最新を取得）
     private var tracks: [TrackInPlaylist] {
         tracksProvider?() ?? []
@@ -191,21 +194,27 @@ class ChorusPlayerManager: ObservableObject {
 
         currentPlayTask = Task {
             do {
-                // Apple Music IDから曲を取得
-                let request = MusicCatalogResourceRequest<Song>(
-                    matching: \.id,
-                    equalTo: MusicItemID(track.appleMusicSongId)
-                )
-                let response = try await request.response()
+                // キャッシュからSongを取得、なければAPIリクエスト
+                let song: Song
+                if let cached = songCache[track.appleMusicSongId] {
+                    song = cached
+                } else {
+                    let request = MusicCatalogResourceRequest<Song>(
+                        matching: \.id,
+                        equalTo: MusicItemID(track.appleMusicSongId)
+                    )
+                    let response = try await request.response()
 
-                // タスクがキャンセルされていないか確認
-                guard !Task.isCancelled else { return }
+                    guard !Task.isCancelled else { return }
 
-                guard let song = response.items.first else {
-                    print("曲が見つかりません: \(track.title)")
-                    isTransitioning = false
-                    next()
-                    return
+                    guard let fetchedSong = response.items.first else {
+                        print("曲が見つかりません: \(track.title)")
+                        isTransitioning = false
+                        next()
+                        return
+                    }
+                    song = fetchedSong
+                    songCache[track.appleMusicSongId] = song
                 }
 
                 // アートワークURLを更新（プレイヤーカード表示用）
@@ -237,7 +246,7 @@ class ChorusPlayerManager: ObservableObject {
                 scheduleNextTrack(endTime: endTime)
 
                 // 前後トラックのアートワークを先読み
-                prefetchAdjacentArtworks()
+                prefetchAllArtworks()
 
             } catch {
                 guard !Task.isCancelled else { return }
@@ -276,28 +285,22 @@ class ChorusPlayerManager: ObservableObject {
         backgroundTimer = timer
     }
 
-    /// 前後トラックのアートワークURLと画像を先読み
-    private func prefetchAdjacentArtworks() {
+    /// 全トラックのアートワークURLと画像、Songオブジェクトを先読み
+    private func prefetchAllArtworks() {
         let currentTracks = tracks
         guard !currentTracks.isEmpty else { return }
 
-        // 前後のインデックスを計算
-        let prevIndex = currentTrackIndex > 0 ? currentTrackIndex - 1 : currentTracks.count - 1
-        let nextIndex = currentTrackIndex < currentTracks.count - 1 ? currentTrackIndex + 1 : 0
-
-        let adjacentTracks = Set([prevIndex, nextIndex])
-            .filter { $0 != currentTrackIndex }
-            .map { currentTracks[$0] }
-
         Task {
-            for track in adjacentTracks {
-                // すでにartworkURLがあれば画像キャッシュだけ先読み
-                if let existingURL = track.artworkURL {
+            for track in currentTracks {
+                guard !Task.isCancelled else { return }
+
+                // Songがキャッシュ済みかつartworkURLもあれば画像だけ先読み
+                if songCache[track.appleMusicSongId] != nil, let existingURL = track.artworkURL {
                     await prefetchImage(url: existingURL)
                     continue
                 }
 
-                // artworkURLがなければMusicKitから取得
+                // MusicKitからSongを取得してキャッシュ
                 do {
                     let request = MusicCatalogResourceRequest<Song>(
                         matching: \.id,
@@ -306,12 +309,14 @@ class ChorusPlayerManager: ObservableObject {
                     let response = try await request.response()
                     guard !Task.isCancelled else { return }
 
-                    if let song = response.items.first, let artwork = song.artwork {
-                        let url = artwork.url(width: 100, height: 100)
-                        track.artworkURL = url
-                        // 画像データも先読み
-                        if let url {
-                            await prefetchImage(url: url)
+                    if let song = response.items.first {
+                        songCache[track.appleMusicSongId] = song
+                        if let artwork = song.artwork {
+                            let url = artwork.url(width: 100, height: 100)
+                            track.artworkURL = url
+                            if let url {
+                                await prefetchImage(url: url)
+                            }
                         }
                     }
                 } catch {
