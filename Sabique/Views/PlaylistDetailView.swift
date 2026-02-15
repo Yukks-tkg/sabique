@@ -37,6 +37,7 @@ struct PlaylistDetailView: View {
 
     @EnvironmentObject private var authManager: AuthManager
     @EnvironmentObject private var communityManager: CommunityManager
+    @AppStorage("isLeftHandedMode") private var isLeftHandedMode: Bool = false
     
     // 1曲目のID（並べ替え検知用）
     private var firstTrackId: String? {
@@ -360,7 +361,7 @@ struct PlaylistDetailView: View {
     private var playbackControlsView: some View {
         VStack(spacing: 0) {
             playbackGradient
-            playbackButtons
+            playbackCard
         }
         .frame(maxWidth: .infinity)
         .animation(nil, value: playerManager.isPlaying)
@@ -381,73 +382,130 @@ struct PlaylistDetailView: View {
         .frame(height: 60)
     }
 
-    private var playbackButtons: some View {
-        HStack(spacing: 20) {
-            previousButton
-            playStopButton
-            nextButton
+    private var playbackCard: some View {
+        HStack(spacing: 12) {
+            if isLeftHandedMode {
+                // 左利きモード：コントロール → 曲情報 → アートワーク
+                playbackControls
+                currentTrackInfo
+                Spacer()
+                currentTrackArtwork
+            } else {
+                // 右利きモード（デフォルト）：アートワーク → 曲情報 → コントロール
+                currentTrackArtwork
+                currentTrackInfo
+                Spacer()
+                playbackControls
+            }
         }
-        .frame(maxWidth: .infinity)
+        .padding(.horizontal, 16)
         .padding(.vertical, 12)
+        .background(
+            RoundedRectangle(cornerRadius: 20)
+                .fill(.ultraThinMaterial)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 20)
+                        .stroke(Color.white.opacity(0.1), lineWidth: 1)
+                )
+        )
+        .padding(.horizontal, 12)
+        .padding(.bottom, 12)
         .background(Color.black.opacity(0.8))
     }
 
-    /// 再生中かどうか
-    private var isAnyPlaying: Bool {
-        playerManager.isPlaying
-    }
-
-    private var previousButton: some View {
-        Button(action: { handlePrevious() }) {
-            Image(systemName: "backward.fill")
-                .font(.title2)
-                .foregroundColor(.white)
-                .frame(width: 50, height: 50)
-                .background(Color.white.opacity(0.2))
-                .cornerRadius(14)
-        }
-        .disabled(!isAnyPlaying)
-        .opacity(isAnyPlaying ? 1.0 : 0.4)
-    }
-
-    private var playStopButton: some View {
-        Button(action: handlePlayStop) {
-            HStack(spacing: 12) {
-                Image(systemName: isAnyPlaying ? "stop.fill" : "play.fill")
-                    .font(.title3)
-                Text(isAnyPlaying ? String(localized: "stop") : String(localized: "play"))
-                    .font(.headline)
-                    .bold()
+    @ViewBuilder
+    private var currentTrackArtwork: some View {
+        Group {
+            if let currentTrack = playerManager.currentTrack,
+               let artworkURL = currentTrack.artworkURL {
+                AsyncImage(url: artworkURL) { image in
+                    image
+                        .resizable()
+                        .aspectRatio(contentMode: .fill)
+                } placeholder: {
+                    placeholderArtwork
+                }
+            } else {
+                placeholderArtwork
             }
-            .foregroundColor(.white)
-            .frame(width: 160)
-            .padding(.vertical, 16)
-            .background(playButtonGradient)
-            .cornerRadius(16)
-            .shadow(color: Color(red: 1.0, green: 0.5, blue: 0.3).opacity(0.4), radius: 10, x: 0, y: 5)
         }
-        .buttonStyle(.plain)
+        .frame(width: 50, height: 50)
+        .cornerRadius(8)
     }
 
-    private var playButtonGradient: LinearGradient {
-        LinearGradient(
-            colors: [Color(red: 1.0, green: 0.6, blue: 0.2), Color(red: 1.0, green: 0.4, blue: 0.4)],
-            startPoint: .leading,
-            endPoint: .trailing
-        )
+    private var placeholderArtwork: some View {
+        RoundedRectangle(cornerRadius: 8)
+            .fill(Color.gray.opacity(0.3))
+            .overlay(
+                Image(systemName: "music.note")
+                    .foregroundColor(.gray)
+                    .font(.title3)
+            )
     }
 
-    private var nextButton: some View {
-        Button(action: { handleNext() }) {
-            Image(systemName: "forward.fill")
-                .font(.title2)
-                .foregroundColor(.white)
-                .frame(width: 50, height: 50)
-                .background(Color.white.opacity(0.2))
-                .cornerRadius(14)
+    private var currentTrackInfo: some View {
+        VStack(alignment: isLeftHandedMode ? .trailing : .leading, spacing: 2) {
+            if let currentTrack = playerManager.currentTrack {
+                Text(currentTrack.title)
+                    .font(.system(size: 15, weight: .semibold))
+                    .foregroundColor(.white)
+                    .lineLimit(1)
+
+                Text(currentTrack.artist)
+                    .font(.system(size: 13))
+                    .foregroundColor(.white.opacity(0.7))
+                    .lineLimit(1)
+            } else {
+                Text(String(localized: "play"))
+                    .font(.system(size: 15, weight: .semibold))
+                    .foregroundColor(.white.opacity(0.7))
+            }
         }
-        .disabled(!isAnyPlaying)
-        .opacity(isAnyPlaying ? 1.0 : 0.4)
+        .frame(maxWidth: .infinity, alignment: isLeftHandedMode ? .trailing : .leading)
+    }
+
+    private var playbackControls: some View {
+        HStack(spacing: 8) {
+            // 前へボタン
+            Button(action: { handlePrevious() }) {
+                Image(systemName: "backward.fill")
+                    .font(.system(size: 18))
+                    .foregroundColor(.white)
+                    .frame(width: 36, height: 36)
+            }
+            .disabled(!playerManager.isPlaying)
+            .opacity(playerManager.isPlaying ? 1.0 : 0.4)
+
+            // 再生/停止ボタン
+            Button(action: handlePlayStop) {
+                Image(systemName: playerManager.isPlaying ? "pause.fill" : "play.fill")
+                    .font(.system(size: 20))
+                    .foregroundColor(.white)
+                    .frame(width: 44, height: 44)
+                    .background(
+                        Circle()
+                            .fill(
+                                LinearGradient(
+                                    colors: [Color(red: 1.0, green: 0.6, blue: 0.2), Color(red: 1.0, green: 0.4, blue: 0.4)],
+                                    startPoint: .topLeading,
+                                    endPoint: .bottomTrailing
+                                )
+                            )
+                            .shadow(color: Color(red: 1.0, green: 0.5, blue: 0.3).opacity(0.4), radius: 8, x: 0, y: 4)
+                    )
+            }
+            .buttonStyle(.plain)
+
+            // 次へボタン
+            Button(action: { handleNext() }) {
+                Image(systemName: "forward.fill")
+                    .font(.system(size: 18))
+                    .foregroundColor(.white)
+                    .frame(width: 36, height: 36)
+            }
+            .disabled(!playerManager.isPlaying)
+            .opacity(playerManager.isPlaying ? 1.0 : 0.4)
+        }
     }
 
     // MARK: - Actions

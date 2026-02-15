@@ -169,6 +169,11 @@ class ChorusPlayerManager: ObservableObject {
                     return
                 }
 
+                // アートワークURLを更新（プレイヤーカード表示用）
+                if let artwork = song.artwork {
+                    track.artworkURL = artwork.url(width: 100, height: 100)
+                }
+
                 // 曲を再生
                 player.queue = [song]
                 try await player.play()

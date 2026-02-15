@@ -40,6 +40,7 @@ struct SettingsView: View {
     @AppStorage("customBackgroundArtworkURLString") private var customBackgroundArtworkURLString: String = ""
     @AppStorage("customBackgroundSongTitle") private var customBackgroundSongTitle: String = ""
     @AppStorage("customBackgroundArtistName") private var customBackgroundArtistName: String = ""
+    @AppStorage("isLeftHandedMode") private var isLeftHandedMode: Bool = false
     
     var body: some View {
         NavigationStack {
@@ -272,7 +273,31 @@ struct SettingsView: View {
                     }
                     
 
-                    
+                    // コントロール位置設定
+                    Section {
+                        Picker(selection: $isLeftHandedMode) {
+                            HStack {
+                                Image(systemName: "hand.point.right.fill")
+                                Text(String(localized: "right_handed"))
+                            }
+                            .tag(false)
+
+                            HStack {
+                                Image(systemName: "hand.point.left.fill")
+                                Text(String(localized: "left_handed"))
+                            }
+                            .tag(true)
+                        } label: {
+                            Text(String(localized: "control_position"))
+                        }
+                        .pickerStyle(.inline)
+                    } header: {
+                        Text(String(localized: "playback_settings"))
+                    } footer: {
+                        Text(String(localized: "control_position_description"))
+                            .font(.caption)
+                    }
+
                     Section(String(localized: "background_settings")) {
                         if !customBackgroundArtworkURLString.isEmpty, let url = URL(string: customBackgroundArtworkURLString) {
                             HStack {
