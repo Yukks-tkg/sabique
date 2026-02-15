@@ -427,15 +427,35 @@ struct PlaylistDetailView: View {
     private var currentTrackInfo: some View {
         VStack(alignment: isLeftHandedMode ? .trailing : .leading, spacing: 2) {
             if let currentTrack = playerManager.currentTrack {
-                Text(currentTrack.title)
-                    .font(.system(size: 15, weight: .semibold))
-                    .foregroundColor(.white)
-                    .lineLimit(1)
+                ViewThatFits(in: .horizontal) {
+                    // まず通常サイズで1行に収まるか試す（タイトル15pt / アーティスト13pt）
+                    VStack(alignment: isLeftHandedMode ? .trailing : .leading, spacing: 2) {
+                        Text(currentTrack.title)
+                            .font(.system(size: 15, weight: .semibold))
+                            .foregroundColor(.white)
+                            .fixedSize(horizontal: true, vertical: false)
+                            .lineLimit(1)
 
-                Text(currentTrack.artist)
-                    .font(.system(size: 13))
-                    .foregroundColor(.white.opacity(0.7))
-                    .lineLimit(1)
+                        Text(currentTrack.artist)
+                            .font(.system(size: 13))
+                            .foregroundColor(.white.opacity(0.7))
+                            .lineLimit(1)
+                    }
+
+                    // 収まらなければ小さめフォントで2行表示（タイトル12pt / アーティスト10.5pt）
+                    VStack(alignment: isLeftHandedMode ? .trailing : .leading, spacing: 2) {
+                        Text(currentTrack.title)
+                            .font(.system(size: 12, weight: .semibold))
+                            .foregroundColor(.white)
+                            .lineLimit(2)
+                            .multilineTextAlignment(isLeftHandedMode ? .trailing : .leading)
+
+                        Text(currentTrack.artist)
+                            .font(.system(size: 10.5))
+                            .foregroundColor(.white.opacity(0.7))
+                            .lineLimit(1)
+                    }
+                }
             }
         }
         .frame(maxWidth: .infinity, alignment: isLeftHandedMode ? .trailing : .leading)
