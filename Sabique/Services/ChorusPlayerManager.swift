@@ -227,6 +227,9 @@ class ChorusPlayerManager: ObservableObject {
                 // 次の曲へのタイマーをセット
                 scheduleNextTrack(endTime: endTime)
 
+                // 前後トラックのアートワークを先読み
+                prefetchAdjacentArtworks()
+
             } catch {
                 guard !Task.isCancelled else { return }
                 print("再生エラー: \(error)")
@@ -262,6 +265,60 @@ class ChorusPlayerManager: ObservableObject {
 
         timer.resume()
         backgroundTimer = timer
+    }
+
+    /// 前後トラックのアートワークURLと画像を先読み
+    private func prefetchAdjacentArtworks() {
+        let currentTracks = tracks
+        guard !currentTracks.isEmpty else { return }
+
+        // 前後のインデックスを計算
+        let prevIndex = currentTrackIndex > 0 ? currentTrackIndex - 1 : currentTracks.count - 1
+        let nextIndex = currentTrackIndex < currentTracks.count - 1 ? currentTrackIndex + 1 : 0
+
+        let adjacentTracks = Set([prevIndex, nextIndex])
+            .filter { $0 != currentTrackIndex }
+            .map { currentTracks[$0] }
+
+        Task {
+            for track in adjacentTracks {
+                // すでにartworkURLがあれば画像キャッシュだけ先読み
+                if let existingURL = track.artworkURL {
+                    await prefetchImage(url: existingURL)
+                    continue
+                }
+
+                // artworkURLがなければMusicKitから取得
+                do {
+                    let request = MusicCatalogResourceRequest<Song>(
+                        matching: \.id,
+                        equalTo: MusicItemID(track.appleMusicSongId)
+                    )
+                    let response = try await request.response()
+                    guard !Task.isCancelled else { return }
+
+                    if let song = response.items.first, let artwork = song.artwork {
+                        let url = artwork.url(width: 100, height: 100)
+                        track.artworkURL = url
+                        // 画像データも先読み
+                        if let url {
+                            await prefetchImage(url: url)
+                        }
+                    }
+                } catch {
+                    print("先読みエラー: \(track.title) - \(error)")
+                }
+            }
+        }
+    }
+
+    /// URLの画像データをキャッシュに先読み
+    private func prefetchImage(url: URL) async {
+        do {
+            let (_, _) = try await URLSession.shared.data(from: url)
+        } catch {
+            // 先読み失敗は無視
+        }
     }
 
     /// バックグラウンドタイマーをキャンセル
