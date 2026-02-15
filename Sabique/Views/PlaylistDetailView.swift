@@ -446,10 +446,6 @@ struct PlaylistDetailView: View {
                     .font(.system(size: 13))
                     .foregroundColor(.white.opacity(0.7))
                     .lineLimit(1)
-            } else {
-                Text(String(localized: "play"))
-                    .font(.system(size: 15, weight: .semibold))
-                    .foregroundColor(.white.opacity(0.7))
             }
         }
         .frame(maxWidth: .infinity, alignment: isLeftHandedMode ? .trailing : .leading)
