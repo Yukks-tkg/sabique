@@ -1007,9 +1007,11 @@ struct RotatingArtwork: View {
             )
             .rotationEffect(.degrees(rotation))
             .onAppear {
-                // Viewが生成されたとき、回転中なら開始
+                // Viewが生成されたとき、回転中ならトランジション完了後に開始
                 if isRotating {
-                    startRotation()
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) {
+                        startRotation()
+                    }
                 }
             }
             .onChange(of: isRotating) { _, newValue in
