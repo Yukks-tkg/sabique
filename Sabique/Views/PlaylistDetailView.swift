@@ -417,7 +417,7 @@ struct PlaylistDetailView: View {
     private var currentTrackArtwork: some View {
         RotatingArtwork(
             artworkURL: playerManager.currentTrack?.artworkURL,
-            isRotating: playerManager.isPlaying,
+            isRotating: playerManager.isPlaying && !playerManager.isPaused,
             onHoldPause: { isHolding in
                 handleArtworkHold(isHolding: isHolding)
             }
@@ -1008,11 +1008,6 @@ struct RotatingArtwork: View {
                 }
             }
             .id(animationID) // アニメーションを完全にリセットするためのID
-
-            // 中央の穴（レコードっぽく）
-            Circle()
-                .fill(Color.black.opacity(0.3))
-                .frame(width: 8, height: 8)
         }
         .scaleEffect(isPressed ? 0.95 : 1.0)
         .animation(.spring(response: 0.3, dampingFraction: 0.6), value: isPressed)
