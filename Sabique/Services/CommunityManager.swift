@@ -309,9 +309,16 @@ class CommunityManager: ObservableObject {
         let newPlaylist = Playlist(name: communityPlaylist.name, orderIndex: 0)
         modelContext.insert(newPlaylist)
 
-        // トラックを追加
+        // トラックを追加（MusicKitからローカライズ名を取得）
         for (index, communityTrack) in tracksToImport.enumerated() {
             let track = communityTrack.toTrackInPlaylist(orderIndex: index)
+
+            // デバイス言語に合ったタイトル・アーティスト名を取得
+            if let localized = await TrackInPlaylist.fetchLocalizedInfo(songId: communityTrack.appleMusicId) {
+                track.title = localized.title
+                track.artist = localized.artist
+            }
+
             track.playlist = newPlaylist
             modelContext.insert(track)
         }

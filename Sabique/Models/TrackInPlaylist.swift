@@ -7,6 +7,7 @@
 
 import Foundation
 import SwiftData
+import MusicKit
 
 @Model
 final class TrackInPlaylist {
@@ -73,5 +74,35 @@ final class TrackInPlaylist {
         let minutes = Int(totalSeconds) / 60
         let seconds = Int(totalSeconds) % 60
         return String(format: "%d:%02d", minutes, seconds)
+    }
+
+    // MARK: - ローカライズ名取得
+
+    /// Apple Music APIから現在のデバイス言語に合ったタイトル・アーティスト名を取得
+    /// 取得できた場合はSwiftDataのプロパティも更新する
+    @MainActor
+    func refreshLocalizedInfo() async {
+        guard let (localizedTitle, localizedArtist) = await Self.fetchLocalizedInfo(songId: appleMusicSongId) else {
+            return
+        }
+        self.title = localizedTitle
+        self.artist = localizedArtist
+    }
+
+    /// Apple Music IDからローカライズされたタイトル・アーティスト名を取得
+    static func fetchLocalizedInfo(songId: String) async -> (title: String, artist: String)? {
+        do {
+            let request = MusicCatalogResourceRequest<Song>(
+                matching: \.id,
+                equalTo: MusicItemID(songId)
+            )
+            let response = try await request.response()
+            if let song = response.items.first {
+                return (song.title, song.artistName)
+            }
+        } catch {
+            print("⚠️ ローカライズ名取得失敗 (songId: \(songId)): \(error)")
+        }
+        return nil
     }
 }

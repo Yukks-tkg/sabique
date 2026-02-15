@@ -402,13 +402,13 @@ struct SongSearchView: View {
         }
 
         Task {
-            let catalogSongId = await getCatalogSongId(song: song)
+            let (catalogSongId, localizedTitle, localizedArtist) = await getCatalogSongInfo(song: song)
 
             await MainActor.run {
                 let track = TrackInPlaylist(
                     appleMusicSongId: catalogSongId,
-                    title: song.title,
-                    artist: song.artistName,
+                    title: localizedTitle,
+                    artist: localizedArtist,
                     orderIndex: playlist.tracks.count
                 )
                 track.playlist = playlist
@@ -418,26 +418,32 @@ struct SongSearchView: View {
             }
         }
     }
-    
-    /// カタログから正しい曲IDを取得
-    private func getCatalogSongId(song: Song) async -> String {
+
+    /// カタログから正しい曲ID・ローカライズされたタイトル・アーティスト名を取得
+    private func getCatalogSongInfo(song: Song) async -> (id: String, title: String, artist: String) {
         var catalogSongId = song.id.rawValue
-        
+        var title = song.title
+        var artist = song.artistName
+
         do {
             var searchRequest = MusicCatalogSearchRequest(term: "\(song.title) \(song.artistName)", types: [Song.self])
             searchRequest.limit = 5
             let searchResponse = try await searchRequest.response()
-            
+
             if let catalogSong = searchResponse.songs.first(where: { $0.title == song.title && $0.artistName == song.artistName }) {
                 catalogSongId = catalogSong.id.rawValue
+                title = catalogSong.title
+                artist = catalogSong.artistName
             } else if let firstSong = searchResponse.songs.first {
                 catalogSongId = firstSong.id.rawValue
+                title = firstSong.title
+                artist = firstSong.artistName
             }
         } catch {
             print("Catalog search failed: \(error)")
         }
-        
-        return catalogSongId
+
+        return (catalogSongId, title, artist)
     }
 }
 

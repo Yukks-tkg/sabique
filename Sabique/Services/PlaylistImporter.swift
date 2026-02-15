@@ -96,10 +96,13 @@ class PlaylistImporter {
             
             // 曲が見つかった場合のみトラックを追加
             if let validSongId = songId {
+                // デバイス言語に合ったタイトル・アーティスト名を取得
+                let localizedInfo = await TrackInPlaylist.fetchLocalizedInfo(songId: validSongId)
+
                 let track = TrackInPlaylist(
                     appleMusicSongId: validSongId,
-                    title: exportedTrack.title,
-                    artist: exportedTrack.artist,
+                    title: localizedInfo?.title ?? exportedTrack.title,
+                    artist: localizedInfo?.artist ?? exportedTrack.artist,
                     orderIndex: index,
                     chorusStartSeconds: exportedTrack.chorusStart,
                     chorusEndSeconds: exportedTrack.chorusEnd
@@ -240,10 +243,13 @@ class PlaylistImporter {
                 }
 
                 if let validSongId = songId {
+                    // デバイス言語に合ったタイトル・アーティスト名を取得
+                    let localizedInfo = await TrackInPlaylist.fetchLocalizedInfo(songId: validSongId)
+
                     let track = TrackInPlaylist(
                         appleMusicSongId: validSongId,
-                        title: exportedTrack.title,
-                        artist: exportedTrack.artist,
+                        title: localizedInfo?.title ?? exportedTrack.title,
+                        artist: localizedInfo?.artist ?? exportedTrack.artist,
                         orderIndex: trackIndex,
                         chorusStartSeconds: exportedTrack.chorusStart,
                         chorusEndSeconds: exportedTrack.chorusEnd
