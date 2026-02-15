@@ -418,23 +418,16 @@ struct PlaylistDetailView: View {
 
     @ViewBuilder
     private var currentTrackArtwork: some View {
-        ZStack {
-            RotatingArtwork(
-                artworkURL: playerManager.currentTrack?.artworkURL,
-                isRotating: playerManager.isPlaying && !playerManager.isPaused,
-                onHoldPause: { isHolding in
-                    handleArtworkHold(isHolding: isHolding)
-                }
-            )
-            .id(playerManager.currentTrack?.id)
-            .transition(.asymmetric(
-                insertion: .move(edge: slideDirection).combined(with: .opacity),
-                removal: .move(edge: slideDirection == .trailing ? .leading : .trailing).combined(with: .opacity)
-            ))
-        }
-        .frame(width: 54, height: 54)
-        .clipped()
-        .animation(.easeInOut(duration: 0.3), value: playerManager.currentTrack?.id)
+        RotatingArtwork(
+            artworkURL: playerManager.currentTrack?.artworkURL,
+            isRotating: playerManager.isPlaying && !playerManager.isPaused,
+            onHoldPause: { isHolding in
+                handleArtworkHold(isHolding: isHolding)
+            }
+        )
+        .id(playerManager.currentTrack?.id)
+        .transition(.scale(scale: 0.5).combined(with: .opacity))
+        .animation(.easeOut(duration: 0.25), value: playerManager.currentTrack?.id)
     }
 
     private var placeholderArtwork: some View {
@@ -898,7 +891,12 @@ struct TrackRow: View {
         }
         
         if let foundSong = song, let artwork = foundSong.artwork {
-            artworkURL = artwork.url(width: 100, height: 100)
+            let url = artwork.url(width: 100, height: 100)
+            artworkURL = url
+            // SwiftDataにもキャッシュ（再生時のAPI呼び出しを省略できる）
+            if track.artworkURL == nil {
+                track.artworkURL = url
+            }
         }
     }
 }

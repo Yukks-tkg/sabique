@@ -184,6 +184,11 @@ class ChorusPlayerManager: ObservableObject {
 
         let track = currentTracks[currentTrackIndex]
 
+        // artworkURLがすでにキャッシュ済みなら即座にUI更新（トランジション即発火）
+        if track.artworkURL != nil {
+            currentTrack = track
+        }
+
         currentPlayTask = Task {
             do {
                 // Apple Music IDから曲を取得
@@ -208,8 +213,10 @@ class ChorusPlayerManager: ObservableObject {
                     track.artworkURL = artwork.url(width: 100, height: 100)
                 }
 
-                // artworkURL準備完了後にUI更新（1回で済む）
-                currentTrack = track
+                // artworkURLが未キャッシュだった場合はここでUI更新
+                if currentTrack?.id != track.id {
+                    currentTrack = track
+                }
 
                 // 曲を再生
                 player.queue = [song]
