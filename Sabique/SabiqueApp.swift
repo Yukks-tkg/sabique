@@ -7,6 +7,7 @@
 
 import SwiftUI
 import SwiftData
+import StoreKit
 import FirebaseCore
 
 @main
@@ -15,6 +16,8 @@ struct SabiqueApp: App {
     @StateObject private var storeManager = StoreManager()
     @StateObject private var authManager = AuthManager()
     @StateObject private var communityManager = CommunityManager()
+    @Environment(\.requestReview) private var requestReview
+    @AppStorage("appLaunchCount") private var appLaunchCount = 0
 
     let modelContainer: ModelContainer
 
@@ -41,6 +44,15 @@ struct SabiqueApp: App {
                 .environmentObject(storeManager)
                 .environmentObject(authManager)
                 .environmentObject(communityManager)
+                .onAppear {
+                    appLaunchCount += 1
+                    if appLaunchCount == 10 {
+                        // 少し遅延させてアプリの表示が安定してから表示
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) {
+                            requestReview()
+                        }
+                    }
+                }
         }
         .modelContainer(modelContainer)
     }
