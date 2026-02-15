@@ -95,7 +95,8 @@ class CommunityManager: ObservableObject {
             throw CommunityError.userBanned
         }
 
-        let communityPlaylist = CommunityPlaylist.from(
+        // ISRCを含むコミュニティプレイリストを作成
+        let communityPlaylist = await CommunityPlaylist.fromWithISRC(
             playlist: playlist,
             authorId: authorId,
             authorName: authorName,
@@ -112,6 +113,7 @@ class CommunityManager: ObservableObject {
         print("  - authorIsPremium: \(communityPlaylist.authorIsPremium)")
         print("  - authorCountryCode: \(communityPlaylist.authorCountryCode ?? "nil")")
         print("  - tracks count: \(communityPlaylist.tracks.count)")
+        print("  - ISRCs: \(communityPlaylist.tracks.map { $0.isrc ?? "nil" })")
 
         do {
             // プレイリストを投稿

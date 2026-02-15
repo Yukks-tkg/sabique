@@ -127,6 +127,7 @@ class ChorusPlayerManager: ObservableObject {
     /// 次の曲へ
     func next() {
         guard !isTransitioning else { return }
+        isPaused = false
 
         // 現在再生中のトラックのIDを使って、最新のリストでの次のトラックを見つける
         if let currentTrack = currentTrack,
@@ -148,6 +149,7 @@ class ChorusPlayerManager: ObservableObject {
     /// 前の曲へ
     func previous() {
         guard !isTransitioning else { return }
+        isPaused = false
 
         // 現在再生中のトラックのIDを使って、最新のリストでの前のトラックを見つける
         if let currentTrack = currentTrack,

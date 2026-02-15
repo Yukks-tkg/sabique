@@ -7,6 +7,7 @@
 
 import Foundation
 import FirebaseFirestore
+import MusicKit
 
 /// コミュニティプレイリスト（Firestore用）
 /// カスタムinit(from decoder:)は@DocumentIDの自動注入を妨げるため使用しない
@@ -71,7 +72,8 @@ struct CommunityTrack: Identifiable, Codable {
 // MARK: - 変換ヘルパー
 
 extension CommunityPlaylist {
-    /// マイプレイリストからコミュニティプレイリストを作成
+    /// マイプレイリストからコミュニティプレイリストを作成（ISRCなし）
+    /// この関数は非推奨。代わりにasyncバージョンを使用してください。
     static func from(
         playlist: Playlist,
         authorId: String,
@@ -84,7 +86,7 @@ extension CommunityPlaylist {
             CommunityTrack(
                 id: track.id.uuidString,
                 appleMusicId: track.appleMusicSongId,
-                isrc: nil,  // TODO: ISRCを取得する処理を追加
+                isrc: nil,
                 title: track.title,
                 artist: track.artist,
                 chorusStart: track.chorusStartSeconds,
@@ -109,6 +111,67 @@ extension CommunityPlaylist {
             viewCount: 0,
             createdAt: Date()
         )
+    }
+
+    /// マイプレイリストからコミュニティプレイリストを作成（ISRCあり）
+    static func fromWithISRC(
+        playlist: Playlist,
+        authorId: String,
+        authorName: String?,
+        authorIsPremium: Bool,
+        authorCountryCode: String?,
+        authorArtworkURL: String?
+    ) async -> CommunityPlaylist {
+        // 各トラックのISRCを非同期で取得
+        var communityTracks: [CommunityTrack] = []
+
+        for track in playlist.sortedTracks {
+            let isrc = await fetchISRC(for: track.appleMusicSongId)
+
+            let communityTrack = CommunityTrack(
+                id: track.id.uuidString,
+                appleMusicId: track.appleMusicSongId,
+                isrc: isrc,
+                title: track.title,
+                artist: track.artist,
+                chorusStart: track.chorusStartSeconds,
+                chorusEnd: track.chorusEndSeconds
+            )
+            communityTracks.append(communityTrack)
+        }
+
+        let songIds = communityTracks.map { $0.appleMusicId }
+
+        return CommunityPlaylist(
+            id: nil,  // Firestoreが自動生成
+            name: playlist.name,
+            authorId: authorId,
+            authorName: authorName,
+            authorIsPremium: authorIsPremium,
+            authorCountryCode: authorCountryCode,
+            authorArtworkURL: authorArtworkURL,
+            tracks: communityTracks,
+            songIds: songIds,
+            likeCount: 0,
+            downloadCount: 0,
+            viewCount: 0,
+            createdAt: Date()
+        )
+    }
+
+    /// Apple Music APIからISRCを取得
+    private static func fetchISRC(for songId: String) async -> String? {
+        do {
+            let request = MusicCatalogResourceRequest<Song>(
+                matching: \.id,
+                equalTo: MusicItemID(songId)
+            )
+            let response = try await request.response()
+            return response.items.first?.isrc
+        } catch {
+            print("⚠️ ISRC取得失敗 (songId: \(songId)): \(error)")
+            return nil
+        }
     }
 }
 

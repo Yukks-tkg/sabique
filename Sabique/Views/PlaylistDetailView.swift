@@ -460,12 +460,12 @@ struct PlaylistDetailView: View {
                     .foregroundColor(.white)
                     .frame(width: 36, height: 36)
             }
-            .disabled(!playerManager.isPlaying)
-            .opacity(playerManager.isPlaying ? 1.0 : 0.4)
+            .disabled(!playerManager.isPlaying && !playerManager.isPaused)
+            .opacity((playerManager.isPlaying || playerManager.isPaused) ? 1.0 : 0.4)
 
             // 再生/停止ボタン
             Button(action: handlePlayStop) {
-                Image(systemName: playerManager.isPlaying ? "pause.fill" : "play.fill")
+                Image(systemName: (playerManager.isPlaying && !playerManager.isPaused) ? "pause.fill" : "play.fill")
                     .font(.system(size: 20))
                     .foregroundColor(.white)
                     .frame(width: 44, height: 44)
@@ -490,8 +490,8 @@ struct PlaylistDetailView: View {
                     .foregroundColor(.white)
                     .frame(width: 36, height: 36)
             }
-            .disabled(!playerManager.isPlaying)
-            .opacity(playerManager.isPlaying ? 1.0 : 0.4)
+            .disabled(!playerManager.isPlaying && !playerManager.isPaused)
+            .opacity((playerManager.isPlaying || playerManager.isPaused) ? 1.0 : 0.4)
         }
     }
 
@@ -578,10 +578,14 @@ struct PlaylistDetailView: View {
     }
 
     private func handlePlayStop() {
-        if playerManager.isPlaying {
-            playerManager.stop()
+        if playerManager.isPlaying && !playerManager.isPaused {
+            // 再生中 → 一時停止
+            playerManager.pause()
+        } else if playerManager.isPaused {
+            // 一時停止中 → 再開
+            playerManager.resume()
         } else {
-            // クロージャで渡すことで、再生中のトラック順変更がリアルタイムで反映される
+            // 停止状態 → 先頭から再生
             playerManager.play { [playlist] in
                 playlist.sortedTracks
             }
