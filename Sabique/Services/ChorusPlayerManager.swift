@@ -183,7 +183,6 @@ class ChorusPlayerManager: ObservableObject {
         isTransitioning = true
 
         let track = currentTracks[currentTrackIndex]
-        currentTrack = track
 
         currentPlayTask = Task {
             do {
@@ -208,6 +207,9 @@ class ChorusPlayerManager: ObservableObject {
                 if let artwork = song.artwork {
                     track.artworkURL = artwork.url(width: 100, height: 100)
                 }
+
+                // artworkURL準備完了後にUI更新（1回で済む）
+                currentTrack = track
 
                 // 曲を再生
                 player.queue = [song]
