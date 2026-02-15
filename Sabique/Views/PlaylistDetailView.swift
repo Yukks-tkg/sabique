@@ -677,11 +677,8 @@ struct MarqueeText: View {
     @State private var containerWidth: CGFloat = 0
     @State private var offset: CGFloat = 0
     @State private var animationTask: Task<Void, Never>?
-
-    /// テキストがコンテナからはみ出すか
-    private var needsScroll: Bool {
-        textWidth > containerWidth && isAnimating
-    }
+    /// アニメーションリセット用ID（変更するとView再生成で進行中アニメーションが破棄される）
+    @State private var resetId = UUID()
 
     var body: some View {
         GeometryReader { geometry in
@@ -702,6 +699,7 @@ struct MarqueeText: View {
         }
         .clipped()
         .frame(height: UIFont.preferredFont(forTextStyle: .headline).lineHeight)
+        .id(resetId)
         .onChange(of: isAnimating) { _, newValue in
             if newValue {
                 startAnimation()
@@ -779,9 +777,9 @@ struct MarqueeText: View {
     private func stopAnimation() {
         animationTask?.cancel()
         animationTask = nil
-        withAnimation(nil) {
-            offset = 0
-        }
+        // IDを変更してViewを再生成し、進行中のアニメーションを確実に破棄
+        offset = 0
+        resetId = UUID()
     }
 }
 
