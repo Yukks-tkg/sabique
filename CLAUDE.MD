@@ -7,10 +7,13 @@ SabiqueはSwiftUIとMusicKitを使用したiOS向け音楽プレイリスト管�
 - プレイリストの作成・管理・削除・リネーム
 - Apple Musicからのプレイリストインポート
 - 曲のハイライト（サビ）区間の設定と連続再生
+- レコードプレイヤー風の再生UI（アートワーク回転、長い曲名の自動レイアウト調整）
 - カスタム背景アートワーク設定
 - プレミアム機能（In-App Purchase対応）
 - コミュニティ機能（プレイリスト公開・共有）
 - Sign in with Apple認証
+- トラック情報のローカライズ（デバイス言語に応じたタイトル・アーティスト名表示）
+- レビューリクエスト（10回起動時に表示）
 
 ## アーキテクチャ
 
@@ -65,14 +68,18 @@ Sabique/
 ### TrackInPlaylist（トラック）
 - `id: UUID` - 一意識別子
 - `appleMusicSongId: String` - Apple Music曲ID
-- `title: String` - 曲名
-- `artist: String` - アーティスト名
+- `title: String` - 曲名（デバイス言語でローカライズ済み）
+- `artist: String` - アーティスト名（デバイス言語でローカライズ済み）
 - `chorusStartSeconds: Double?` - ハイライト開始位置（秒）
 - `chorusEndSeconds: Double?` - ハイライト終了位置（秒）
 - `artworkURL: URL?` - アートワークURLキャッシュ
 - `orderIndex: Int` - プレイリスト内での表示順序
 - `isLocked: Bool` - ロック状態（無料版制限用）
 - `playlist: Playlist?` - 所属プレイリスト
+
+**ローカライズ対応メソッド:**
+- `refreshLocalizedInfo()` - MusicKitから現在のデバイス言語のタイトル・アーティスト名を再取得して更新（@MainActor）
+- `fetchLocalizedInfo(songId:)` - Apple Music IDからローカライズされた情報を取得（static）
 
 ### CommunityPlaylist（コミュニティプレイリスト）
 - Firestore上で管理される公開プレイリスト
@@ -123,6 +130,7 @@ Sabique/
 1. ISRCで曲を検索
 2. 見つからない場合はApple Music IDで検証
 3. 有効なIDが見つかった曲のみインポート
+4. MusicKitからデバイス言語に合ったタイトル・アーティスト名を取得して保存
 
 ### StoreManager
 App Store課金管理を担当します。
@@ -148,7 +156,7 @@ Sign in with Appleによる認証を管理します。
 - プレイリストの公開・削除
 - コミュニティプレイリストの取得（人気・新着を同時取得）
 - ランキング（いいね数、ダウンロード数）
-- プレイリストのインポート（無料版は3曲制限）
+- プレイリストのインポート（無料版は3曲制限、インポート時にデバイス言語でローカライズ）
 - ユーザーデータの全削除（アカウント削除時）
 
 **データ管理:**
@@ -200,8 +208,13 @@ Sign in with Appleによる認証を管理します。
 
 ### 主要API
 - `MusicCatalogSearchRequest` - 曲検索
-- `MusicCatalogResourceRequest` - 曲IDからの取得
+- `MusicCatalogResourceRequest` - 曲IDからの取得（ローカライズ名取得にも使用）
 - `ApplicationMusicPlayer` - 再生制御
+
+### ローカライズ対応
+曲追加・インポート時にMusicKitのカタログAPIからデバイス言語に合ったタイトル・アーティスト名を取得して保存する。これにより、他言語で投稿されたコミュニティプレイリストをインポートしても、ユーザーの言語で表示される。
+- `TrackInPlaylist.fetchLocalizedInfo(songId:)` を全インポート経路で使用
+- 対応箇所: SongSearchView（曲追加）、CommunityManager（コミュニティインポート）、PlaylistImporter（ファイルインポート・バックアップ復元）
 
 ## データ永続化
 SwiftDataを使用してプレイリストとトラックを永続化。
@@ -217,6 +230,16 @@ SwiftDataを使用してプレイリストとトラックを永続化。
 - プレイリストのランダムなアートワークをぼかして背景に表示
 - カスタム背景URLの設定が可能（AppStorage）
 - 0.5秒のフェードアニメーション
+
+### 再生プレイヤー（PlaylistDetailView下部）
+- レコードプレイヤー風デザイン（`RotatingArtwork`でアートワークが回転）
+- 長押しで一時停止、離すと再開
+- 長い曲名は`ViewThatFits`で自動レイアウト調整（通常: 15pt/1行、フォールバック: 12pt/2行、アーティスト名も同比率で縮小）
+- 左利きモード対応（`isLeftHandedMode`でレイアウト反転）
+
+### MarqueeText（横スクロールテキスト）
+- トラック一覧で再生中の曲名が長い場合に横スクロール
+- 曲切り替え時は`resetId`（UUID）を変更してViewを再生成し、進行中アニメーションを確実に破棄
 
 ### ダークモード
 - `.preferredColorScheme(.dark)` で強制ダークモード
@@ -305,6 +328,11 @@ SwiftDataを使用してプレイリストとトラックを永続化。
 - プレミアム判定は`StoreManager.isPremium`
 - コミュニティからのインポートも曲数制限適用
 
+### レビューリクエスト
+- `AppStorage("appLaunchCount")`で起動回数を管理
+- 10回目の起動時に`requestReview()`を呼び出し（2秒遅延）
+- AppleのAPIが表示頻度を自動制御するため過剰表示なし
+
 ### Firebaseセキュリティルール
 ```javascript
 // communityPlaylists コレクション
@@ -324,6 +352,10 @@ match /communityPlaylists/{playlistId} {
 - **ターゲット:** Sabique
 - **Configuration:** Debug / Release
 - **Scheme:** Sabique
+
+### SwiftUIアニメーションの注意点
+- `withAnimation(.linear(duration:))`で開始されたアニメーションはTaskキャンセルだけでは停止しない
+- 確実に停止するには`.id()`modifierのIDを変更してView再生成する手法が有効（MarqueeTextで採用）
 
 ## 今後の拡張案
 - 波形表示の実装

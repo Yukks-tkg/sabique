@@ -839,14 +839,38 @@ struct TrackRow: View {
 
             Spacer()
 
-            // 編集エリア（時間 + chevron）タップでハイライト設定画面
+            // 編集エリア（時間 or バッジ + chevron）タップでハイライト設定画面
             Button(action: { onEdit?() }) {
                 HStack(spacing: 6) {
                     if track.hasChorusSettings {
                         Text("\(track.chorusStartFormatted) - \(track.chorusEndFormatted)")
-                            .font(.caption)
+                            .font(.caption2)
+                            .fontWeight(.medium)
                             .monospacedDigit()
-                            .foregroundColor(.secondary)
+                            .foregroundColor(.white.opacity(0.85))
+                            .padding(.horizontal, 10)
+                            .padding(.vertical, 9)
+                            .background(
+                                Capsule()
+                                    .fill(Color.white.opacity(0.15))
+                            )
+                    } else {
+                        Text(String(localized: "set_highlight"))
+                            .font(.caption2)
+                            .fontWeight(.medium)
+                            .foregroundColor(.white)
+                            .padding(.horizontal, 10)
+                            .padding(.vertical, 9)
+                            .background(
+                                Capsule()
+                                    .fill(
+                                        LinearGradient(
+                                            colors: [Color(red: 1.0, green: 0.6, blue: 0.2), Color(red: 1.0, green: 0.4, blue: 0.4)],
+                                            startPoint: .leading,
+                                            endPoint: .trailing
+                                        )
+                                    )
+                            )
                     }
 
                     Image(systemName: "chevron.right")
