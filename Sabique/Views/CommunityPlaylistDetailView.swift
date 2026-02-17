@@ -34,6 +34,7 @@ struct CommunityPlaylistDetailView: View {
     @State private var showingSignInRequired = false
     @State private var showingBlockConfirm = false
     @State private var showingBlockComplete = false
+    @State private var showingShareSheet = false
     @State private var trackArtworks: [String: URL] = [:]  // appleMusicId -> artworkURL
 
     init(playlist: CommunityPlaylist) {
@@ -89,6 +90,11 @@ struct CommunityPlaylistDetailView: View {
         .toolbar {
             ToolbarItem(placement: .navigationBarTrailing) {
                 Menu {
+                    // シェア
+                    Button(action: { shareToX() }) {
+                        Label(String(localized: "share"), systemImage: "square.and.arrow.up")
+                    }
+
                     if playlist.authorId == authManager.currentUser?.uid {
                         // 自分の投稿なら削除ボタンのみ表示
                         Button(role: .destructive, action: { showingDeleteConfirm = true }) {
@@ -542,6 +548,40 @@ struct CommunityPlaylistDetailView: View {
                     showingImportError = true
                 }
             }
+        }
+    }
+
+    private static let appStoreURL = "https://apps.apple.com/app/sabique/id6757994102"
+
+    private func shareToX() {
+        let trackLines = playlist.tracks.prefix(3).map { "・\($0.title)" }.joined(separator: "\n")
+        let suffix = playlist.tracks.count > 3 ? "\n ..." : ""
+        let headline = String(localized: "share_headline")
+        let text = """
+        \(headline)
+
+        🎧 \(playlist.name)
+        \(trackLines)\(suffix)
+
+        #Sabique #HighlightList #AppleMusic
+        """
+
+        var shareItems: [Any] = [text]
+
+        // URLを別itemとして渡すことでXがOGPカードを認識しやすくなる
+        if let url = URL(string: Self.appStoreURL) {
+            shareItems.append(url)
+        }
+
+        let activityVC = UIActivityViewController(activityItems: shareItems, applicationActivities: nil)
+        if let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
+           let rootVC = windowScene.windows.first?.rootViewController {
+            // iPadではpopoverの設定が必要
+            if let popover = activityVC.popoverPresentationController {
+                popover.sourceView = rootVC.view
+                popover.sourceRect = CGRect(x: rootVC.view.bounds.midX, y: 0, width: 0, height: 0)
+            }
+            rootVC.present(activityVC, animated: true)
         }
     }
 
