@@ -46,7 +46,17 @@ struct ProfileView: View {
                 }
 
                 if authManager.isSignedIn {
-                    signedInView
+                    if isLoading && userProfile == nil {
+                        // 初回読み込み中はローディング表示
+                        VStack {
+                            Spacer()
+                            ProgressView()
+                                .tint(.white)
+                            Spacer()
+                        }
+                    } else {
+                        signedInView
+                    }
                 } else {
                     signedOutView
                 }
