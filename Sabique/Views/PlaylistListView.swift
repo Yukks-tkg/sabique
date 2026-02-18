@@ -28,6 +28,8 @@ struct PlaylistListView: View {
     @State private var showingDeleteConfirm = false
     @State private var playlistToDelete: Playlist?
     @AppStorage("customBackgroundArtworkURLString") private var customBackgroundArtworkURLString: String = ""
+    @AppStorage("backgroundOpacity") private var backgroundOpacity: Double = 0.6
+    @AppStorage("backgroundBlurRadius") private var backgroundBlurRadius: Double = 30
     
     var body: some View {
         NavigationStack {
@@ -232,8 +234,8 @@ struct PlaylistListView: View {
                         .aspectRatio(contentMode: .fill)
                         .frame(width: geometry.size.width, height: geometry.size.height)
                         .clipped()
-                        .blur(radius: 30)
-                        .opacity(0.6)
+                        .blur(radius: backgroundBlurRadius)
+                        .opacity(backgroundOpacity)
                 } placeholder: {
                     Color.black
                 }

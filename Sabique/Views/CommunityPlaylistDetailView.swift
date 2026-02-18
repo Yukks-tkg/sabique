@@ -33,6 +33,8 @@ struct CommunityPlaylistDetailView: View {
     @State private var isLoadingTrack = false
     @State private var showingSignInRequired = false
     @State private var showingBlockConfirm = false
+    @AppStorage("backgroundOpacity") private var backgroundOpacity: Double = 0.6
+    @AppStorage("backgroundBlurRadius") private var backgroundBlurRadius: Double = 30
     @State private var showingBlockComplete = false
     @State private var showingShareSheet = false
     @State private var trackArtworks: [String: URL] = [:]  // appleMusicId -> artworkURL
@@ -56,8 +58,8 @@ struct CommunityPlaylistDetailView: View {
                             .aspectRatio(contentMode: .fill)
                             .frame(width: geometry.size.width, height: geometry.size.height)
                             .clipped()
-                            .blur(radius: 50)
-                            .opacity(0.6)
+                            .blur(radius: backgroundBlurRadius)
+                            .opacity(backgroundOpacity)
                     } placeholder: {
                         Color(.systemGroupedBackground)
                     }

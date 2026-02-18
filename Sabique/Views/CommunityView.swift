@@ -14,6 +14,8 @@ struct CommunityView: View {
     @State private var selectedFilter: SortOption = .popular
     @State private var showingPublish = false
     @AppStorage("customBackgroundArtworkURLString") private var customBackgroundArtworkURLString: String = ""
+    @AppStorage("backgroundOpacity") private var backgroundOpacity: Double = 0.6
+    @AppStorage("backgroundBlurRadius") private var backgroundBlurRadius: Double = 30
     @State private var backgroundArtworkURL: URL?
     @State private var searchText = ""
     @State private var isSearching = false
@@ -72,8 +74,8 @@ struct CommunityView: View {
                         .aspectRatio(contentMode: .fill)
                         .frame(width: geometry.size.width, height: geometry.size.height)
                         .clipped()
-                        .blur(radius: 30)
-                        .opacity(0.6)
+                        .blur(radius: backgroundBlurRadius)
+                        .opacity(backgroundOpacity)
                 } placeholder: {
                     Color.black
                 }

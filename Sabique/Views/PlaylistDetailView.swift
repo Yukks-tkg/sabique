@@ -38,6 +38,8 @@ struct PlaylistDetailView: View {
     @EnvironmentObject private var authManager: AuthManager
     @EnvironmentObject private var communityManager: CommunityManager
     @AppStorage("isLeftHandedMode") private var isLeftHandedMode: Bool = false
+    @AppStorage("backgroundOpacity") private var backgroundOpacity: Double = 0.6
+    @AppStorage("backgroundBlurRadius") private var backgroundBlurRadius: Double = 30
 
     /// アートワークのスライド方向（次へ: .trailing、前へ: .leading）
     @State private var slideDirection: Edge = .trailing
@@ -157,8 +159,8 @@ struct PlaylistDetailView: View {
                         .aspectRatio(contentMode: .fill)
                         .frame(width: geometry.size.width, height: geometry.size.height)
                         .clipped()
-                        .blur(radius: 30)
-                        .opacity(0.6)
+                        .blur(radius: backgroundBlurRadius)
+                        .opacity(backgroundOpacity)
                 } placeholder: {
                     Color.black
                 }

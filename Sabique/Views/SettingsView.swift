@@ -41,6 +41,8 @@ struct SettingsView: View {
     @AppStorage("customBackgroundSongTitle") private var customBackgroundSongTitle: String = ""
     @AppStorage("customBackgroundArtistName") private var customBackgroundArtistName: String = ""
     @AppStorage("isLeftHandedMode") private var isLeftHandedMode: Bool = false
+    @AppStorage("backgroundOpacity") private var backgroundOpacity: Double = 0.6
+    @AppStorage("backgroundBlurRadius") private var backgroundBlurRadius: Double = 30
     
     var body: some View {
         NavigationStack {
@@ -54,8 +56,8 @@ struct SettingsView: View {
                                 .aspectRatio(contentMode: .fill)
                                 .frame(width: geometry.size.width, height: geometry.size.height)
                                 .clipped()
-                                .blur(radius: 30)
-                                .opacity(0.6)
+                                .blur(radius: backgroundBlurRadius)
+                                .opacity(backgroundOpacity)
                         } placeholder: {
                             Color.black
                         }
@@ -295,6 +297,36 @@ struct SettingsView: View {
                         Text(String(localized: "playback_settings"))
                     } footer: {
                         Text(String(localized: "control_position_description"))
+                            .font(.caption)
+                    }
+
+                    Section {
+                        VStack(alignment: .leading, spacing: 8) {
+                            HStack {
+                                Text("明るさ")
+                                Spacer()
+                                Text("\(Int(backgroundOpacity * 100))%")
+                                    .foregroundColor(.secondary)
+                                    .monospacedDigit()
+                            }
+                            Slider(value: $backgroundOpacity, in: 0.5...0.8, step: 0.05)
+                                .tint(.orange)
+                        }
+                        VStack(alignment: .leading, spacing: 8) {
+                            HStack {
+                                Text("ぼかし")
+                                Spacer()
+                                Text("\(Int(backgroundBlurRadius))")
+                                    .foregroundColor(.secondary)
+                                    .monospacedDigit()
+                            }
+                            Slider(value: $backgroundBlurRadius, in: 5...60, step: 5)
+                                .tint(.orange)
+                        }
+                    } header: {
+                        Text("背景の見た目")
+                    } footer: {
+                        Text("アートワーク背景の明るさとぼかし具合を調整します。")
                             .font(.caption)
                     }
 

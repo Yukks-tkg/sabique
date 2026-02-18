@@ -30,6 +30,8 @@ struct ChorusEditView: View {
     @State private var isDraggingSeekbar = false
     @State private var shakeTrigger = 0
     @AppStorage("autoPlayOnOpen") private var autoPlayOnOpen = true
+    @AppStorage("backgroundOpacity") private var backgroundOpacity: Double = 0.6
+    @AppStorage("backgroundBlurRadius") private var backgroundBlurRadius: Double = 30
     
     var body: some View {
         NavigationStack {
@@ -43,8 +45,8 @@ struct ChorusEditView: View {
                                 .aspectRatio(contentMode: .fill)
                                 .frame(width: geometry.size.width, height: geometry.size.height)
                                 .clipped()
-                                .blur(radius: 50)
-                                .opacity(0.6)
+                                .blur(radius: backgroundBlurRadius)
+                                .opacity(backgroundOpacity)
                         } placeholder: {
                             Color.black
                         }

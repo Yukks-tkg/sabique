@@ -29,6 +29,8 @@ struct ProfileView: View {
     @State private var totalViews: Int = 0
     @State private var myPublishedPlaylists: [CommunityPlaylist] = []
     @AppStorage("customBackgroundArtworkURLString") private var customBackgroundArtworkURLString: String = ""
+    @AppStorage("backgroundOpacity") private var backgroundOpacity: Double = 0.6
+    @AppStorage("backgroundBlurRadius") private var backgroundBlurRadius: Double = 30
     @State private var backgroundArtworkURL: URL?
 
     private let maxNicknameLength = 10
@@ -244,8 +246,8 @@ struct ProfileView: View {
                         .aspectRatio(contentMode: .fill)
                         .frame(width: geometry.size.width, height: geometry.size.height)
                         .clipped()
-                        .blur(radius: 30)
-                        .opacity(0.6)
+                        .blur(radius: backgroundBlurRadius)
+                        .opacity(backgroundOpacity)
                 } placeholder: {
                     Color.black
                 }
