@@ -985,6 +985,7 @@
       }
     },
     "background_settings" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -10202,16 +10203,10 @@
         }
       }
     },
-    "アートワーク背景の明るさとぼかし具合を調整します。" : {
-
-    },
     "ぼかし" : {
 
     },
     "明るさ" : {
-
-    },
-    "背景の見た目" : {
 
     }
   },

@@ -315,36 +315,6 @@ struct SettingsView: View {
                     }
 
                     Section {
-                        VStack(alignment: .leading, spacing: 8) {
-                            HStack {
-                                Text("明るさ")
-                                Spacer()
-                                Text("\(Int((backgroundOpacity - 0.4) / 0.6 * 90 + 10))%")
-                                    .foregroundColor(.secondary)
-                                    .monospacedDigit()
-                            }
-                            Slider(value: opacitySliderBinding, in: 10...100, step: 10)
-                                .tint(.orange)
-                        }
-                        VStack(alignment: .leading, spacing: 8) {
-                            HStack {
-                                Text("ぼかし")
-                                Spacer()
-                                Text("\(Int((backgroundBlurRadius - 5) / 55 * 100))%")
-                                    .foregroundColor(.secondary)
-                                    .monospacedDigit()
-                            }
-                            Slider(value: blurSliderBinding, in: 10...100, step: 10)
-                                .tint(.orange)
-                        }
-                    } header: {
-                        Text("背景の見た目")
-                    } footer: {
-                        Text("アートワーク背景の明るさとぼかし具合を調整します。")
-                            .font(.caption)
-                    }
-
-                    Section(String(localized: "background_settings")) {
                         if !customBackgroundArtworkURLString.isEmpty, let url = URL(string: customBackgroundArtworkURLString) {
                             HStack {
                                 AsyncImage(url: url) { image in
@@ -399,8 +369,30 @@ struct SettingsView: View {
                                 }
                             }
                         }
+                        VStack(alignment: .leading, spacing: 8) {
+                            HStack {
+                                Text("明るさ")
+                                Spacer()
+                                Text("\(Int((backgroundOpacity - 0.4) / 0.6 * 90 + 10))%")
+                                    .foregroundColor(.secondary)
+                                    .monospacedDigit()
+                            }
+                            Slider(value: opacitySliderBinding, in: 10...100, step: 10)
+                                .tint(.orange)
+                        }
+                        VStack(alignment: .leading, spacing: 8) {
+                            HStack {
+                                Text("ぼかし")
+                                Spacer()
+                                Text("\(Int((backgroundBlurRadius - 5) / 55 * 100))%")
+                                    .foregroundColor(.secondary)
+                                    .monospacedDigit()
+                            }
+                            Slider(value: blurSliderBinding, in: 10...100, step: 10)
+                                .tint(.orange)
+                        }
                     }
-                    
+
                     // データ管理セクション（ブロック + バックアップ）
                     Section {
                         // ブロック管理
