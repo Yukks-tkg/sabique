@@ -81,9 +81,9 @@ struct SabiqueWidgetEntryView: View {
     // MARK: Small (正方形)
     private var smallView: some View {
         ZStack {
-            VStack(spacing: 8) {
+            VStack(spacing: 6) {
                 // レコード盤
-                recordDisk(size: 100)
+                recordDisk(size: 120)
 
                 // プレイリスト名
                 Text(entry.playlistName)
@@ -91,45 +91,42 @@ struct SabiqueWidgetEntryView: View {
                     .foregroundColor(.white.opacity(0.5))
                     .lineLimit(1)
             }
-            .padding(.vertical, 12)
+            .padding(.vertical, 8)
         }
     }
 
     // MARK: Medium (横長)
     private var mediumView: some View {
         ZStack {
-            HStack(spacing: 16) {
+            HStack(spacing: 0) {
                 // レコード盤
-                recordDisk(size: 110)
+                recordDisk(size: 145)
 
                 // 曲情報
                 VStack(alignment: .leading, spacing: 4) {
                     Text(entry.playlistName)
-                        .font(.system(size: 11, weight: .medium))
+                        .font(.system(size: 13, weight: .medium))
                         .foregroundColor(.white.opacity(0.6))
-                        .lineLimit(1)
+                        .lineLimit(2)
 
                     Text(entry.trackTitle)
-                        .font(.system(size: 15, weight: .bold))
+                        .font(.system(size: 20, weight: .bold))
                         .foregroundColor(.white)
                         .lineLimit(2)
                         .minimumScaleFactor(0.8)
+                        .padding(.top, 6)
 
                     Text(entry.artistName)
-                        .font(.system(size: 12, weight: .regular))
+                        .font(.system(size: 15, weight: .regular))
                         .foregroundColor(.white.opacity(0.7))
                         .lineLimit(1)
 
-                    // Sabiqueロゴ文字
-                    Text("Sabique")
-                        .font(.system(size: 10, weight: .semibold, design: .rounded))
-                        .foregroundColor(.white.opacity(0.5))
-                        .padding(.top, 4)
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.leading, 20)
             }
-            .padding(.horizontal, 16)
-            .padding(.vertical, 16)
+            .padding(.horizontal, 12)
+            .padding(.vertical, 8)
         }
     }
 
@@ -138,9 +135,9 @@ struct SabiqueWidgetEntryView: View {
         let grooveCount = 4
 
         return ZStack {
-            // 一番外側: レコードの黒い本体
+            // 一番外側: レコードの本体（濃いめのグレー）
             Circle()
-                .fill(Color(white: 0.08))
+                .fill(Color(white: 0.12))
                 .frame(width: size, height: size)
 
             // レコードの溝（同心円）
@@ -150,6 +147,12 @@ struct SabiqueWidgetEntryView: View {
                     .stroke(Color.white.opacity(0.06), lineWidth: 0.5)
                     .frame(width: size * ratio, height: size * ratio)
             }
+
+            // アートワーク周りの黒リング
+            let ringSize = size * 0.58
+            Circle()
+                .fill(Color(white: 0.06))
+                .frame(width: ringSize, height: ringSize)
 
             // アートワーク（中央の丸いラベル部分）
             let labelSize = size * 0.52
@@ -170,10 +173,6 @@ struct SabiqueWidgetEntryView: View {
                     .stroke(Color.white.opacity(0.15), lineWidth: 1)
             )
 
-            // 中央の穴
-            Circle()
-                .fill(Color(white: 0.08))
-                .frame(width: size * 0.07, height: size * 0.07)
 
             // 外枠のハイライト
             Circle()

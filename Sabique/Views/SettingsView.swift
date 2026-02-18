@@ -43,7 +43,21 @@ struct SettingsView: View {
     @AppStorage("isLeftHandedMode") private var isLeftHandedMode: Bool = false
     @AppStorage("backgroundOpacity") private var backgroundOpacity: Double = 0.6
     @AppStorage("backgroundBlurRadius") private var backgroundBlurRadius: Double = 30
-    
+
+    private var opacitySliderBinding: Binding<Double> {
+        Binding(
+            get: { (backgroundOpacity - 0.4) / 0.6 * 90 + 10 },
+            set: { backgroundOpacity = ($0 - 10) / 90 * 0.6 + 0.4 }
+        )
+    }
+
+    private var blurSliderBinding: Binding<Double> {
+        Binding(
+            get: { (backgroundBlurRadius - 5) / 55 * 100 },
+            set: { backgroundBlurRadius = 5 + $0 / 100 * 55 }
+        )
+    }
+
     var body: some View {
         NavigationStack {
             ZStack {
@@ -305,22 +319,22 @@ struct SettingsView: View {
                             HStack {
                                 Text("明るさ")
                                 Spacer()
-                                Text("\(Int(backgroundOpacity * 100))%")
+                                Text("\(Int((backgroundOpacity - 0.4) / 0.6 * 90 + 10))%")
                                     .foregroundColor(.secondary)
                                     .monospacedDigit()
                             }
-                            Slider(value: $backgroundOpacity, in: 0.5...0.8, step: 0.05)
+                            Slider(value: opacitySliderBinding, in: 10...100, step: 10)
                                 .tint(.orange)
                         }
                         VStack(alignment: .leading, spacing: 8) {
                             HStack {
                                 Text("ぼかし")
                                 Spacer()
-                                Text("\(Int(backgroundBlurRadius))")
+                                Text("\(Int((backgroundBlurRadius - 5) / 55 * 100))%")
                                     .foregroundColor(.secondary)
                                     .monospacedDigit()
                             }
-                            Slider(value: $backgroundBlurRadius, in: 5...60, step: 5)
+                            Slider(value: blurSliderBinding, in: 10...100, step: 10)
                                 .tint(.orange)
                         }
                     } header: {
