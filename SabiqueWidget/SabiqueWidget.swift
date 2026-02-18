@@ -13,6 +13,7 @@ struct NowPlayingEntry: TimelineEntry {
     let trackTitle: String
     let artistName: String
     let playlistName: String
+    let playlistId: String
     let artworkData: Data?
 }
 
@@ -28,6 +29,7 @@ struct NowPlayingProvider: TimelineProvider {
             trackTitle: "どんなときも。",
             artistName: "槇原敬之",
             playlistName: "My Playlist",
+            playlistId: "",
             artworkData: nil
         )
     }
@@ -49,6 +51,7 @@ struct NowPlayingProvider: TimelineProvider {
         let title = defaults?.string(forKey: "nowPlaying.trackTitle") ?? "曲が選択されていません"
         let artist = defaults?.string(forKey: "nowPlaying.artistName") ?? ""
         let playlist = defaults?.string(forKey: "nowPlaying.playlistName") ?? "Sabique"
+        let playlistId = defaults?.string(forKey: "nowPlaying.playlistId") ?? ""
         let artworkData = defaults?.data(forKey: "nowPlaying.artworkData")
 
         return NowPlayingEntry(
@@ -56,6 +59,7 @@ struct NowPlayingProvider: TimelineProvider {
             trackTitle: title,
             artistName: artist,
             playlistName: playlist,
+            playlistId: playlistId,
             artworkData: artworkData
         )
     }
@@ -227,7 +231,7 @@ struct SabiqueWidget: Widget {
                         Color.black
                     }
                 }
-                .widgetURL(URL(string: "sabique://open"))
+                .widgetURL(URL(string: "sabique://playlist?id=\(entry.playlistId)"))
         }
         .configurationDisplayName("Sabique")
         .description("最後に再生した曲をレコード風に表示します。")
@@ -245,6 +249,7 @@ struct SabiqueWidget: Widget {
         trackTitle: "どんなときも。",
         artistName: "槇原敬之",
         playlistName: "90年代ベスト",
+        playlistId: "",
         artworkData: nil
     )
 }
@@ -257,6 +262,7 @@ struct SabiqueWidget: Widget {
         trackTitle: "どんなときも。（オリジナル・ヴァージョン）",
         artistName: "槇原敬之",
         playlistName: "90年代ベスト",
+        playlistId: "",
         artworkData: nil
     )
 }

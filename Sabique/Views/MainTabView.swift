@@ -10,11 +10,12 @@ import SwiftData
 
 struct MainTabView: View {
     @State private var selectedTab = 0
+    @State private var widgetOpenPlaylistId: String? = nil
 
     var body: some View {
         TabView(selection: $selectedTab) {
             // Tab 1: マイリスト
-            PlaylistListView()
+            PlaylistListView(widgetOpenPlaylistId: $widgetOpenPlaylistId)
                 .tabItem {
                     Label(String(localized: "my_list"), systemImage: "music.note.list")
                 }
@@ -37,6 +38,18 @@ struct MainTabView: View {
         .preferredColorScheme(.dark)
         .task {
             await PlaylistValidator.fetchNGWords()
+        }
+        .onOpenURL { url in
+            // sabique://playlist?id=〇〇 の形式で受け取る
+            guard url.scheme == "sabique",
+                  url.host == "playlist",
+                  let components = URLComponents(url: url, resolvingAgainstBaseURL: false),
+                  let idParam = components.queryItems?.first(where: { $0.name == "id" })?.value,
+                  !idParam.isEmpty
+            else { return }
+
+            widgetOpenPlaylistId = idParam
+            selectedTab = 0 // マイリストタブに切り替え
         }
     }
 }

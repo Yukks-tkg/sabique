@@ -14,7 +14,10 @@ struct PlaylistListView: View {
     @EnvironmentObject private var playerManager: ChorusPlayerManager
     @EnvironmentObject private var storeManager: StoreManager
     @Query(sort: \Playlist.orderIndex) private var playlists: [Playlist]
-    
+
+    var widgetOpenPlaylistId: Binding<String?>?
+
+    @State private var navigationPath: [Playlist] = []
     @State private var showingCreateSheet = false
     @State private var showingSettings = false
     @State private var showingImportSheet = false
@@ -32,21 +35,32 @@ struct PlaylistListView: View {
     @AppStorage("backgroundBlurRadius") private var backgroundBlurRadius: Double = 30
     
     var body: some View {
-        NavigationStack {
+        NavigationStack(path: $navigationPath) {
             ZStack {
                 backgroundView
-                
+
                 // オーバーレイ
                 Color.black.opacity(0.25)
                     .ignoresSafeArea()
-                
+
                 mainContent
+            }
+            .navigationDestination(for: Playlist.self) { playlist in
+                PlaylistDetailView(playlist: playlist)
             }
             .task(id: playlists.count) {
                 await updateBackgroundArtwork()
             }
             .task(id: customBackgroundArtworkURLString) {
                 await updateBackgroundArtwork()
+            }
+            .onChange(of: widgetOpenPlaylistId?.wrappedValue) { _, newId in
+                guard let idString = newId,
+                      let uuid = UUID(uuidString: idString),
+                      let playlist = playlists.first(where: { $0.id == uuid })
+                else { return }
+                navigationPath = [playlist]
+                widgetOpenPlaylistId?.wrappedValue = nil
             }
             .preferredColorScheme(.dark)
             .navigationBarTitleDisplayMode(.inline)
@@ -261,7 +275,7 @@ struct PlaylistListView: View {
                 List {
                     ForEach(playlists) { playlist in
                         let isPlayingFromThisPlaylist = playerManager.isPlaying && playlist.sortedTracks.contains(where: { $0.id == playerManager.currentTrack?.id })
-                        NavigationLink(destination: PlaylistDetailView(playlist: playlist)) {
+                        NavigationLink(value: playlist) {
                             PlaylistRow(playlist: playlist)
                                 .padding(.horizontal, 8)
                                 .padding(.vertical, 4)

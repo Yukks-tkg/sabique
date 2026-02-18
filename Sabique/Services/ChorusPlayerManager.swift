@@ -351,6 +351,7 @@ class ChorusPlayerManager: ObservableObject {
         defaults?.set(track.title, forKey: "nowPlaying.trackTitle")
         defaults?.set(track.artist, forKey: "nowPlaying.artistName")
         defaults?.set(track.playlist?.name ?? "", forKey: "nowPlaying.playlistName")
+        defaults?.set(track.playlist?.id.uuidString ?? "", forKey: "nowPlaying.playlistId")
 
         // アートワークを画像データとして保存
         if let url = track.artworkURL {

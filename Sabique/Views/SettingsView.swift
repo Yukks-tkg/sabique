@@ -314,7 +314,7 @@ struct SettingsView: View {
                             .font(.caption)
                     }
 
-                    Section {
+                    Section(String(localized: "background_settings")) {
                         if !customBackgroundArtworkURLString.isEmpty, let url = URL(string: customBackgroundArtworkURLString) {
                             HStack {
                                 AsyncImage(url: url) { image in
