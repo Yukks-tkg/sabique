@@ -222,7 +222,7 @@ struct SabiqueWidget: Widget {
                                 .aspectRatio(contentMode: .fill)
                                 .blur(radius: 30)
                                 .scaleEffect(1.3)
-                            Color.black.opacity(0.5)
+                            Color.black.opacity(0.25)
                         }
                     } else {
                         Color.black
