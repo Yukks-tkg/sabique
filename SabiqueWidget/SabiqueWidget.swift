@@ -78,29 +78,9 @@ struct SabiqueWidgetEntryView: View {
         }
     }
 
-    // MARK: ぼかし背景
-    @ViewBuilder
-    private var blurredBackground: some View {
-        if let data = entry.artworkData, let uiImage = UIImage(data: data) {
-            ZStack {
-                Image(uiImage: uiImage)
-                    .resizable()
-                    .aspectRatio(contentMode: .fill)
-                    .blur(radius: 30)
-                    .scaleEffect(1.3)
-                Color.black.opacity(0.5)
-            }
-        } else {
-            Color.black
-        }
-    }
-
     // MARK: Small (正方形)
     private var smallView: some View {
         ZStack {
-            // 背景
-            blurredBackground
-
             VStack(spacing: 8) {
                 // レコード盤
                 recordDisk(size: 100)
@@ -118,9 +98,6 @@ struct SabiqueWidgetEntryView: View {
     // MARK: Medium (横長)
     private var mediumView: some View {
         ZStack {
-            // 背景
-            blurredBackground
-
             HStack(spacing: 16) {
                 // レコード盤
                 recordDisk(size: 110)
@@ -237,7 +214,20 @@ struct SabiqueWidget: Widget {
     var body: some WidgetConfiguration {
         StaticConfiguration(kind: kind, provider: NowPlayingProvider()) { entry in
             SabiqueWidgetEntryView(entry: entry)
-                .containerBackground(for: .widget) { Color.clear }
+                .containerBackground(for: .widget) {
+                    if let data = entry.artworkData, let uiImage = UIImage(data: data) {
+                        ZStack {
+                            Image(uiImage: uiImage)
+                                .resizable()
+                                .aspectRatio(contentMode: .fill)
+                                .blur(radius: 30)
+                                .scaleEffect(1.3)
+                            Color.black.opacity(0.5)
+                        }
+                    } else {
+                        Color.black
+                    }
+                }
                 .widgetURL(URL(string: "sabique://open"))
         }
         .configurationDisplayName("Sabique")
