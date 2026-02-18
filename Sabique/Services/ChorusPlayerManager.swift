@@ -9,6 +9,7 @@ import Foundation
 import MusicKit
 import Combine
 import AVFoundation
+import WidgetKit
 
 @MainActor
 class ChorusPlayerManager: ObservableObject {
@@ -227,6 +228,9 @@ class ChorusPlayerManager: ObservableObject {
                     currentTrack = track
                 }
 
+                // ウィジェット用にデータを保存
+                saveNowPlayingForWidget(track: track)
+
                 // 曲を再生
                 player.queue = [song]
                 try await player.play()
@@ -339,5 +343,25 @@ class ChorusPlayerManager: ObservableObject {
     private func cancelBackgroundTimer() {
         backgroundTimer?.cancel()
         backgroundTimer = nil
+    }
+
+    /// 再生中の曲情報をウィジェット用に保存
+    private func saveNowPlayingForWidget(track: TrackInPlaylist) {
+        let defaults = UserDefaults(suiteName: "group.com.yuki.Sabique")
+        defaults?.set(track.title, forKey: "nowPlaying.trackTitle")
+        defaults?.set(track.artist, forKey: "nowPlaying.artistName")
+        defaults?.set(track.playlist?.name ?? "", forKey: "nowPlaying.playlistName")
+
+        // アートワークを画像データとして保存
+        if let url = track.artworkURL {
+            Task {
+                if let (data, _) = try? await URLSession.shared.data(from: url) {
+                    defaults?.set(data, forKey: "nowPlaying.artworkData")
+                    WidgetCenter.shared.reloadTimelines(ofKind: "SabiqueWidget")
+                }
+            }
+        } else {
+            WidgetCenter.shared.reloadTimelines(ofKind: "SabiqueWidget")
+        }
     }
 }
