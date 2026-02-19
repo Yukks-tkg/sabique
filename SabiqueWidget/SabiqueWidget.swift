@@ -108,22 +108,22 @@ struct SabiqueWidgetEntryView: View {
 
                 // 曲情報
                 VStack(alignment: .leading, spacing: 4) {
-                    Text(entry.playlistName)
-                        .font(.system(size: 13, weight: .medium))
-                        .foregroundColor(.white.opacity(0.6))
-                        .lineLimit(2)
-
                     Text(entry.trackTitle)
                         .font(.system(size: 20, weight: .bold))
                         .foregroundColor(.white)
                         .lineLimit(2)
                         .minimumScaleFactor(0.8)
-                        .padding(.top, 6)
 
                     Text(entry.artistName)
                         .font(.system(size: 15, weight: .regular))
                         .foregroundColor(.white.opacity(0.7))
                         .lineLimit(1)
+
+                    Text(entry.playlistName)
+                        .font(.system(size: 11, weight: .medium))
+                        .foregroundColor(.white.opacity(0.4))
+                        .lineLimit(1)
+                        .padding(.top, 12)
 
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
@@ -218,6 +218,7 @@ struct SabiqueWidgetEntryView: View {
                 )
                 .frame(width: size, height: size)
         }
+        .shadow(color: .black.opacity(0.6), radius: 12, x: 4, y: 6)
     }
 
     private func recordLabelPlaceholder(size: CGFloat) -> some View {

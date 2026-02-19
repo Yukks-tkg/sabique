@@ -1100,3 +1100,4 @@ struct RotatingArtwork: View {
     }
     .modelContainer(for: [Playlist.self, TrackInPlaylist.self], inMemory: true)
 }
+

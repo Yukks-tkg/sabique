@@ -220,7 +220,7 @@ class ChorusPlayerManager: ObservableObject {
 
                 // アートワークURLを更新（プレイヤーカード表示用）
                 if let artwork = song.artwork {
-                    track.artworkURL = artwork.url(width: 100, height: 100)
+                    track.artworkURL = artwork.url(width: 300, height: 300)
                 }
 
                 // artworkURLが未キャッシュだった場合はここでUI更新
