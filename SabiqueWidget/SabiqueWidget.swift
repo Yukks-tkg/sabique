@@ -136,7 +136,7 @@ struct SabiqueWidgetEntryView: View {
 
     // MARK: レコード盤コンポーネント
     private func recordDisk(size: CGFloat) -> some View {
-        let grooveCount = 4
+        let grooveCount = 14
 
         return ZStack {
             // 一番外側: レコードの本体（濃いめのグレー）
@@ -144,11 +144,11 @@ struct SabiqueWidgetEntryView: View {
                 .fill(Color(white: 0.12))
                 .frame(width: size, height: size)
 
-            // レコードの溝（同心円）
+            // レコードの溝（同心円）- 外周から内周（ラベル手前）まで密に配置
             ForEach(0..<grooveCount, id: \.self) { i in
-                let ratio = 1.0 - Double(i) * 0.13
+                let ratio = 0.98 - Double(i) * 0.033
                 Circle()
-                    .stroke(Color.white.opacity(0.06), lineWidth: 0.5)
+                    .stroke(Color.white.opacity(0.07), lineWidth: 0.4)
                     .frame(width: size * ratio, height: size * ratio)
             }
 

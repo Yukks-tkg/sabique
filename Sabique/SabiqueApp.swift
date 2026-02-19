@@ -9,6 +9,7 @@ import SwiftUI
 import SwiftData
 import StoreKit
 import FirebaseCore
+import FirebaseAuth
 
 @main
 struct SabiqueApp: App {
