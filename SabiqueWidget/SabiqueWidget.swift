@@ -178,15 +178,31 @@ struct SabiqueWidgetEntryView: View {
             )
 
 
-            // 外枠のハイライト
+            // 光沢オーバーレイ（左上からの光）
+            Circle()
+                .fill(
+                    LinearGradient(
+                        colors: [
+                            Color.white.opacity(0.12),
+                            Color.white.opacity(0.04),
+                            Color.clear,
+                            Color.black.opacity(0.15)
+                        ],
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    )
+                )
+                .frame(width: size, height: size)
+
+            // 外枠のハイライト（強化）
             Circle()
                 .stroke(
                     LinearGradient(
-                        colors: [Color.white.opacity(0.15), Color.clear],
+                        colors: [Color.white.opacity(0.35), Color.white.opacity(0.05), Color.clear],
                         startPoint: .topLeading,
                         endPoint: .bottomTrailing
                     ),
-                    lineWidth: 1
+                    lineWidth: 1.5
                 )
                 .frame(width: size, height: size)
         }
