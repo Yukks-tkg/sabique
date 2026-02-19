@@ -20,6 +20,32 @@ class CommunityManager: ObservableObject {
     @Published var isLoadingNewest = false
     @Published var errorMessage: String?
 
+    // プロフィール統計のキャッシュ
+    @Published var cachedTotalLikes: Int? = nil
+    @Published var cachedTotalDownloads: Int? = nil
+    @Published var cachedTotalViews: Int? = nil
+    @Published var cachedUserProfile: UserProfile? = nil
+    @Published var cachedMyPublishedPlaylists: [CommunityPlaylist]? = nil
+
+    /// アプリ起動時にプロフィールデータを事前取得
+    func prefetchUserProfile(userId: String) async {
+        async let likes = try? getTotalLikesForUser(userId: userId)
+        async let downloads = try? getTotalDownloadsForUser(userId: userId)
+        async let views = try? getTotalViewsForUser(userId: userId)
+        async let profile = try? getUserProfile(userId: userId)
+        async let playlists = try? getUserPlaylists(userId: userId)
+
+        let (l, d, v, p, pl) = await (likes, downloads, views, profile, playlists)
+
+        await MainActor.run {
+            if let l { cachedTotalLikes = l }
+            if let d { cachedTotalDownloads = d }
+            if let v { cachedTotalViews = v }
+            if let p { cachedUserProfile = p }
+            if let pl { cachedMyPublishedPlaylists = pl }
+        }
+    }
+
     // MARK: - 投稿機能
 
     /// ユーザープロフィールを取得または作成

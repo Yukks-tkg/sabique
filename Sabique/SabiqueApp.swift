@@ -52,6 +52,12 @@ struct SabiqueApp: App {
                             requestReview()
                         }
                     }
+                    // サインイン済みならプロフィールデータを事前取得
+                    if let userId = authManager.currentUser?.uid {
+                        Task {
+                            await communityManager.prefetchUserProfile(userId: userId)
+                        }
+                    }
                 }
         }
         .modelContainer(modelContainer)

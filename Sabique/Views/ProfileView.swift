@@ -299,11 +299,21 @@ struct ProfileView: View {
                             .foregroundColor(.primary)
                         Spacer()
                         Text(String(localized: "upgrade"))
-                            .font(.caption)
-                            .foregroundColor(.blue)
-                        Image(systemName: "chevron.right")
-                            .font(.caption)
-                            .foregroundColor(.secondary)
+                            .font(.caption2)
+                            .fontWeight(.medium)
+                            .foregroundColor(.white)
+                            .padding(.horizontal, 10)
+                            .padding(.vertical, 9)
+                            .background(
+                                Capsule()
+                                    .fill(
+                                        LinearGradient(
+                                            colors: [Color(red: 1.0, green: 0.6, blue: 0.2), Color(red: 1.0, green: 0.4, blue: 0.4)],
+                                            startPoint: .leading,
+                                            endPoint: .trailing
+                                        )
+                                    )
+                            )
                     }
                     .padding()
                     .background(Color.white.opacity(0.1))
@@ -576,8 +586,21 @@ extension ProfileView {
             return
         }
 
+        // キャッシュがあれば即座に反映（0表示を防ぐ）
+        if let cached = communityManager.cachedUserProfile {
+            userProfile = cached
+            nickname = cached.nickname ?? ""
+        }
+        if let likes = communityManager.cachedTotalLikes { totalLikes = likes }
+        if let downloads = communityManager.cachedTotalDownloads { totalDownloads = downloads }
+        if let views = communityManager.cachedTotalViews { totalViews = views }
+        if let playlists = communityManager.cachedMyPublishedPlaylists { myPublishedPlaylists = playlists }
+
+        // キャッシュがない場合のみローディング表示
+        let hasCache = communityManager.cachedUserProfile != nil
+        if !hasCache { isLoading = true }
+
         print("🔄 プロフィール読み込み開始: \(userId)")
-        isLoading = true
 
         // プロフィールを取得（必須）
         do {
@@ -637,6 +660,11 @@ extension ProfileView {
             totalViews = views
             myPublishedPlaylists = playlists
             isLoading = false
+            // キャッシュを最新データで更新
+            communityManager.cachedTotalLikes = likes
+            communityManager.cachedTotalDownloads = downloads
+            communityManager.cachedTotalViews = views
+            communityManager.cachedMyPublishedPlaylists = playlists
         }
     }
 
