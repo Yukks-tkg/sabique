@@ -139,9 +139,21 @@ struct SabiqueWidgetEntryView: View {
         let grooveCount = 14
 
         return ZStack {
-            // 一番外側: レコードの本体（濃いめのグレー）
+            // 一番外側: レコードの本体（放射状グラデーションで質感を表現）
             Circle()
-                .fill(Color(white: 0.12))
+                .fill(
+                    RadialGradient(
+                        colors: [
+                            Color(white: 0.18), // 内周（ラベル手前）: 少し明るめ
+                            Color(white: 0.13), // 中間
+                            Color(white: 0.10), // 外周に向かって少し暗く
+                            Color(white: 0.08)  // 外周端: 締まった印象
+                        ],
+                        center: .center,
+                        startRadius: size * 0.25,
+                        endRadius: size * 0.52
+                    )
+                )
                 .frame(width: size, height: size)
 
             // レコードの溝（同心円）- 外周から内周（ラベル手前）まで密に配置
