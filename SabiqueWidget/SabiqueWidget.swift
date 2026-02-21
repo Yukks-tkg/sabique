@@ -157,6 +157,11 @@ struct SabiqueWidgetEntryView: View {
             HStack(alignment: .top, spacing: 16) {
                 // 左: 現在の曲
                 VStack(spacing: 10) {
+                    Text("NOW PLAYING")
+                        .font(.system(size: 9, weight: .semibold))
+                        .foregroundColor(.white.opacity(0.5))
+                        .tracking(1.2)
+
                     recordDisk(size: 130)
 
                     VStack(spacing: 3) {
@@ -178,6 +183,11 @@ struct SabiqueWidgetEntryView: View {
 
                 // 右: 次の曲（少し薄く）
                 VStack(spacing: 10) {
+                    Text("NEXT")
+                        .font(.system(size: 9, weight: .semibold))
+                        .foregroundColor(.white.opacity(0.5))
+                        .tracking(1.2)
+
                     recordDisk(size: 130, dimmed: true, useNextArtwork: true)
 
                     VStack(spacing: 3) {
@@ -223,15 +233,10 @@ struct SabiqueWidgetEntryView: View {
             Spacer()
 
             // 下部: プレイリスト名
-            HStack(spacing: 4) {
-                Image(systemName: "music.note.list")
-                    .font(.system(size: 11))
-                    .foregroundColor(.white.opacity(0.4))
-                Text(entry.playlistName)
-                    .font(.system(size: 12, weight: .medium))
-                    .foregroundColor(.white.opacity(0.4))
-                    .lineLimit(1)
-            }
+            Text(entry.playlistName)
+                .font(.system(size: 12, weight: .medium))
+                .foregroundColor(.white.opacity(0.4))
+                .lineLimit(1)
             .padding(.bottom, 16)
         }
     }
