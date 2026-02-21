@@ -81,6 +81,7 @@ class ChorusPlayerManager: ObservableObject {
 
         currentTrackIndex = min(index, self.tracks.count - 1)
         isPlaying = true
+        isPaused = false
         isTransitioning = false
 
         playCurrentTrack()
