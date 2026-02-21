@@ -135,6 +135,15 @@ struct PlaylistListView: View {
     }
     
     /// プレイリスト追加ボタンの処理
+    private func trackCountText(_ count: Int) -> String {
+        let format = String(localized: "track_count_format")
+        // 英語系は単複数を区別（"1 track" / "n tracks"）、他言語はローカライズ文字列をそのまま使う
+        if Locale.current.language.languageCode?.identifier == "en" {
+            return count == 1 ? "1 track" : "\(count) tracks"
+        }
+        return "\(count)\(format)"
+    }
+
     private func handleAddPlaylist() {
         if canAddPlaylist {
             showingCreateSheet = true
@@ -331,7 +340,7 @@ struct PlaylistRow: View {
                 Text(playlist.name)
                     .font(.headline)
                     .foregroundColor(.primary)
-                Text("\(playlist.trackCount)" + String(localized: "track_count_format"))
+                Text(trackCountText(playlist.trackCount))
                     .font(.subheadline)
                     .foregroundColor(.secondary)
             }
