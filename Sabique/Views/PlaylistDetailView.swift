@@ -49,7 +49,7 @@ struct PlaylistDetailView: View {
         playlist.sortedTracks.first?.appleMusicSongId
     }
     
-    @StateObject private var playerManager = ChorusPlayerManager()
+    @EnvironmentObject private var playerManager: ChorusPlayerManager
     
     var body: some View {
         ZStack(alignment: .bottom) {
