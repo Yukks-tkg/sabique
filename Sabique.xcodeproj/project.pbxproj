@@ -78,6 +78,13 @@
 			);
 			target = 0244FEDD2F460CCA009100C5 /* SabiqueWidgetExtension */;
 		};
+		0244FEF82F492D1C009100C5 /* Exceptions for "SabiqueWidget" folder in "Sabique" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				PlayIntent.swift,
+			);
+			target = 0225A3CB2F176C46006BEBA7 /* Sabique */;
+		};
 /* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
@@ -102,6 +109,7 @@
 		0244FEE42F460CCA009100C5 /* SabiqueWidget */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			exceptions = (
+				0244FEF82F492D1C009100C5 /* Exceptions for "SabiqueWidget" folder in "Sabique" target */,
 				0244FEF22F460CCB009100C5 /* Exceptions for "SabiqueWidget" folder in "SabiqueWidgetExtension" target */,
 			);
 			path = SabiqueWidget;

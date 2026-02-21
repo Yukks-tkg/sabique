@@ -15,9 +15,12 @@ struct PlaylistListView: View {
     @EnvironmentObject private var storeManager: StoreManager
     @Query(sort: \Playlist.orderIndex) private var playlists: [Playlist]
 
-    var widgetOpenPlaylistId: Binding<String?>?
+    var navigationPath: Binding<[Playlist]>?
 
-    @State private var navigationPath: [Playlist] = []
+    @State private var _navigationPath: [Playlist] = []
+    private var effectiveNavigationPath: Binding<[Playlist]> {
+        navigationPath ?? $_navigationPath
+    }
     @State private var showingCreateSheet = false
     @State private var showingSettings = false
     @State private var showingImportSheet = false
@@ -35,7 +38,7 @@ struct PlaylistListView: View {
     @AppStorage("backgroundBlurRadius") private var backgroundBlurRadius: Double = 30
     
     var body: some View {
-        NavigationStack(path: $navigationPath) {
+        NavigationStack(path: effectiveNavigationPath) {
             ZStack {
                 backgroundView
 
@@ -53,14 +56,6 @@ struct PlaylistListView: View {
             }
             .task(id: customBackgroundArtworkURLString) {
                 await updateBackgroundArtwork()
-            }
-            .onChange(of: widgetOpenPlaylistId?.wrappedValue) { _, newId in
-                guard let idString = newId,
-                      let uuid = UUID(uuidString: idString),
-                      let playlist = playlists.first(where: { $0.id == uuid })
-                else { return }
-                navigationPath = [playlist]
-                widgetOpenPlaylistId?.wrappedValue = nil
             }
             .preferredColorScheme(.dark)
             .navigationBarTitleDisplayMode(.inline)

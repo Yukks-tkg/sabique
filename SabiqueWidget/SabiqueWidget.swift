@@ -5,6 +5,7 @@
 
 import WidgetKit
 import SwiftUI
+import AppIntents
 
 // MARK: - データモデル
 
@@ -15,6 +16,10 @@ struct NowPlayingEntry: TimelineEntry {
     let playlistName: String
     let playlistId: String
     let artworkData: Data?
+    // 次の曲情報
+    let nextTrackTitle: String
+    let nextArtistName: String
+    let nextArtworkData: Data?
 }
 
 // MARK: - Provider
@@ -30,7 +35,10 @@ struct NowPlayingProvider: TimelineProvider {
             artistName: "槇原敬之",
             playlistName: "My Playlist",
             playlistId: "",
-            artworkData: nil
+            artworkData: nil,
+            nextTrackTitle: "Tomorrow never knows",
+            nextArtistName: "Mr.Children",
+            nextArtworkData: nil
         )
     }
 
@@ -53,6 +61,9 @@ struct NowPlayingProvider: TimelineProvider {
         let playlist = defaults?.string(forKey: "nowPlaying.playlistName") ?? "Sabique"
         let playlistId = defaults?.string(forKey: "nowPlaying.playlistId") ?? ""
         let artworkData = defaults?.data(forKey: "nowPlaying.artworkData")
+        let nextTitle = defaults?.string(forKey: "nowPlaying.nextTrackTitle") ?? ""
+        let nextArtist = defaults?.string(forKey: "nowPlaying.nextArtistName") ?? ""
+        let nextArtworkData = defaults?.data(forKey: "nowPlaying.nextArtworkData")
 
         return NowPlayingEntry(
             date: .now,
@@ -60,7 +71,10 @@ struct NowPlayingProvider: TimelineProvider {
             artistName: artist,
             playlistName: playlist,
             playlistId: playlistId,
-            artworkData: artworkData
+            artworkData: artworkData,
+            nextTrackTitle: nextTitle,
+            nextArtistName: nextArtist,
+            nextArtworkData: nextArtworkData
         )
     }
 }
@@ -77,6 +91,8 @@ struct SabiqueWidgetEntryView: View {
             smallView
         case .systemMedium:
             mediumView
+        case .systemLarge:
+            largeView
         default:
             smallView
         }
@@ -134,9 +150,96 @@ struct SabiqueWidgetEntryView: View {
         }
     }
 
+    // MARK: Large (縦長)
+    private var largeView: some View {
+        VStack(spacing: 0) {
+            // 2枚のレコードを横に並べる
+            HStack(alignment: .top, spacing: 16) {
+                // 左: 現在の曲
+                VStack(spacing: 10) {
+                    recordDisk(size: 130)
+
+                    VStack(spacing: 3) {
+                        Text(entry.trackTitle)
+                            .font(.system(size: 13, weight: .bold))
+                            .foregroundColor(.white)
+                            .lineLimit(2)
+                            .minimumScaleFactor(0.85)
+                            .multilineTextAlignment(.center)
+
+                        Text(entry.artistName)
+                            .font(.system(size: 11, weight: .regular))
+                            .foregroundColor(.white.opacity(0.65))
+                            .lineLimit(1)
+                            .minimumScaleFactor(0.85)
+                    }
+                    .frame(maxWidth: .infinity)
+                }
+
+                // 右: 次の曲（少し薄く）
+                VStack(spacing: 10) {
+                    recordDisk(size: 130, dimmed: true, useNextArtwork: true)
+
+                    VStack(spacing: 3) {
+                        Text(entry.nextTrackTitle.isEmpty ? "---" : entry.nextTrackTitle)
+                            .font(.system(size: 13, weight: .bold))
+                            .foregroundColor(.white.opacity(0.5))
+                            .lineLimit(2)
+                            .minimumScaleFactor(0.85)
+                            .multilineTextAlignment(.center)
+
+                        Text(entry.nextArtistName.isEmpty ? "" : entry.nextArtistName)
+                            .font(.system(size: 11, weight: .regular))
+                            .foregroundColor(.white.opacity(0.35))
+                            .lineLimit(1)
+                            .minimumScaleFactor(0.85)
+                    }
+                    .frame(maxWidth: .infinity)
+                }
+            }
+            .padding(.horizontal, 16)
+            .padding(.top, 16)
+
+            Spacer()
+
+            // 再生ボタン
+            Button(intent: PlayCurrentTrackIntent()) {
+                HStack(spacing: 8) {
+                    Image(systemName: "play.fill")
+                        .font(.system(size: 14))
+                    Text("ハイライト再生")
+                        .font(.system(size: 14, weight: .semibold))
+                }
+                .foregroundColor(.white)
+                .padding(.horizontal, 24)
+                .padding(.vertical, 10)
+                .background(
+                    Capsule()
+                        .fill(Color.white.opacity(0.15))
+                )
+            }
+            .buttonStyle(.plain)
+
+            Spacer()
+
+            // 下部: プレイリスト名
+            HStack(spacing: 4) {
+                Image(systemName: "music.note.list")
+                    .font(.system(size: 11))
+                    .foregroundColor(.white.opacity(0.4))
+                Text(entry.playlistName)
+                    .font(.system(size: 12, weight: .medium))
+                    .foregroundColor(.white.opacity(0.4))
+                    .lineLimit(1)
+            }
+            .padding(.bottom, 16)
+        }
+    }
+
     // MARK: レコード盤コンポーネント
-    private func recordDisk(size: CGFloat) -> some View {
+    private func recordDisk(size: CGFloat, dimmed: Bool = false, useNextArtwork: Bool = false) -> some View {
         let grooveCount = 14
+        let artworkData = useNextArtwork ? entry.nextArtworkData : entry.artworkData
 
         return ZStack {
             // 一番外側: レコードの本体（放射状グラデーションで質感を表現）
@@ -173,7 +276,7 @@ struct SabiqueWidgetEntryView: View {
             // アートワーク（中央の丸いラベル部分）
             let labelSize = size * 0.52
             Group {
-                if let data = entry.artworkData,
+                if let data = artworkData,
                    let uiImage = UIImage(data: data) {
                     Image(uiImage: uiImage)
                         .resizable()
@@ -217,6 +320,12 @@ struct SabiqueWidgetEntryView: View {
                     lineWidth: 1.5
                 )
                 .frame(width: size, height: size)
+            // 次の曲は暗くして「待機中」感を出す
+            if dimmed {
+                Circle()
+                    .fill(Color.black.opacity(0.45))
+                    .frame(width: size, height: size)
+            }
         }
         .shadow(color: .black.opacity(0.6), radius: 12, x: 4, y: 6)
     }
@@ -264,7 +373,7 @@ struct SabiqueWidget: Widget {
         }
         .configurationDisplayName("Sabique")
         .description("最後に再生した曲をレコード風に表示します。")
-        .supportedFamilies([.systemSmall, .systemMedium])
+        .supportedFamilies([.systemSmall, .systemMedium, .systemLarge])
     }
 }
 
@@ -279,7 +388,10 @@ struct SabiqueWidget: Widget {
         artistName: "槇原敬之",
         playlistName: "90年代ベスト",
         playlistId: "",
-        artworkData: nil
+        artworkData: nil,
+        nextTrackTitle: "Tomorrow never knows",
+        nextArtistName: "Mr.Children",
+        nextArtworkData: nil
     )
 }
 
@@ -292,6 +404,25 @@ struct SabiqueWidget: Widget {
         artistName: "槇原敬之",
         playlistName: "90年代ベスト",
         playlistId: "",
-        artworkData: nil
+        artworkData: nil,
+        nextTrackTitle: "Tomorrow never knows",
+        nextArtistName: "Mr.Children",
+        nextArtworkData: nil
+    )
+}
+
+#Preview(as: .systemLarge) {
+    SabiqueWidget()
+} timeline: {
+    NowPlayingEntry(
+        date: .now,
+        trackTitle: "どんなときも。",
+        artistName: "槇原敬之",
+        playlistName: "90年代ベスト",
+        playlistId: "",
+        artworkData: nil,
+        nextTrackTitle: "Tomorrow never knows",
+        nextArtistName: "Mr.Children",
+        nextArtworkData: nil
     )
 }

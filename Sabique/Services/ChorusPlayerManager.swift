@@ -353,6 +353,26 @@ class ChorusPlayerManager: ObservableObject {
         defaults?.set(track.playlist?.name ?? "", forKey: "nowPlaying.playlistName")
         defaults?.set(track.playlist?.id.uuidString ?? "", forKey: "nowPlaying.playlistId")
 
+        // 次の曲情報を保存
+        let currentTracks = tracks
+        if let currentIndex = currentTracks.firstIndex(where: { $0.id == track.id }) {
+            let nextIndex = (currentIndex + 1) % currentTracks.count
+            let nextTrack = currentTracks[nextIndex]
+            defaults?.set(nextTrack.title, forKey: "nowPlaying.nextTrackTitle")
+            defaults?.set(nextTrack.artist, forKey: "nowPlaying.nextArtistName")
+
+            // 次の曲のアートワークも保存
+            if let url = nextTrack.artworkURL {
+                Task {
+                    if let (data, _) = try? await URLSession.shared.data(from: url) {
+                        defaults?.set(data, forKey: "nowPlaying.nextArtworkData")
+                    }
+                }
+            } else {
+                defaults?.removeObject(forKey: "nowPlaying.nextArtworkData")
+            }
+        }
+
         // アートワークを画像データとして保存
         if let url = track.artworkURL {
             Task {
