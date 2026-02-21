@@ -12,8 +12,10 @@ import Combine
 struct ChorusEditView: View {
     @Environment(\.dismiss) private var dismiss
     @Bindable var track: TrackInPlaylist
-    
+
     var onSave: (() -> Void)?
+    /// 再生バーからの遷移時に現在の再生位置を引き継ぐ
+    var initialSeekTime: Double?
     
     @State private var chorusStart: Double?
     @State private var chorusEnd: Double?
@@ -592,9 +594,11 @@ struct ChorusEditView: View {
             // このトラックのキューを設定
             player.queue = [foundSong]
             
-            // 再生位置を初期化（新規トラックは0、設定済みは開始2秒前）
+            // 再生位置を初期化（initialSeekTime > キューポイント開始2秒前 > 0）
             let startTime: TimeInterval
-            if let start = track.chorusStartSeconds {
+            if let seekTime = initialSeekTime {
+                startTime = seekTime
+            } else if let start = track.chorusStartSeconds {
                 startTime = max(0, start - 2)
             } else {
                 startTime = 0

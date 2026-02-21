@@ -25,6 +25,11 @@ class ChorusPlayerManager: ObservableObject {
     private var currentPlayTask: Task<Void, Never>?
     private var isTransitioning = false
 
+    /// 現在の再生位置（外部から読み取り用）
+    var currentPlaybackTime: TimeInterval {
+        player.playbackTime
+    }
+
     /// 現在のトラックの終了時間（resume時に再利用するために保存）
     private var currentEndTime: Double = 0
 

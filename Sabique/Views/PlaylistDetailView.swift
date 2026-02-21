@@ -26,6 +26,8 @@ struct PlaylistDetailView: View {
     @State private var previousTrackCount = 0
     @State private var showingRenameAlert = false
     @State private var newPlaylistName = ""
+    @State private var playbarEditTrack: TrackInPlaylist?
+    @State private var playbarSeekTime: Double?
 
 
     // 投稿関連
@@ -130,6 +132,12 @@ struct PlaylistDetailView: View {
                         playerManager.stop()
                     }
                 }
+        }
+        .sheet(item: $playbarEditTrack, onDismiss: {
+            SystemMusicPlayer.shared.stop()
+            playbarSeekTime = nil
+        }) { track in
+            ChorusEditView(track: track, initialSeekTime: playbarSeekTime)
         }
         .sheet(isPresented: $showingSignInSheet) {
             SignInSheetView()
@@ -486,6 +494,15 @@ struct PlaylistDetailView: View {
             }
         }
         .frame(maxWidth: .infinity, alignment: isLeftHandedMode ? .trailing : .leading)
+        .contentShape(Rectangle())
+        .onTapGesture {
+            guard let track = playerManager.currentTrack else { return }
+            // 現在の再生位置をキャプチャしてからChorusEditViewを開く
+            let seekTime = playerManager.currentPlaybackTime
+            playerManager.stop()
+            playbarSeekTime = seekTime
+            playbarEditTrack = track
+        }
     }
 
     private var playbackControls: some View {

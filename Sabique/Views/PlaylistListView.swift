@@ -134,16 +134,6 @@ struct PlaylistListView: View {
         storeManager.isPremium || playlists.count < FreeTierLimits.maxPlaylists
     }
     
-    /// プレイリスト追加ボタンの処理
-    private func trackCountText(_ count: Int) -> String {
-        let format = String(localized: "track_count_format")
-        // 英語系は単複数を区別（"1 track" / "n tracks"）、他言語はローカライズ文字列をそのまま使う
-        if Locale.current.language.languageCode?.identifier == "en" {
-            return count == 1 ? "1 track" : "\(count) tracks"
-        }
-        return "\(count)\(format)"
-    }
-
     private func handleAddPlaylist() {
         if canAddPlaylist {
             showingCreateSheet = true
@@ -361,6 +351,14 @@ struct PlaylistRow: View {
             .cornerRadius(8)
     }
     
+    private func trackCountText(_ count: Int) -> String {
+        let format = String(localized: "track_count_format")
+        if Locale.current.language.languageCode?.identifier == "en" {
+            return count == 1 ? "1 track" : "\(count) tracks"
+        }
+        return "\(count)\(format)"
+    }
+
     private func loadFirstTrackArtwork() async {
         guard let firstTrack = playlist.sortedTracks.first else { return }
         
