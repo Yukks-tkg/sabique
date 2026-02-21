@@ -25,6 +25,9 @@ class ChorusPlayerManager: ObservableObject {
     private var currentPlayTask: Task<Void, Never>?
     private var isTransitioning = false
 
+    /// 現在のトラックの終了時間（resume時に再利用するために保存）
+    private var currentEndTime: Double = 0
+
     /// MusicKit Songオブジェクトのキャッシュ（Apple Music ID → Song）
     private var songCache: [String: Song] = [:]
 
@@ -115,11 +118,8 @@ class ChorusPlayerManager: ObservableObject {
             do {
                 try await player.play()
 
-                // タイマーを再開（現在の曲の残り時間で）
-                if let track = currentTrack {
-                    let endTime = track.chorusEndSeconds ?? 0
-                    scheduleNextTrack(endTime: endTime)
-                }
+                // タイマーを再開（playCurrentTrack()で保存した終了時間を使用）
+                scheduleNextTrack(endTime: currentEndTime)
 
                 print("▶️ 再生再開")
             } catch {
@@ -243,6 +243,9 @@ class ChorusPlayerManager: ObservableObject {
 
                 // 開始位置へシーク
                 player.playbackTime = startTime
+
+                // resume()で再利用できるよう保存
+                currentEndTime = endTime
 
                 isTransitioning = false
 
