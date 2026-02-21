@@ -22,6 +22,7 @@ struct PlaylistDetailView: View {
     @State private var backgroundArtworkURL: URL?
     @State private var showingPaywall = false
     @State private var shouldScrollToBottom = false
+    @State private var shouldScrollToCurrentTrack = false
     @State private var previousTrackCount = 0
     @State private var showingRenameAlert = false
     @State private var newPlaylistName = ""
@@ -103,6 +104,14 @@ struct PlaylistDetailView: View {
                     // シート表示時のトラック数を記録
                     previousTrackCount = playlist.tracks.count
                 }
+        }
+        .onAppear {
+            // 既に再生中なら現在のトラックまでスクロール（ウィジェットからの遷移など）
+            if playerManager.isPlaying {
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                    shouldScrollToCurrentTrack = true
+                }
+            }
         }
         .onDisappear {
             // 画面を離れたら再生を停止
@@ -218,6 +227,22 @@ struct PlaylistDetailView: View {
                         proxy.scrollTo("addButton", anchor: .bottom)
                     }
                     shouldScrollToBottom = false
+                }
+            }
+            .onChange(of: shouldScrollToCurrentTrack) { _, newValue in
+                if newValue, let trackId = playerManager.currentTrack?.id {
+                    withAnimation {
+                        proxy.scrollTo(trackId, anchor: .center)
+                    }
+                    shouldScrollToCurrentTrack = false
+                }
+            }
+            .onChange(of: playerManager.currentTrack?.id) { _, _ in
+                // 再生トラックが変わったら自動スクロール
+                if playerManager.isPlaying, let trackId = playerManager.currentTrack?.id {
+                    withAnimation {
+                        proxy.scrollTo(trackId, anchor: .center)
+                    }
                 }
             }
         }
