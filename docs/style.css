@@ -276,9 +276,14 @@ nav a:hover {
 }
 
 .appstore-badge img {
-  height: 54px;
-  width: auto;
+  width: 200px;
+  height: auto;
   transition: transform var(--transition), opacity var(--transition);
+}
+
+.social-proof img {
+  width: 200px;
+  height: auto;
 }
 
 .appstore-badge:hover img {
@@ -875,6 +880,11 @@ footer {
   justify-content: center;
 }
 
+.footer-badges img {
+  height: 44px;
+  width: auto;
+}
+
 .footer-links {
   display: flex;
   gap: 24px;
@@ -977,13 +987,16 @@ footer {
 
   .widget-item.small img {
     width: 120px;
+    height: auto;
   }
 
   .widget-item.medium img {
     width: 220px;
+    height: auto;
   }
 
   .widget-item.large img {
     width: 220px;
+    height: auto;
   }
 }
