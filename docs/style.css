@@ -275,15 +275,21 @@ nav a:hover {
   gap: 16px;
 }
 
+.hero-badges .social-proof {
+  margin-top: 12px;
+  padding-top: 16px;
+  border-top: 1px solid var(--card-border);
+}
+
 .appstore-badge img {
-  width: 200px;
-  height: auto;
+  height: 54px;
+  width: auto;
   transition: transform var(--transition), opacity var(--transition);
 }
 
 .social-proof img {
-  width: 200px;
-  height: auto;
+  height: 56px;
+  width: auto;
 }
 
 .appstore-badge:hover img {
