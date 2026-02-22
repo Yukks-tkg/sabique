@@ -496,15 +496,18 @@ nav a:hover {
 }
 
 .widget-item.small img {
-  width: 150px;
+  height: 155px;
+  width: auto;
 }
 
 .widget-item.medium img {
-  width: 280px;
+  height: 155px;
+  width: auto;
 }
 
 .widget-item.large img {
-  width: 280px;
+  height: 280px;
+  width: auto;
 }
 
 /* ── COMMUNITY ────────────────────────────────────────────── */
