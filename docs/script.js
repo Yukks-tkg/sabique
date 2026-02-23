@@ -418,19 +418,23 @@ function renderNewsCards() {
         return;
     }
 
-    container.innerHTML = newsData.map(item => {
+    container.innerHTML = newsData.map((item, idx) => {
         const title = typeof item.title === 'object'
             ? (item.title[currentLang] || item.title['ja'] || '')
             : item.title;
         const dateStr = item.date || '';
-        const linkIcon = item.url ? ' <span class="news-link-icon">→</span>' : '';
-        const tag = item.url ? 'a' : 'div';
-        const href = item.url ? `href="${item.url}" target="_blank" rel="noopener"` : '';
+        const hasBody = item.body && (item.body[currentLang] || item.body['ja']);
+        const hasUrl = !!item.url;
+        // bodyがあればモーダル、なければ外部リンク
+        const tag = hasBody ? 'button' : (hasUrl ? 'a' : 'div');
+        const attrs = hasBody
+            ? `onclick="openNewsModal(${idx})"`
+            : (hasUrl ? `href="${item.url}" target="_blank" rel="noopener"` : '');
         return `
-      <${tag} class="news-card fade-in" ${href}>
+      <${tag} class="news-card fade-in" ${attrs}>
         <span class="news-date">${dateStr}</span>
         <span class="news-title">${title}</span>
-        ${item.url ? '<span class="news-link-icon">→</span>' : ''}
+        ${(hasBody || hasUrl) ? '<span class="news-link-icon">→</span>' : ''}
       </${tag}>
     `;
     }).join('');
@@ -449,6 +453,30 @@ function observeFadeIns() {
     }, { threshold: 0.12 });
 
     document.querySelectorAll('.fade-in:not(.is-visible)').forEach(el => observer.observe(el));
+}
+
+/* ── News Modal ───────────────────────────────────────────── */
+function openNewsModal(idx) {
+    const item = newsData[idx];
+    if (!item) return;
+    const title = typeof item.title === 'object'
+        ? (item.title[currentLang] || item.title['ja'] || '')
+        : item.title;
+    const body = item.body
+        ? (item.body[currentLang] || item.body['ja'] || '')
+        : '';
+    document.getElementById('news-modal-date').textContent = item.date || '';
+    document.getElementById('news-modal-title').textContent = title;
+    document.getElementById('news-modal-body').textContent = body;
+    document.getElementById('news-modal').classList.add('open');
+    document.getElementById('news-modal-overlay').classList.add('open');
+    document.body.style.overflow = 'hidden';
+}
+
+function closeNewsModal() {
+    document.getElementById('news-modal').classList.remove('open');
+    document.getElementById('news-modal-overlay').classList.remove('open');
+    document.body.style.overflow = '';
 }
 
 /* ── Carousel ─────────────────────────────────────────────── */

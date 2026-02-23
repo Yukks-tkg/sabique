@@ -430,6 +430,15 @@
     </div>
   </footer>
 
+  <!-- News Modal -->
+  <div class="news-modal-overlay" id="news-modal-overlay" onclick="closeNewsModal()"></div>
+  <div class="news-modal" id="news-modal" role="dialog" aria-modal="true">
+    <button class="news-modal-close" onclick="closeNewsModal()" aria-label="閉じる">✕</button>
+    <p class="news-modal-date" id="news-modal-date"></p>
+    <h3 class="news-modal-title" id="news-modal-title"></h3>
+    <div class="news-modal-body" id="news-modal-body"></div>
+  </div>
+
   <script src="script.js"></script>
 </body>
 

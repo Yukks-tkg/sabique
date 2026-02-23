@@ -991,6 +991,86 @@ footer {
   background: var(--card-border);
 }
 
+/* ── NEWS MODAL ───────────────────────────────────────────── */
+.news-modal-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  z-index: 200;
+  backdrop-filter: blur(4px);
+}
+
+.news-modal-overlay.open {
+  display: block;
+}
+
+.news-modal {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%) scale(0.95);
+  width: min(520px, 90vw);
+  max-height: 80vh;
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  border-radius: 20px;
+  padding: 36px;
+  z-index: 201;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.25s ease, transform 0.25s ease;
+  overflow-y: auto;
+}
+
+.news-modal.open {
+  opacity: 1;
+  pointer-events: auto;
+  transform: translate(-50%, -50%) scale(1);
+}
+
+.news-modal-close {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  background: rgba(255, 255, 255, 0.07);
+  border: none;
+  color: var(--text-muted);
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  cursor: pointer;
+  font-size: 0.85rem;
+  transition: background var(--transition), color var(--transition);
+}
+
+.news-modal-close:hover {
+  background: rgba(255, 255, 255, 0.14);
+  color: var(--white);
+}
+
+.news-modal-date {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  margin-bottom: 8px;
+}
+
+.news-modal-title {
+  font-family: 'Outfit', sans-serif;
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: var(--white);
+  margin-bottom: 20px;
+  line-height: 1.5;
+}
+
+.news-modal-body {
+  font-size: 0.9rem;
+  color: var(--text-sub);
+  line-height: 1.8;
+  white-space: pre-wrap;
+}
+
 /* ── HAMBURGER & DRAWER ───────────────────────────────────── */
 .hamburger-btn {
   display: flex;

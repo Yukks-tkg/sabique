@@ -5,6 +5,9 @@
             "ja": "🎉 Sabiqueの公式サイトをオープンしました！",
             "en": "🎉 The official Sabique website is now live!"
         },
-        "url": "https://Yukks-tkg.github.io/sabique/"
+        "body": {
+            "ja": "Sabiqueの公式ウェブサイトをオープンしました！\n\nアプリの機能紹介・使い方・プレミアムプランの詳細などを掲載しています。\n今後もアップデート情報や新機能のお知らせをこちらでお届けします。\nぜひブックマークしてご利用ください。",
+            "en": "We are excited to announce the launch of the official Sabique website!\n\nYou can learn more about the app features, how it works, and our Premium plan.\nWe will share updates and announcements here going forward.\nFeel free to bookmark it!"
+        }
     }
 ]
