@@ -451,6 +451,20 @@ function observeFadeIns() {
     document.querySelectorAll('.fade-in:not(.is-visible)').forEach(el => observer.observe(el));
 }
 
+/* ── Carousel ─────────────────────────────────────────────── */
+function carouselGoTo(carouselId, index) {
+    const carousel = document.getElementById(carouselId);
+    if (!carousel) return;
+    const slides = carousel.querySelectorAll('.screen-carousel-slide');
+    const dots = carousel.querySelectorAll('.screen-dot');
+    slides.forEach(slide => {
+        slide.style.transform = `translateX(-${index * 100}%)`;
+    });
+    dots.forEach((dot, i) => {
+        dot.classList.toggle('active', i === index);
+    });
+}
+
 /* ── Hamburger Menu ───────────────────────────────────────── */
 function initHamburger() {
     const btn = document.getElementById('hamburger-btn');
