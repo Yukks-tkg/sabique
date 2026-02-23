@@ -271,14 +271,10 @@ nav a:hover {
 
 .hero-badges {
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
+  align-items: center;
+  flex-wrap: wrap;
   gap: 16px;
-}
-
-.hero-badges .social-proof {
-  margin-top: 12px;
-  padding-top: 16px;
-  border-top: 1px solid var(--card-border);
 }
 
 .appstore-badge img {
