@@ -428,7 +428,7 @@ function renderNewsCards() {
         // bodyがあればモーダル、なければ外部リンク
         const tag = hasBody ? 'button' : (hasUrl ? 'a' : 'div');
         const attrs = hasBody
-            ? `onclick="openNewsModal(${idx})"`
+            ? `type="button" onclick="openNewsModal(${idx})"`
             : (hasUrl ? `href="${item.url}" target="_blank" rel="noopener"` : '');
         return `
       <${tag} class="news-card fade-in" ${attrs}>
