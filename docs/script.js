@@ -225,7 +225,7 @@ const i18n = {
         footer_privacy: 'Privacy Policy',
         footer_terms: 'Terms of Use',
         footer_x: 'Follow on X',
-        footer_copy: '© 2025 Sabique. All rights reserved.',
+        footer_copy: '© 2026 Sabique. All rights reserved.',
     }
 };
 
