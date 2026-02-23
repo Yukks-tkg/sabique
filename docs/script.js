@@ -259,13 +259,21 @@ function t(key) { return (i18n[currentLang] || i18n.ja)[key] || key; }
 function render() {
     const s = i18n[currentLang];
 
-    // Nav
+    // Nav (header)
     setText('nav-features', s.nav_features);
     setText('nav-howitworks', s.nav_howitworks);
     setText('nav-widget', s.nav_widget);
     setText('nav-community', s.nav_community);
     setText('nav-premium', s.nav_premium);
     setText('nav-news', s.nav_news);
+
+    // Drawer nav
+    setText('drawer-features', s.nav_features);
+    setText('drawer-howitworks', s.nav_howitworks);
+    setText('drawer-widget', s.nav_widget);
+    setText('drawer-community', s.nav_community);
+    setText('drawer-premium', s.nav_premium);
+    setText('drawer-news', s.nav_news);
 
     // Hero
     setText('hero-eyebrow', s.hero_eyebrow);
@@ -443,6 +451,38 @@ function observeFadeIns() {
     document.querySelectorAll('.fade-in:not(.is-visible)').forEach(el => observer.observe(el));
 }
 
+/* ── Hamburger Menu ───────────────────────────────────────── */
+function initHamburger() {
+    const btn = document.getElementById('hamburger-btn');
+    const drawer = document.getElementById('nav-drawer');
+    const overlay = document.getElementById('nav-overlay');
+    if (!btn || !drawer || !overlay) return;
+
+    function openDrawer() {
+        drawer.classList.add('open');
+        overlay.classList.add('open');
+        btn.classList.add('open');
+        document.body.style.overflow = 'hidden';
+    }
+
+    function closeDrawer() {
+        drawer.classList.remove('open');
+        overlay.classList.remove('open');
+        btn.classList.remove('open');
+        document.body.style.overflow = '';
+    }
+
+    btn.addEventListener('click', () => {
+        drawer.classList.contains('open') ? closeDrawer() : openDrawer();
+    });
+
+    overlay.addEventListener('click', closeDrawer);
+
+    drawer.querySelectorAll('a').forEach(link => {
+        link.addEventListener('click', closeDrawer);
+    });
+}
+
 /* ── Init ─────────────────────────────────────────────────── */
 document.addEventListener('DOMContentLoaded', () => {
     render();
@@ -450,4 +490,5 @@ document.addEventListener('DOMContentLoaded', () => {
     updateAppStoreBadge();
     observeFadeIns();
     loadNews();
+    initHamburger();
 });
