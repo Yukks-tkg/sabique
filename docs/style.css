@@ -284,7 +284,7 @@ nav a:hover {
 }
 
 .social-proof img {
-  height: 56px;
+  height: 54px;
   width: auto;
 }
 
@@ -372,7 +372,7 @@ nav a:hover {
   width: 48px;
   height: 48px;
   border-radius: 12px;
-  background: linear-gradient(135deg, rgba(245, 185, 66, 0.2), rgba(232, 58, 58, 0.2));
+  background: linear-gradient(135deg, rgba(245, 185, 66, 0.45), rgba(232, 58, 58, 0.45));
   display: flex;
   align-items: center;
   justify-content: center;
@@ -551,7 +551,7 @@ nav a:hover {
   width: 40px;
   height: 40px;
   border-radius: 10px;
-  background: linear-gradient(135deg, rgba(245, 185, 66, 0.15), rgba(232, 58, 58, 0.15));
+  background: linear-gradient(135deg, rgba(245, 185, 66, 0.45), rgba(232, 58, 58, 0.45));
   display: flex;
   align-items: center;
   justify-content: center;

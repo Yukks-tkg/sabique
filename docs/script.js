@@ -17,17 +17,17 @@ const i18n = {
         hero_eyebrow: 'Apple Music × ハイライト再生',
         hero_title1: '好きな曲の、',
         hero_title2: 'いちばん好きな',
-        hero_title3: 'ところだけをつなぐ。',
-        hero_sub: 'Sabiqueは、Apple Musicの楽曲からサビ・イントロ・ギターソロなど「推しパート」だけを秒単位で指定し、途切れなく連続再生できる音楽アプリです。',
+        hero_title3: 'ところをつなぐ。',
+        hero_sub: 'Sabiqueは、Apple Musicの楽曲からサビ・イントロ・ギターソロなど「推しパート」を秒単位で指定し、途切れなく連続再生できる音楽アプリです。',
         hero_req_note: '利用にはApple Musicサブスクリプションが必要です',
         appstore_alt: 'App Storeからダウンロード',
 
         feat_label: '主な機能',
         feat_title: 'あなただけの最強メドレーを。',
-        feat_desc: '聴きたい部分だけを集めた、世界にひとつのプレイリスト。',
+        feat_desc: '聴きたい部分を集めた、世界にひとつのプレイリスト。',
 
         feat1_title: 'サビだけ連続再生',
-        feat1_desc: '設定したハイライト区間だけを途切れなく再生。好きな部分の美味しいとこ取りが実現します。',
+        feat1_desc: '設定したハイライト区間を途切れなく再生。聴きたい瞬間が、次々と流れます。',
         feat2_title: '直感的なハイライト指定',
         feat2_desc: '開始・終了位置を秒単位で設定。シークバーを操作するだけで誰でも簡単に設定できます。',
         feat3_title: 'Apple Music完全連携',
@@ -37,7 +37,7 @@ const i18n = {
         hiw_title: '3ステップではじめよう',
         hiw_desc: '難しい操作は不要。あっという間にあなただけのメドレーが完成します。',
         step1_title: 'プレイリストを作る',
-        step1_desc: 'Apple Musicから好きな曲を検索して追加。何曲でもOK。',
+        step1_desc: 'Apple Musicから好きな曲を検索して追加。',
         step2_title: 'サビ位置を設定する',
         step2_desc: '各曲の「ここからここまで」を秒単位で指定するだけ。',
         step3_title: '再生して楽しむ',
@@ -114,7 +114,7 @@ const i18n = {
         footer_privacy: 'プライバシーポリシー',
         footer_terms: '利用規約',
         footer_x: 'X でフォロー',
-        footer_copy: '© 2025 Sabique. All rights reserved.',
+        footer_copy: '© 2026 Sabique. All rights reserved.',
     },
 
     en: {
@@ -138,7 +138,7 @@ const i18n = {
         feat_desc: 'Create a playlist of only the parts you love from any song.',
 
         feat1_title: 'Seamless Highlight Playback',
-        feat1_desc: 'Play only the highlighted sections of each track, one after another — no skipping required.',
+        feat1_desc: 'Play only the highlighted sections of each track. The moments you love, one after another.',
         feat2_title: 'Intuitive Highlight Setting',
         feat2_desc: 'Set start and end times to the second. Just scrub the timeline and you\'re done.',
         feat3_title: 'Full Apple Music Integration',
