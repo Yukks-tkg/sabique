@@ -480,6 +480,8 @@ function closeNewsModal() {
 }
 
 /* ── Carousel ─────────────────────────────────────────────── */
+const carouselState = {};
+
 function carouselGoTo(carouselId, index) {
     const carousel = document.getElementById(carouselId);
     if (!carousel) return;
@@ -491,6 +493,19 @@ function carouselGoTo(carouselId, index) {
     dots.forEach((dot, i) => {
         dot.classList.toggle('active', i === index);
     });
+    carouselState[carouselId] = index;
+}
+
+function initCarouselAutoPlay(carouselId, intervalMs = 3000) {
+    const carousel = document.getElementById(carouselId);
+    if (!carousel) return;
+    carouselState[carouselId] = 0;
+    setInterval(() => {
+        const slides = carousel.querySelectorAll('.screen-carousel-slide');
+        const current = carouselState[carouselId] ?? 0;
+        const next = (current + 1) % slides.length;
+        carouselGoTo(carouselId, next);
+    }, intervalMs);
 }
 
 /* ── Hamburger Menu ───────────────────────────────────────── */
@@ -533,4 +548,5 @@ document.addEventListener('DOMContentLoaded', () => {
     observeFadeIns();
     loadNews();
     initHamburger();
+    initCarouselAutoPlay('community-carousel', 3000);
 });
