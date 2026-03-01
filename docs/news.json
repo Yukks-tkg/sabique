@@ -1,5 +1,16 @@
 [
     {
+        "date": "2026-03-01",
+        "title": {
+            "ja": "📝 noteに記事を投稿しました！",
+            "en": "📝 New article published on note!"
+        },
+        "body": {
+            "ja": "「Apple Musicで好きな区間だけ繰り返し聴く方法」というテーマで記事を書きました。\n\nSabiqueの使い方をスクリーンショット付きでわかりやすく解説しています。\nぜひ読んでみてください！\n\nhttps://note.com/yukks_1996/n/nccf4dea722c4",
+            "en": "We've published a new article about how to loop only your favorite parts of songs on Apple Music.\n\nCheck it out on note!\n\nhttps://note.com/yukks_1996/n/nccf4dea722c4"
+        }
+    },
+    {
         "date": "2026-02-22",
         "title": {
             "ja": "🎉 Sabiqueの公式サイトをオープンしました！",
