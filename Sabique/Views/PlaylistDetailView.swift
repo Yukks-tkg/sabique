@@ -121,6 +121,9 @@ struct PlaylistDetailView: View {
                 playerManager.stop()
             }
         }
+        .onChange(of: playlist.sortedTracks.map(\.id)) { _, _ in
+            playerManager.refreshPlaybackOrder()
+        }
         .sheet(item: $selectedTrack, onDismiss: {
             // ハイライト設定画面から戻ったら再生を停止
             SystemMusicPlayer.shared.stop()
@@ -338,6 +341,21 @@ struct PlaylistDetailView: View {
                     .font(.system(size: 14))
                     .foregroundColor(.secondary)
             }
+
+            Spacer(minLength: 8)
+            Button {
+                playerManager.setShuffleEnabled(!playerManager.isShuffleEnabled)
+            } label: {
+                Image(systemName: "shuffle")
+                    .foregroundColor(playerManager.isShuffleEnabled ? .orange : .secondary)
+                    .frame(minWidth: 44, minHeight: 44)
+            }
+            .buttonStyle(.plain)
+            .accessibilityIdentifier("shufflePlaybackButton")
+            .accessibilityLabel(String(localized: "shuffle_playback", table: "PlaybackControls"))
+            .accessibilityValue(playerManager.isShuffleEnabled
+                ? String(localized: "shuffle_on", table: "PlaybackControls")
+                : String(localized: "shuffle_off", table: "PlaybackControls"))
         }
         .padding(.top, 10)
     }

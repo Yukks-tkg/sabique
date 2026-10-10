@@ -52,7 +52,10 @@ class CommunityManager: ObservableObject {
     func getUserProfile(userId: String) async throws -> UserProfile {
         let userDoc = try await db.collection("users").document(userId).getDocument()
 
-        if let profile = try? userDoc.data(as: UserProfile.self) {
+        if let profile = try Self.decodeExistingUserProfile(
+            documentExists: userDoc.exists,
+            decode: { try userDoc.data(as: UserProfile.self) }
+        ) {
             print("🔍 プロフィール取得成功:")
             print("  - userId: \(userId)")
             print("  - nickname: \(profile.nickname ?? "nil")")
@@ -72,6 +75,16 @@ class CommunityManager: ObservableObject {
             try db.collection("users").document(userId).setData(from: newProfile)
             return newProfile
         }
+    }
+
+    /// Only an absent document may fall through to profile creation.
+    /// An existing document that cannot be decoded must remain untouched.
+    static func decodeExistingUserProfile(
+        documentExists: Bool,
+        decode: () throws -> UserProfile
+    ) throws -> UserProfile? {
+        guard documentExists else { return nil }
+        return try decode()
     }
 
     /// プレイリストをコミュニティに投稿

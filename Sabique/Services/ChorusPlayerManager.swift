@@ -17,6 +17,9 @@ class ChorusPlayerManager: ObservableObject {
     @Published var isPaused = false
     @Published var currentTrackIndex = 0
     @Published var currentTrack: TrackInPlaylist?
+    @Published private var playbackOrder = PlaybackOrder()
+
+    var isShuffleEnabled: Bool { playbackOrder.isShuffled }
 
     /// トラックリストを取得するクロージャ（常に最新の順序を返す）
     private var tracksProvider: (() -> [TrackInPlaylist])?
@@ -24,6 +27,8 @@ class ChorusPlayerManager: ObservableObject {
     private var backgroundTimer: DispatchSourceTimer?
     private var currentPlayTask: Task<Void, Never>?
     private var isTransitioning = false
+    private var widgetArtworkTask: Task<Void, Never>?
+    private var widgetUpdateID = UUID()
 
     /// 現在の再生位置（外部から読み取り用）
     var currentPlaybackTime: TimeInterval {
@@ -59,24 +64,25 @@ class ChorusPlayerManager: ObservableObject {
 
     /// ハイライト連続再生を開始（先頭から）
     func play(tracks: @escaping () -> [TrackInPlaylist]) {
-        playFrom(index: 0, tracks: tracks)
+        startPlayback(selectedTrackID: nil, tracks: tracks)
     }
 
     /// ハイライト連続再生を指定トラックから開始
     func playFrom(track: TrackInPlaylist, tracks: @escaping () -> [TrackInPlaylist]) {
-        let currentTracks = tracks()
-        let index = currentTracks.firstIndex(where: { $0.id == track.id }) ?? 0
-        playFrom(index: index, tracks: tracks)
+        startPlayback(selectedTrackID: track.id, tracks: tracks)
     }
 
-    /// ハイライト連続再生を指定インデックスから開始
-    private func playFrom(index: Int, tracks: @escaping () -> [TrackInPlaylist]) {
+    /// 保存順を変えず、この再生セッションの順序を作る
+    private func startPlayback(selectedTrackID: UUID?, tracks: @escaping () -> [TrackInPlaylist]) {
         self.tracksProvider = tracks
+        let currentTracks = self.tracks
 
-        guard !self.tracks.isEmpty else {
+        guard !currentTracks.isEmpty else {
+            stop()
             print("曲がありません")
             return
         }
+        playbackOrder.start(trackIDs: currentTracks.map(\.id), selectedID: selectedTrackID)
 
         // ApplicationMusicPlayer用にAudioSessionを設定
         configureAudioSession()
@@ -84,7 +90,6 @@ class ChorusPlayerManager: ObservableObject {
         // SystemMusicPlayerが再生中の場合は停止する
         SystemMusicPlayer.shared.stop()
 
-        currentTrackIndex = min(index, self.tracks.count - 1)
         isPlaying = true
         isPaused = false
         isTransitioning = false
@@ -100,9 +105,13 @@ class ChorusPlayerManager: ObservableObject {
         cancelBackgroundTimer()
         currentPlayTask?.cancel()
         currentPlayTask = nil
+        widgetArtworkTask?.cancel()
+        widgetArtworkTask = nil
+        widgetUpdateID = UUID()
         player.stop()
         currentTrack = nil
         tracksProvider = nil
+        playbackOrder.stop()
         print("🛑 再生停止")
     }
 
@@ -136,55 +145,51 @@ class ChorusPlayerManager: ObservableObject {
 
     /// 次の曲へ
     func next() {
-        guard !isTransitioning else { return }
+        guard isPlaying, !isTransitioning else { return }
         isPaused = false
-
-        // 現在再生中のトラックのIDを使って、最新のリストでの次のトラックを見つける
-        if let currentTrack = currentTrack,
-           let currentIndex = tracks.firstIndex(where: { $0.id == currentTrack.id }) {
-            currentTrackIndex = currentIndex + 1
-        } else {
-            currentTrackIndex += 1
-        }
-
-        if currentTrackIndex >= tracks.count {
-            // 最後まで再生完了、最初に戻ってリピート
-            currentTrackIndex = 0
-            print("🔁 リピート: 最初の曲に戻ります")
-        }
-
+        playbackOrder.synchronize(with: tracks.map(\.id))
+        playbackOrder.next()
         playCurrentTrack()
     }
 
     /// 前の曲へ
     func previous() {
-        guard !isTransitioning else { return }
+        guard isPlaying, !isTransitioning else { return }
         isPaused = false
-
-        // 現在再生中のトラックのIDを使って、最新のリストでの前のトラックを見つける
-        if let currentTrack = currentTrack,
-           let currentIndex = tracks.firstIndex(where: { $0.id == currentTrack.id }) {
-            currentTrackIndex = currentIndex - 1
-        } else {
-            currentTrackIndex -= 1
-        }
-
-        if currentTrackIndex < 0 {
-            // 最初より前、最後の曲に移動
-            currentTrackIndex = tracks.count - 1
-            print("🔁 リピート: 最後の曲に移動します")
-        }
-
+        playbackOrder.synchronize(with: tracks.map(\.id))
+        playbackOrder.previous()
         playCurrentTrack()
+    }
+
+    /// モード変更では現在の曲・再生位置・一時停止状態を変えない
+    func setShuffleEnabled(_ enabled: Bool) {
+        playbackOrder.setShuffleEnabled(enabled, trackIDs: tracks.map(\.id))
+        refreshPlaybackOrder()
+    }
+
+    /// 一覧の追加・削除・並べ替えを再生順とウィジェットへ反映
+    func refreshPlaybackOrder() {
+        guard isPlaying else { return }
+        playbackOrder.synchronize(with: tracks.map(\.id))
+        guard playbackOrder.currentID != nil else {
+            stop()
+            return
+        }
+        if let currentTrack, currentTrack.id == playbackOrder.currentID {
+            saveNowPlayingForWidget(track: currentTrack)
+        }
     }
 
     /// 現在の曲を再生
     private func playCurrentTrack() {
         let currentTracks = tracks
-        guard currentTrackIndex < currentTracks.count else {
+        playbackOrder.synchronize(with: currentTracks.map(\.id))
+        guard let trackID = playbackOrder.currentID,
+              let index = currentTracks.firstIndex(where: { $0.id == trackID }) else {
             stop()
             return
         }
+        currentTrackIndex = index
 
         // 既存のタスクとタイマーをキャンセル
         currentPlayTask?.cancel()
@@ -200,6 +205,7 @@ class ChorusPlayerManager: ObservableObject {
         }
 
         currentPlayTask = Task {
+            guard !Task.isCancelled else { return }
             do {
                 // キャッシュからSongを取得、なければAPIリクエスト
                 let song: Song
@@ -354,44 +360,47 @@ class ChorusPlayerManager: ObservableObject {
         backgroundTimer = nil
     }
 
-    /// 再生中の曲情報をウィジェット用に保存
+    /// 再生順と同じ次曲を保存し、古い画像取得の完了を反映しない
     private func saveNowPlayingForWidget(track: TrackInPlaylist) {
+        let currentTracks = tracks
+        playbackOrder.synchronize(with: currentTracks.map(\.id))
+        guard playbackOrder.currentID == track.id else { return }
+        let nextTrack = currentTracks.first { $0.id == playbackOrder.nextID }
         let defaults = UserDefaults(suiteName: "group.com.yuki.Sabique")
+        let updateID = UUID()
+        widgetUpdateID = updateID
+        widgetArtworkTask?.cancel()
+
         defaults?.set(track.title, forKey: "nowPlaying.trackTitle")
         defaults?.set(track.artist, forKey: "nowPlaying.artistName")
         defaults?.set(track.playlist?.name ?? "", forKey: "nowPlaying.playlistName")
         defaults?.set(track.playlist?.id.uuidString ?? "", forKey: "nowPlaying.playlistId")
+        defaults?.set(nextTrack?.title ?? "", forKey: "nowPlaying.nextTrackTitle")
+        defaults?.set(nextTrack?.artist ?? "", forKey: "nowPlaying.nextArtistName")
+        // Never display the previous generation's artwork beside new metadata.
+        defaults?.removeObject(forKey: "nowPlaying.artworkData")
+        defaults?.removeObject(forKey: "nowPlaying.nextArtworkData")
+        WidgetCenter.shared.reloadTimelines(ofKind: "SabiqueWidget")
 
-        // 次の曲情報を保存
-        let currentTracks = tracks
-        if let currentIndex = currentTracks.firstIndex(where: { $0.id == track.id }) {
-            let nextIndex = (currentIndex + 1) % currentTracks.count
-            let nextTrack = currentTracks[nextIndex]
-            defaults?.set(nextTrack.title, forKey: "nowPlaying.nextTrackTitle")
-            defaults?.set(nextTrack.artist, forKey: "nowPlaying.nextArtistName")
-
-            // 次の曲のアートワークも保存
-            if let url = nextTrack.artworkURL {
-                Task {
-                    if let (data, _) = try? await URLSession.shared.data(from: url) {
-                        defaults?.set(data, forKey: "nowPlaying.nextArtworkData")
-                    }
-                }
-            } else {
-                defaults?.removeObject(forKey: "nowPlaying.nextArtworkData")
+        let artworkURL = track.artworkURL
+        let nextArtworkURL = nextTrack?.artworkURL
+        widgetArtworkTask = Task { [weak self] in
+            async let artworkData = Self.loadWidgetArtwork(from: artworkURL)
+            async let nextArtworkData = Self.loadWidgetArtwork(from: nextArtworkURL)
+            let (artwork, nextArtwork) = await (artworkData, nextArtworkData)
+            guard let self, !Task.isCancelled, self.widgetUpdateID == updateID else { return }
+            if let artwork {
+                defaults?.set(artwork, forKey: "nowPlaying.artworkData")
             }
-        }
-
-        // アートワークを画像データとして保存
-        if let url = track.artworkURL {
-            Task {
-                if let (data, _) = try? await URLSession.shared.data(from: url) {
-                    defaults?.set(data, forKey: "nowPlaying.artworkData")
-                    WidgetCenter.shared.reloadTimelines(ofKind: "SabiqueWidget")
-                }
+            if let nextArtwork {
+                defaults?.set(nextArtwork, forKey: "nowPlaying.nextArtworkData")
             }
-        } else {
             WidgetCenter.shared.reloadTimelines(ofKind: "SabiqueWidget")
         }
+    }
+
+    private static func loadWidgetArtwork(from url: URL?) async -> Data? {
+        guard let url else { return nil }
+        return try? await URLSession.shared.data(from: url).0
     }
 }

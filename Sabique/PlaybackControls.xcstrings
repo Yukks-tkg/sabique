@@ -1,0 +1,24 @@
+{
+  "sourceLanguage" : "en",
+  "strings" : {
+    "shuffle_playback" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Shuffle playback" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "シャッフル再生" } }
+      }
+    },
+    "shuffle_on" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "On" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "オン" } }
+      }
+    },
+    "shuffle_off" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Off" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "オフ" } }
+      }
+    }
+  },
+  "version" : "1.0"
+}

@@ -93,10 +93,10 @@ struct MainTabView: View {
 
         if let track = sortedTracks.first(where: { $0.title == trackTitle }) {
             print("▶️ ウィジェットから再生開始: \(track.title)")
-            playerManager.playFrom(track: track, tracks: { sortedTracks })
+            playerManager.playFrom(track: track, tracks: { [playlist] in playlist.sortedTracks })
         } else {
             print("▶️ ウィジェットから先頭再生開始")
-            playerManager.play(tracks: { sortedTracks })
+            playerManager.play(tracks: { [playlist] in playlist.sortedTracks })
         }
 
         // PlaylistDetailViewへ直接遷移
